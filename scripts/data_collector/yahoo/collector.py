@@ -541,11 +541,18 @@ class YahooNormalize1dExtend(YahooNormalize1d):
         if str(symbol_name).upper() not in old_symbol_list:
             return df.reset_index()
         old_df = self.old_qlib_data.loc[str(symbol_name).upper()]
-        latest_date = old_df.index[-1]
+        valid_old_df = old_df[old_df["close"].notna()]
+        if valid_old_df.empty:
+            return df.reset_index()
+        latest_date = valid_old_df.index[-1]
         df = df.loc[latest_date:]
+        if df.empty:
+            return df.reset_index()
         new_latest_data = df.iloc[0]
-        old_latest_data = old_df.loc[latest_date]
+        old_latest_data = valid_old_df.loc[latest_date]
         for col in self.column_list[:-1]:
+            if pd.isna(new_latest_data[col]) or pd.isna(old_latest_data[col]):
+                continue
             if col == "volume":
                 df[col] = df[col] / (new_latest_data[col] / old_latest_data[col])
             else:

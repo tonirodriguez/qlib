@@ -268,6 +268,42 @@ class DumpDataBase:
                 # append; self._mode == self.ALL_MODE or not bin_path.exists()
                 np.hstack([date_index, _df[field]]).astype("<f").tofile(str(bin_path.resolve()))
 
+    def _get_last_bin_calendar(self, code: str):
+        """Return the last calendar date that has a real dumped value for a symbol."""
+        old_calendar_list = getattr(self, "_old_calendar_list", None)
+        if not old_calendar_list:
+            return None
+
+        features_dir = self._features_dir.joinpath(code_to_fname(code).lower())
+        if not features_dir.exists():
+            return None
+
+        candidate_fields = ("close", "factor", "open", "high", "low", "volume")
+        last_positions = []
+        calendar_len = len(old_calendar_list)
+
+        for field in candidate_fields:
+            bin_path = features_dir.joinpath(f"{field.lower()}.{self.freq}{self.DUMP_FILE_SUFFIX}")
+            if not bin_path.exists():
+                continue
+            arr = np.fromfile(bin_path, dtype="<f")
+            if len(arr) <= 1:
+                continue
+
+            start_idx = int(arr[0])
+            values = arr[1:]
+            valid_idx = np.flatnonzero(~np.isnan(values))
+            if len(valid_idx) == 0:
+                continue
+
+            last_idx = start_idx + int(valid_idx[-1])
+            if 0 <= last_idx < calendar_len:
+                last_positions.append(last_idx)
+
+        if not last_positions:
+            return None
+        return old_calendar_list[max(last_positions)]
+
     def _dump_bin(self, file_or_data: [Path, pd.DataFrame], calendar_list: List[pd.Timestamp]):
         if not calendar_list:
             logger.warning("calendar_list is empty")
@@ -502,10 +538,13 @@ class DumpDataUpdate(DumpDataBase):
                     continue
                 if _code in self._update_instruments:
                     # exists stock, will append data
+                    instrument_end = pd.Timestamp(self._update_instruments[_code][self.INSTRUMENTS_END_FIELD])
+                    last_bin_end = self._get_last_bin_calendar(_code)
+                    effective_end = (
+                        min(instrument_end, last_bin_end) if last_bin_end is not None else instrument_end
+                    )
                     _update_calendars = (
-                        _df[_df[self.date_field_name] > self._update_instruments[_code][self.INSTRUMENTS_END_FIELD]][
-                            self.date_field_name
-                        ]
+                        _df[_df[self.date_field_name] > effective_end][self.date_field_name]
                         .sort_values()
                         .to_list()
                     )
