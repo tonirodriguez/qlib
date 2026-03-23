@@ -4,7 +4,7 @@ __pycache__/
 *.pyc
 *.pyd
 *.so
-*.ipynb
+# *.ipynb
 .ipynb_checkpoints
 _build
 build/
@@ -23,12 +23,12 @@ qlib/VERSION.txt
 qlib/data/_libs/expanding.cpp
 qlib/data/_libs/rolling.cpp
 qlib/_version.py
-examples/estimator/estimator_example/
-examples/rl/data/
-examples/rl/checkpoints/
-examples/rl/outputs/
-examples/rl_order_execution/data/
-examples/rl_order_execution/outputs/
+# examples/estimator/estimator_example/
+# examples/rl/data/
+# examples/rl/checkpoints/
+# examples/rl/outputs/
+# examples/rl_order_execution/data/
+# examples/rl_order_execution/outputs/
 
 *.egg-info/
 
