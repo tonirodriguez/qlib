@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
-from pathlib import Path
 import json
-from typing import Dict, List
+import sqlite3
+from dataclasses import dataclass
+from loguru import logger
+
+from infra.db import get_conn
 
 
 @dataclass
@@ -13,69 +15,120 @@ class Fill:
     qty: int
     price: float
     fee: float
-    status: str = "filled"
+    status: str
 
 
 class PaperBroker:
-    def __init__(
-        self,
-        initial_cash: float = 100000.0,
-        fee_rate: float = 0.001,
-        state_path: str | Path = "data/state/paper_broker_state.json",
-    ) -> None:
-        self.state_path = Path(state_path)
+    def __init__(self, initial_cash: float = 100000.0, fee_rate: float = 0.001) -> None:
         self.initial_cash = initial_cash
         self.fee_rate = fee_rate
-        self.state_path.parent.mkdir(parents=True, exist_ok=True)
+        self._bootstrap()
 
-        if self.state_path.exists():
-            self._load()
-        else:
-            self.cash = initial_cash
-            self.positions: Dict[str, int] = {}
-            self._save()
+    def _bootstrap(self) -> None:
+        with get_conn() as conn:
+            rows = conn.execute("SELECT key, value FROM broker_state").fetchall()
+            if not rows:
+                conn.execute(
+                    "INSERT OR REPLACE INTO broker_state(key, value) VALUES (?, ?)",
+                    ("cash", str(self.initial_cash)),
+                )
+                conn.execute(
+                    "INSERT OR REPLACE INTO broker_state(key, value) VALUES (?, ?)",
+                    ("positions", json.dumps({})),
+                )
 
-    def _load(self) -> None:
-        data = json.loads(self.state_path.read_text(encoding="utf-8"))
-        self.cash = float(data["cash"])
-        self.positions = {k: int(v) for k, v in data["positions"].items()}
+    def get_cash(self, conn: sqlite3.Connection | None = None) -> float:
+        if conn is None:
+            with get_conn() as conn:
+                row = conn.execute("SELECT value FROM broker_state WHERE key='cash'").fetchone()
+                return float(row["value"])
+        row = conn.execute("SELECT value FROM broker_state WHERE key='cash'").fetchone()
+        return float(row["value"])
 
-    def _save(self) -> None:
-        payload = {"cash": self.cash, "positions": self.positions}
-        self.state_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    def set_cash(self, cash: float, conn: sqlite3.Connection | None = None) -> None:
+        if conn is None:
+            with get_conn() as conn:
+                conn.execute(
+                    "INSERT OR REPLACE INTO broker_state(key, value) VALUES (?, ?)",
+                    ("cash", str(cash)),
+                )
+            return
+        conn.execute(
+            "INSERT OR REPLACE INTO broker_state(key, value) VALUES (?, ?)",
+            ("cash", str(cash)),
+        )
 
-    def get_positions(self) -> Dict[str, int]:
-        return dict(self.positions)
+    def get_positions(self, conn: sqlite3.Connection | None = None) -> dict[str, int]:
+        if conn is None:
+            with get_conn() as conn:
+                row = conn.execute("SELECT value FROM broker_state WHERE key='positions'").fetchone()
+                return json.loads(row["value"])
+        row = conn.execute("SELECT value FROM broker_state WHERE key='positions'").fetchone()
+        return json.loads(row["value"])
 
-    def get_cash(self) -> float:
-        return self.cash
+    def set_positions(self, positions: dict[str, int], conn: sqlite3.Connection | None = None) -> None:
+        if conn is None:
+            with get_conn() as conn:
+                conn.execute(
+                    "INSERT OR REPLACE INTO broker_state(key, value) VALUES (?, ?)",
+                    ("positions", json.dumps(positions)),
+                )
+            return
+        conn.execute(
+            "INSERT OR REPLACE INTO broker_state(key, value) VALUES (?, ?)",
+            ("positions", json.dumps(positions)),
+        )
 
-    def place_market_order(self, instrument: str, side: str, qty: int, price: float) -> Fill:
+    def set_state(self, cash: float, positions: dict[str, int], conn: sqlite3.Connection) -> None:
+        conn.execute(
+            "INSERT OR REPLACE INTO broker_state(key, value) VALUES (?, ?)",
+            ("cash", str(cash)),
+        )
+        conn.execute(
+            "INSERT OR REPLACE INTO broker_state(key, value) VALUES (?, ?)",
+            ("positions", json.dumps(positions)),
+        )
+
+    def place_market_order(
+        self,
+        instrument: str,
+        side: str,
+        qty: int,
+        price: float,
+        conn: sqlite3.Connection | None = None,
+    ) -> Fill:
         if qty <= 0:
             raise ValueError("qty must be positive")
 
+        cash = self.get_cash(conn)
+        positions = self.get_positions(conn)
         gross = qty * price
         fee = gross * self.fee_rate
 
         if side == "buy":
-            total_cost = gross + fee
-            if total_cost > self.cash:
-                return Fill(instrument, side, qty, price, fee, status="rejected_no_cash")
-            self.cash -= total_cost
-            self.positions[instrument] = self.positions.get(instrument, 0) + qty
+            total = gross + fee
+            if total > cash:
+                return Fill(instrument, side, qty, price, fee, "rejected_no_cash")
+            cash -= total
+            positions[instrument] = int(positions.get(instrument, 0)) + qty
 
         elif side == "sell":
-            current_qty = self.positions.get(instrument, 0)
-            if qty > current_qty:
-                return Fill(instrument, side, qty, price, fee, status="rejected_no_position")
-            self.cash += gross - fee
-            new_qty = current_qty - qty
-            if new_qty == 0:
-                self.positions.pop(instrument, None)
+            current = int(positions.get(instrument, 0))
+            if qty > current:
+                return Fill(instrument, side, qty, price, fee, "rejected_no_position")
+            cash += gross - fee
+            remaining = current - qty
+            if remaining == 0:
+                positions.pop(instrument, None)
             else:
-                self.positions[instrument] = new_qty
+                positions[instrument] = remaining
         else:
-            raise ValueError("side must be 'buy' or 'sell'")
+            raise ValueError("side must be buy/sell")
 
-        self._save()
-        return Fill(instrument, side, qty, price, fee)
+        if conn is None:
+            with get_conn() as tx_conn:
+                self.set_state(cash, positions, tx_conn)
+        else:
+            self.set_state(cash, positions, conn)
+        logger.info(f"Filled {side} {qty} {instrument} @ {price:.2f}")
+        return Fill(instrument, side, qty, price, fee, "filled")
