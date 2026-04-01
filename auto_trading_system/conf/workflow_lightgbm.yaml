@@ -14,6 +14,28 @@ data_handler_config: &data_handler_config
     fit_end_time: 2023-12-31
     instruments: *market # Extrae los features de TODO el mercado
 
+port_analysis_config: &port_analysis_config
+    strategy:
+        class: TopkDropoutStrategy
+        module_path: qlib.contrib.strategy
+        kwargs:
+            signal: <PRED>
+            # TOPK 1: El modelo sólo comprará la mejor puntuada de las 3 cada día
+            topk: 10
+            n_drop: 2
+
+    backtest:
+        start_time: 2025-01-01
+        end_time: 2026-03-29
+        account: 100000
+        benchmark: *benchmark
+        exchange_kwargs:
+            limit_threshold: 0.095
+            deal_price: close
+            open_cost: 0.0005
+            close_cost: 0.0015
+            min_cost: 5
+
 task:
     model:
         class: LGBModel
@@ -43,30 +65,24 @@ task:
                 valid: [2024-01-01, 2024-12-31]
                 # 3. Probamos desde 2024
                 test: [2025-01-01, 2025-12-31]
+    
+    record: 
+        - class: SignalRecord
+          module_path: qlib.workflow.record_temp
+          kwargs: 
+            model: <MODEL>
+            dataset: <DATASET>
+        - class: SigAnaRecord
+          module_path: qlib.workflow.record_temp
+          kwargs: 
+            ana_long_short: False
+            ann_scaler: 252
+        - class: PortAnaRecord
+          module_path: qlib.workflow.record_temp
+          kwargs: 
+            config: *port_analysis_config
 
-port_analysis_config: &port_analysis_config
-    strategy:
-        class: TopkDropoutStrategy
-        module_path: qlib.contrib.strategy
-        kwargs:
-            signal: <PRED>
-            # TOPK 1: El modelo sólo comprará la mejor puntuada de las 3 cada día
-            topk: 10
-            n_drop: 2
-
-    backtest:
-        start_time: 2025-01-01
-        end_time: 2026-03-29
-        account: 100000
-        benchmark: *benchmark
-        exchange_kwargs:
-            limit_threshold: 0.095
-            deal_price: close
-            open_cost: 0.0005
-            close_cost: 0.0015
-            min_cost: 5
-
-experiment_name: qlib_mvp_lgbm
+experiment_name: backtest_analysis
 top_n: 10
 min_score: null
 weight_mode: equal

@@ -1,16 +1,14 @@
 from __future__ import annotations
-
-
 import pandas as pd
+
 
 def select_top_n(
     signals: pd.DataFrame,
-    top_n: int = 10,
+    top_n: int,
     min_score: float | None = None,
 ) -> pd.DataFrame:
-
     df = signals.copy()
-    
+
     if min_score is not None:
         df = df[df["score"] >= min_score].copy()
 

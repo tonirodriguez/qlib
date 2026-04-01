@@ -1,0 +1,69 @@
+2026-04-01 17:05:10.576 | INFO     | research.run_workflow:main:12 - Running workflow: qrun /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/conf/workflow_lightgbm.yaml
+2026-04-01 17:06:12.570 | INFO     | research.run_workflow:main:18 - Workflow completed successfully.
+2026-04-01 17:14:07.429 | INFO     | research.run_workflow:main:12 - Running workflow: qrun /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/conf/workflow_lightgbm.yaml
+2026-04-01 17:14:45.531 | INFO     | research.run_workflow:main:18 - Workflow completed successfully.
+2026-04-01 17:16:38.055 | INFO     | research.run_workflow:main:12 - Running workflow: qrun /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/conf/workflow_lightgbm.yaml
+2026-04-01 17:17:16.644 | INFO     | research.run_workflow:main:18 - Workflow completed successfully.
+2026-04-01 17:19:51.558 | INFO     | research.run_workflow:main:12 - Running workflow: qrun /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/conf/workflow_lightgbm.yaml
+2026-04-01 17:20:25.581 | INFO     | research.run_workflow:main:18 - Workflow completed successfully.
+2026-04-01 17:21:34.354 | INFO     | research.run_workflow:main:12 - Running workflow: qrun /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/conf/workflow_lightgbm.yaml
+2026-04-01 17:22:07.451 | INFO     | research.run_workflow:main:18 - Workflow completed successfully.
+2026-04-01 17:26:56.338 | INFO     | research.run_workflow:main:12 - Running workflow: qrun /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/conf/workflow_lightgbm.yaml
+2026-04-01 17:27:29.648 | INFO     | research.run_workflow:main:18 - Workflow completed successfully.
+2026-04-01 17:29:41.294 | INFO     | research.run_workflow:main:12 - Running workflow: qrun /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/conf/workflow_lightgbm.yaml
+2026-04-01 17:30:16.943 | INFO     | research.run_workflow:main:18 - Workflow completed successfully.
+2026-04-01 17:34:48.504 | INFO     | research.run_workflow:main:12 - Running workflow: qrun /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/conf/workflow_lightgbm.yaml
+2026-04-01 17:35:20.953 | INFO     | research.run_workflow:main:18 - Workflow completed successfully.
+2026-04-01 17:40:08.144 | INFO     | research.run_workflow:main:12 - Running workflow: qrun /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/conf/workflow_lightgbm.yaml
+2026-04-01 17:40:46.949 | INFO     | research.run_workflow:main:12 - Running workflow: qrun /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/conf/workflow_lightgbm.yaml
+2026-04-01 17:41:31.917 | INFO     | research.run_workflow:main:18 - Workflow completed successfully.
+2026-04-01 17:41:34.940 | INFO     | research.export_signals:export_latest_predictions:67 - Exported 504 signals for 2025-12-31 to /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/data/signals/signals_2025-12-31.parquet
+2026-04-01 17:41:35.048 | INFO     | portfolio.rebalance:build_target_positions:61 - Built 10 target positions for 2025-12-31
+2026-04-01 17:49:09.925 | INFO     | research.run_workflow:main:12 - Running workflow: qrun /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/conf/workflow_lightgbm.yaml
+2026-04-01 17:49:53.447 | INFO     | research.run_workflow:main:18 - Workflow completed successfully.
+2026-04-01 17:49:57.374 | INFO     | research.export_signals:export_latest_predictions:67 - Exported 504 signals for 2025-12-31 to /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/data/signals/signals_2025-12-31.parquet
+2026-04-01 17:49:57.464 | INFO     | portfolio.rebalance:build_target_positions:61 - Built 10 target positions for 2025-12-31
+2026-04-01 17:49:57.545 | INFO     | execution.executor:execute_target_positions:124 - Saved fills to /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/data/reports/fills_2025-12-31.parquet
+2026-04-01 18:01:14.539 | INFO     | research.run_workflow:main:12 - Running workflow: qrun /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/conf/workflow_lightgbm.yaml
+2026-04-01 18:02:06.268 | INFO     | research.run_workflow:main:18 - Workflow completed successfully.
+2026-04-01 18:02:11.435 | INFO     | research.export_signals:export_latest_predictions:67 - Exported 504 signals for 2025-12-31 to /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/data/signals/signals_2025-12-31.parquet
+2026-04-01 18:02:11.543 | INFO     | portfolio.rebalance:build_target_positions:61 - Built 10 target positions for 2025-12-31
+2026-04-01 18:03:34.628 | INFO     | research.run_workflow:main:12 - Running workflow: qrun /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/conf/workflow_lightgbm.yaml
+2026-04-01 18:04:18.282 | INFO     | research.run_workflow:main:18 - Workflow completed successfully.
+2026-04-01 18:04:22.874 | INFO     | research.export_signals:export_latest_predictions:67 - Exported 504 signals for 2025-12-31 to /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/data/signals/signals_2025-12-31.parquet
+2026-04-01 18:04:22.978 | INFO     | portfolio.rebalance:build_target_positions:61 - Built 10 target positions for 2025-12-31
+2026-04-01 18:07:54.458 | INFO     | research.run_workflow:main:12 - Running workflow: qrun /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/conf/workflow_lightgbm.yaml
+2026-04-01 18:08:37.382 | INFO     | research.run_workflow:main:18 - Workflow completed successfully.
+2026-04-01 18:08:42.596 | INFO     | research.export_signals:export_latest_predictions:67 - Exported 504 signals for 2025-12-31 to /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/data/signals/signals_2025-12-31.parquet
+2026-04-01 18:08:42.685 | INFO     | portfolio.rebalance:build_target_positions:61 - Built 10 target positions for 2025-12-31
+2026-04-01 18:29:35.881 | INFO     | research.run_workflow:main:12 - Running workflow: qrun /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/conf/workflow_lightgbm.yaml
+2026-04-01 18:30:23.375 | INFO     | research.run_workflow:main:18 - Workflow completed successfully.
+2026-04-01 18:30:29.116 | INFO     | research.export_signals:export_latest_predictions:67 - Exported 504 signals for 2025-12-31 to /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/data/signals/signals_2025-12-31.parquet
+2026-04-01 18:30:29.179 | INFO     | portfolio.rebalance:build_target_positions:62 - Built 10 target positions for 2025-12-31
+2026-04-01 18:36:31.128 | INFO     | research.run_workflow:main:12 - Running workflow: qrun /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/conf/workflow_lightgbm.yaml
+2026-04-01 18:37:22.095 | INFO     | research.run_workflow:main:18 - Workflow completed successfully.
+2026-04-01 18:37:28.340 | INFO     | research.export_signals:export_latest_predictions:67 - Exported 504 signals for 2025-12-31 to /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/data/signals/signals_2025-12-31.parquet
+2026-04-01 18:37:28.525 | INFO     | portfolio.rebalance:build_target_positions:62 - Built 10 target positions for 2025-12-31
+2026-04-01 18:48:26.468 | INFO     | research.run_workflow:main:12 - Running workflow: qrun /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/conf/workflow_lightgbm.yaml
+2026-04-01 18:49:11.940 | INFO     | research.run_workflow:main:18 - Workflow completed successfully.
+2026-04-01 18:49:19.042 | INFO     | research.export_signals:export_latest_predictions:67 - Exported 504 signals for 2025-12-31 to /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/data/signals/signals_2025-12-31.parquet
+2026-04-01 18:49:19.119 | INFO     | portfolio.rebalance:build_target_positions:62 - Built 10 target positions for 2025-12-31
+2026-04-01 18:49:50.945 | INFO     | research.run_workflow:main:12 - Running workflow: qrun /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/conf/workflow_lightgbm.yaml
+2026-04-01 18:50:36.361 | INFO     | research.run_workflow:main:18 - Workflow completed successfully.
+2026-04-01 18:50:44.417 | INFO     | research.export_signals:export_latest_predictions:67 - Exported 504 signals for 2025-12-31 to /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/data/signals/signals_2025-12-31.parquet
+2026-04-01 18:50:44.553 | INFO     | portfolio.rebalance:build_target_positions:62 - Built 10 target positions for 2025-12-31
+2026-04-01 18:52:11.047 | INFO     | research.run_workflow:main:12 - Running workflow: qrun /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/conf/workflow_lightgbm.yaml
+2026-04-01 18:52:57.564 | INFO     | research.run_workflow:main:18 - Workflow completed successfully.
+2026-04-01 18:53:05.320 | INFO     | research.export_signals:export_latest_predictions:67 - Exported 504 signals for 2025-12-31 to /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/data/signals/signals_2025-12-31.parquet
+2026-04-01 18:53:05.711 | INFO     | portfolio.rebalance:build_target_positions:62 - Built 10 target positions for 2025-12-31
+2026-04-01 18:53:05.802 | INFO     | execution.paper_broker:place_market_order:133 - Filled buy 16 ANET @ 610.00
+2026-04-01 18:53:05.805 | INFO     | execution.paper_broker:place_market_order:133 - Filled buy 56 AOS @ 175.00
+2026-04-01 18:53:05.805 | INFO     | execution.paper_broker:place_market_order:133 - Filled buy 51 BKR @ 190.00
+2026-04-01 18:53:05.806 | INFO     | execution.paper_broker:place_market_order:133 - Filled buy 54 DLTR @ 180.00
+2026-04-01 18:53:05.806 | INFO     | execution.paper_broker:place_market_order:133 - Filled buy 11 Q @ 880.00
+2026-04-01 18:53:05.806 | INFO     | execution.paper_broker:place_market_order:133 - Filled buy 23 SNDK @ 420.00
+2026-04-01 18:53:05.806 | INFO     | execution.paper_broker:place_market_order:133 - Filled buy 7 VRSK @ 1350.00
+2026-04-01 18:53:05.806 | INFO     | execution.paper_broker:place_market_order:133 - Filled buy 61 WDAY @ 160.00
+2026-04-01 18:53:05.807 | INFO     | execution.paper_broker:place_market_order:133 - Filled buy 18 WEC @ 540.00
+2026-04-01 18:53:05.807 | INFO     | execution.paper_broker:place_market_order:133 - Filled buy 19 WRB @ 500.00
+2026-04-01 18:53:05.913 | INFO     | execution.executor:execute_target_positions:126 - Saved fills to /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/data/reports/fills_2025-12-31.parquet
