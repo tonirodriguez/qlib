@@ -1,0 +1,15 @@
+{
+  "cash": 3148.244999999999,
+  "positions": {
+    "AAPL": 51,
+    "AMD": 59,
+    "AMZN": 54,
+    "AVGO": 7,
+    "GOOGL": 61,
+    "META": 19,
+    "MSFT": 23,
+    "NFLX": 16,
+    "NVDA": 11,
+    "TSLA": 56
+  }
+}
