@@ -4,14 +4,34 @@
 from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor
 
-import qlib
-from qlib.data import D
-
 import fire
-import datacompy
 import pandas as pd
 from tqdm import tqdm
 from loguru import logger
+
+
+def _require_qlib():
+    try:
+        import qlib
+        from qlib.data import D
+    except ModuleNotFoundError as exc:
+        if exc.name == "qlib":
+            raise ModuleNotFoundError(
+                "qlib is required to run check_dump_bin.py. Install the package or run the script from an environment "
+                "where qlib is available."
+            ) from exc
+        raise
+    return qlib, D
+
+
+def _require_datacompy():
+    try:
+        import datacompy
+    except ModuleNotFoundError as exc:
+        raise ModuleNotFoundError(
+            "datacompy is required to compare CSV data with qlib bin files. Install it with `pip install datacompy`."
+        ) from exc
+    return datacompy
 
 
 class CheckBin:
@@ -55,6 +75,7 @@ class CheckBin:
         self.qlib_dir = Path(qlib_dir).expanduser()
         bin_path_list = list(self.qlib_dir.joinpath("features").iterdir())
         self.qlib_symbols = sorted(map(lambda x: x.name.lower(), bin_path_list))
+        qlib, _ = _require_qlib()
         qlib.init(
             provider_uri=str(self.qlib_dir.resolve()),
             mount_path=str(self.qlib_dir.resolve()),
@@ -77,6 +98,8 @@ class CheckBin:
         self.file_suffix = file_suffix
 
     def _compare(self, file_path: Path):
+        _, D = _require_qlib()
+        datacompy = _require_datacompy()
         symbol = file_path.name.strip(self.file_suffix)
         if symbol.lower() not in self.qlib_symbols:
             return self.NOT_IN_FEATURES
@@ -109,6 +132,7 @@ class CheckBin:
 
     def check(self):
         """Check whether the bin file after ``dump_bin.py`` is executed is consistent with the original csv file data"""
+        _require_datacompy()
         logger.info("start check......")
 
         error_list = []

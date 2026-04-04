@@ -8,7 +8,7 @@ from pathlib import Path
 import fire
 
 # Resolver el repo de Qlib de forma robusta
-DEFAULT_QLIB_REPO = "/mnt/c/Users/trodriguez/src/qlib"
+DEFAULT_QLIB_REPO = "/mnt/d/src/qlib"
 QLIB_REPO = os.environ.get("QLIB_REPO", DEFAULT_QLIB_REPO)
 COLLECTOR_DIR = Path(QLIB_REPO) / "scripts" / "data_collector" / "yahoo"
 if not COLLECTOR_DIR.exists():
