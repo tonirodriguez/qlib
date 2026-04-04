@@ -15,8 +15,10 @@ from qlib.utils.exceptions import LoadObjectError
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 MLRUNS_DIR = PROJECT_ROOT / "auto_trading_system" / "mlruns"
 MLRUNS_URI = f"file:{MLRUNS_DIR}"
-#EXPERIMENT_NAME = "config_analysis_improved_v2"
-EXPERIMENT_NAME = "config_analysis_optuna"
+EXPERIMENT_NAME = "config_analysis_improved_v2"
+#EXPERIMENT_NAME = "workflow_lightgbm_analysis"
+#EXPERIMENT_NAME = "config_analysis_optuna"
+
 PROVIDER_URI = "~/.qlib/qlib_data/us_data"
 
 
