@@ -67,3 +67,11 @@
 2026-04-01 18:53:05.807 | INFO     | execution.paper_broker:place_market_order:133 - Filled buy 18 WEC @ 540.00
 2026-04-01 18:53:05.807 | INFO     | execution.paper_broker:place_market_order:133 - Filled buy 19 WRB @ 500.00
 2026-04-01 18:53:05.913 | INFO     | execution.executor:execute_target_positions:126 - Saved fills to /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/data/reports/fills_2025-12-31.parquet
+2026-04-01 19:09:38.276 | INFO     | research.run_workflow:main:12 - Running workflow: qrun /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/conf/workflow_lightgbm.yaml
+2026-04-01 19:11:35.449 | INFO     | research.run_workflow:main:12 - Running workflow: qrun /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/conf/workflow_lightgbm.yaml
+2026-04-01 19:12:22.246 | INFO     | research.run_workflow:main:18 - Workflow completed successfully.
+2026-04-01 19:12:30.050 | INFO     | research.export_signals:export_latest_predictions:67 - Exported 505 signals for 2026-03-27 to /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/data/signals/signals_2026-03-27.parquet
+2026-04-01 19:12:30.156 | INFO     | portfolio.rebalance:build_target_positions:62 - Built 10 target positions for 2026-03-27
+2026-04-01 19:12:30.249 | INFO     | execution.paper_broker:place_market_order:133 - Filled buy 16 ANET @ 610.00
+2026-04-01 19:12:30.251 | INFO     | execution.paper_broker:place_market_order:133 - Filled buy 19 WRB @ 500.00
+2026-04-01 19:12:30.289 | INFO     | execution.executor:execute_target_positions:126 - Saved fills to /mnt/c/Users/trodriguez/src/qlib/auto_trading_system/data/reports/fills_2026-03-27.parquet
