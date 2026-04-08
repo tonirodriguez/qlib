@@ -195,6 +195,7 @@ class SP500Run(Run):
     def update_data_to_bin(
         self,
         qlib_data_1d_dir: str,
+        start_date: str = None,
         end_date: str = None,
         check_data_length: int = None,
         delay: float = 1,
@@ -215,14 +216,16 @@ class SP500Run(Run):
             raise ValueError(f"No se encontro el calendario base en {calendar_path}")
 
         calendar_df = pd.read_csv(calendar_path)
-        trading_date = (pd.Timestamp(calendar_df.iloc[-1, 0]) - pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+        default_start_date = (pd.Timestamp(calendar_df.iloc[-1, 0]) - pd.Timedelta(days=1)).strftime("%Y-%m-%d")
 
+        if start_date is None:
+            start_date = default_start_date
         if end_date is None:
-            end_date = (pd.Timestamp(trading_date) + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+            end_date = (pd.Timestamp(start_date) + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
         effective_date = (pd.Timestamp(end_date) - pd.Timedelta(days=1)).strftime("%Y-%m-%d")
         os.environ["SP500_EFFECTIVE_DATE"] = effective_date
 
-        self.download_data(delay=delay, start=trading_date, end=end_date, check_data_length=check_data_length)
+        self.download_data(delay=delay, start=start_date, end=end_date, check_data_length=check_data_length)
         self.max_workers = (
             max(multiprocessing.cpu_count() - 2, 1)
             if self.max_workers is None or self.max_workers <= 1
