@@ -26,4 +26,4 @@ $PYTHON_BIN scripts/update_sp500.py update_data_to_bin \
   --end_date "$TODAY" \
   --region US
 
-echo "✅ Update completado para S&P 500 hasta $TODAY."
+echo "✅ Update completado para S&P 500 esde $START_DATE hasta $TODAY."
