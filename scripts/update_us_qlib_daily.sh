@@ -5,9 +5,10 @@ set -euo pipefail
 QLIB_REPO="${QLIB_REPO:-/mnt/c/Users/trodriguez/src/qlib}"         # ruta donde clonaste qlib
 DATA_DIR="${DATA_DIR:-$HOME/.qlib/qlib_data/us_data}"
 PYTHON_BIN="${PYTHON_BIN:-python}"
-START_DATE="${START_DATE:-2026-03-31}"
+START_DATE="${START_DATE:-}"
 REBUILD_START_DATE="${REBUILD_START_DATE:-1999-12-31}"
 MAX_WORKERS="${MAX_WORKERS:-1}"
+DELAY="${DELAY:-0.1}"
 TODAY=$(date +%F)
 MODE="update"
 REBUILD_UNIVERSE_DIR="${REBUILD_UNIVERSE_DIR:-}"
@@ -36,6 +37,7 @@ export QLIB_MAX_WORKERS="$MAX_WORKERS"
 
 if [ "$MODE" = "rebuild" ]; then
   echo "ℹ️  Usando QLIB_MAX_WORKERS=$QLIB_MAX_WORKERS"
+  echo "ℹ️  Usando DELAY=$DELAY"
   if [ -z "$REBUILD_UNIVERSE_DIR" ]; then
     if [ -s "$DATA_DIR/instruments/all.txt" ] && [ -s "$DATA_DIR/calendars/day.txt" ]; then
       REBUILD_UNIVERSE_DIR="$DATA_DIR"
@@ -61,15 +63,18 @@ if [ "$MODE" = "rebuild" ]; then
     --universe_data_dir "$REBUILD_UNIVERSE_DIR" \
     --start_date "$REBUILD_START_DATE" \
     --end_date "$TODAY" \
+    --delay "$DELAY" \
     --backup_existing True \
     --region US
   echo "✅ Reconstrucción completada desde $REBUILD_START_DATE hasta $TODAY."
 else
   echo "ℹ️  Usando QLIB_MAX_WORKERS=$QLIB_MAX_WORKERS"
+  echo "ℹ️  Usando DELAY=$DELAY"
   update_args=(
     update_data_to_bin
     --qlib_data_1d_dir "$DATA_DIR"
     --end_date "$TODAY"
+    --delay "$DELAY"
     --region US
   )
 
