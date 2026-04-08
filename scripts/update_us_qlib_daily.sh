@@ -2,10 +2,10 @@
 set -euo pipefail
 
 # === CONFIG ===
-QLIB_REPO="${QLIB_REPO:-/mnt/c/Users/trodriguez/src/qlib}"         # ruta donde clonaste qlib
+QLIB_REPO="${QLIB_REPO:-/mnt/c/Users/toni/src/qlib}"         # ruta donde clonaste qlib
 DATA_DIR="${DATA_DIR:-$HOME/.qlib/qlib_data/us_data}"
 PYTHON_BIN="${PYTHON_BIN:-python}"
-START_DATE="${START_DATE:-}"
+START_DATE="${START_DATE:-2026-03-31}"
 REBUILD_START_DATE="${REBUILD_START_DATE:-1999-12-31}"
 MAX_WORKERS="${MAX_WORKERS:-1}"
 DELAY="${DELAY:-0.1}"
@@ -73,6 +73,7 @@ else
   update_args=(
     update_data_to_bin
     --qlib_data_1d_dir "$DATA_DIR"
+    --start_date "$START_DATE" \
     --end_date "$TODAY"
     --delay "$DELAY"
     --region US

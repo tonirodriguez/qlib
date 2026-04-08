@@ -319,6 +319,7 @@ class USAllRun(Run):
                 target_dir=qlib_data_1d_dir, interval=self.interval, region=self.region, exists_skip=exists_skip
             )
 
+        explicit_trading_date = trading_date is not None
         if trading_date is None:
             calendar_df = pd.read_csv(Path(qlib_data_1d_dir).joinpath("calendars/day.txt"))
             trading_date = (pd.Timestamp(calendar_df.iloc[-1, 0]) - pd.Timedelta(days=1)).strftime("%Y-%m-%d")
@@ -329,8 +330,16 @@ class USAllRun(Run):
             end_date = (pd.Timestamp(trading_date) + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
         else:
             end_date = pd.Timestamp(end_date).strftime("%Y-%m-%d")
-        requested_effective_date = pd.Timestamp(end_date) - pd.Timedelta(days=1)
-        effective_date = _resolve_incremental_effective_date(Path(qlib_data_1d_dir), requested_effective_date)
+        if explicit_trading_date:
+            # If the caller forces a start date, rebuild the download universe from
+            # the symbols that were still active on that trading date.
+            effective_date = pd.Timestamp(trading_date).normalize()
+            collector.logger.info(
+                f"Using explicit trading_date={trading_date} as US_ALL_EFFECTIVE_DATE for incremental universe selection"
+            )
+        else:
+            requested_effective_date = pd.Timestamp(end_date) - pd.Timedelta(days=1)
+            effective_date = _resolve_incremental_effective_date(Path(qlib_data_1d_dir), requested_effective_date)
         effective_date_str = effective_date.strftime("%Y-%m-%d")
         os.environ["US_ALL_EFFECTIVE_DATE"] = effective_date_str
         collector.logger.info(f"Using US_ALL_EFFECTIVE_DATE={effective_date_str}")
