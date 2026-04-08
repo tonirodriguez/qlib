@@ -6,11 +6,21 @@ from pathlib import Path
 import fire
 
 # Añadir el repositorio de Qlib al path para importar el recolector
-QLIB_REPO = os.environ.get("QLIB_REPO", "/mnt/c/Users/trodriguez/src/qlib")
-sys.path.append(os.path.join(QLIB_REPO, "scripts", "data_collector", "yahoo"))
+DEFAULT_QLIB_REPO = "/mnt/c/Users/trodriguez/src/qlib"
+QLIB_REPO = os.environ.get("QLIB_REPO", DEFAULT_QLIB_REPO)
+COLLECTOR_DIR = Path(QLIB_REPO) / "scripts" / "data_collector" / "yahoo"
+if not COLLECTOR_DIR.exists():
+    alt_repo = Path(__file__).resolve().parents[2] / "qlib"
+    alt_collector_dir = alt_repo / "scripts" / "data_collector" / "yahoo"
+    if alt_collector_dir.exists():
+        COLLECTOR_DIR = alt_collector_dir
+sys.path.append(str(COLLECTOR_DIR))
 
 import collector
 from collector import Run, YahooCollectorUS1d
+
+
+SCRIPT_DIR = Path(__file__).resolve().parent
 
 
 def _install_fake_useragent_fallback():
@@ -136,6 +146,19 @@ class Nasdaq100Collector(YahooCollectorUS1d):
 collector.Nasdaq100Collector = Nasdaq100Collector
 
 class Nasdaq100Run(Run):
+    def __init__(self, source_dir=None, normalize_dir=None, max_workers=1, interval="1d", region="CN"):
+        if source_dir is None:
+            source_dir = SCRIPT_DIR / "data_collector" / "yahoo" / "source_nasdaq100"
+        if normalize_dir is None:
+            normalize_dir = SCRIPT_DIR / "data_collector" / "yahoo" / "normalize_nasdaq100"
+        super().__init__(
+            source_dir=source_dir,
+            normalize_dir=normalize_dir,
+            max_workers=max_workers,
+            interval=interval,
+            region=region,
+        )
+
     @property
     def collector_class_name(self):
         return "Nasdaq100Collector"
@@ -165,14 +188,23 @@ class Nasdaq100Run(Run):
         else:
             trading_date = pd.Timestamp(trading_date).strftime("%Y-%m-%d")
 
+        # Treat end_date as inclusive for the wrapper API. Yahoo's end parameter is exclusive,
+        # so we download through end_date + 1 day while keeping the effective universe date on end_date.
         if end_date is None:
-            end_date = (pd.Timestamp(trading_date) + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+            inclusive_end_date = pd.Timestamp.today().strftime("%Y-%m-%d")
         else:
-            end_date = pd.Timestamp(end_date).strftime("%Y-%m-%d")
-        effective_date = (pd.Timestamp(end_date) - pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+            inclusive_end_date = pd.Timestamp(end_date).strftime("%Y-%m-%d")
+        download_end_date = (pd.Timestamp(inclusive_end_date) + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+        effective_date = inclusive_end_date
         os.environ["NASDAQ100_EFFECTIVE_DATE"] = effective_date
 
-        self.download_data(delay=delay, start=trading_date, end=end_date, check_data_length=check_data_length)
+        collector.BaseRun.download_data(
+            self,
+            delay=delay,
+            start=trading_date,
+            end=download_end_date,
+            check_data_length=check_data_length,
+        )
         self.max_workers = (
             max(collector.multiprocessing.cpu_count() - 2, 1)
             if self.max_workers is None or self.max_workers <= 1

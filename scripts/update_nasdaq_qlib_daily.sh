@@ -2,9 +2,11 @@
 set -euo pipefail
 
 # === CONFIG ===
-QLIB_REPO="${QLIB_REPO:-/mnt/c/Users/trodriguez/src/qlib}"         # ruta donde clonaste qlib
+QLIB_REPO="${QLIB_REPO:-/mnt/c/Users/toni/src/qlib}"         # ruta donde clonaste qlib
 DATA_DIR="${DATA_DIR:-$HOME/.qlib/qlib_data/us_data}"
 PYTHON_BIN="${PYTHON_BIN:-python}"
+SOURCE_DIR="${SOURCE_DIR:-$QLIB_REPO/scripts/data_collector/yahoo/source_nasdaq100}"
+NORMALIZE_DIR="${NORMALIZE_DIR:-$QLIB_REPO/scripts/data_collector/yahoo/normalize_nasdaq100}"
 START_DATE="2026-03-31"
 TODAY=$(date +%F)
 
@@ -15,6 +17,9 @@ if [ ! -d "$QLIB_REPO/scripts/data_collector/yahoo" ]; then
 fi
 
 echo "➡️ Actualizando datos Qlib (Solo Nasdaq 100) desde $START_DATE hasta $TODAY ..."
+echo "   DATA_DIR=$DATA_DIR"
+echo "   SOURCE_DIR=$SOURCE_DIR"
+echo "   NORMALIZE_DIR=$NORMALIZE_DIR"
 
 cd "$QLIB_REPO"
 export PYTHONPATH="$(pwd):${PYTHONPATH:-}"
@@ -22,6 +27,8 @@ export PYTHONPATH="$(pwd):${PYTHONPATH:-}"
 # Ejecutamos el script de python personalizado que filtra las acciones
 $PYTHON_BIN scripts/update_nasdaq100.py update_data_to_bin \
   --qlib_data_1d_dir "$DATA_DIR" \
+  --source_dir "$SOURCE_DIR" \
+  --normalize_dir "$NORMALIZE_DIR" \
   --trading_date "$START_DATE" \
   --end_date "$TODAY" \
   --region US
