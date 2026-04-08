@@ -7,7 +7,7 @@ benchmark: &benchmark ^GSPC
 
 data_handler_config: &data_handler_config
     start_time: 2018-01-01
-    end_time: 2026-04-01
+    end_time: 2026-04-08
     fit_start_time: 2018-01-01
     fit_end_time: 2023-12-31
     instruments: *market
@@ -38,7 +38,7 @@ port_analysis_config: &port_analysis_config
             only_tradable: true
     backtest:
         start_time: 2025-01-01
-        end_time: 2026-03-31
+        end_time: 2026-04-07
         account: 100000
         benchmark: *benchmark
         exchange_kwargs:
@@ -77,7 +77,7 @@ task:
             segments:
                 train: [2018-01-01, 2023-12-31]
                 valid: [2024-01-01, 2024-12-31]
-                test: [2025-01-01, 2026-04-01]
+                test: [2025-01-01, 2026-04-08]
     record:
         - class: SignalRecord
           module_path: qlib.workflow.record_temp
