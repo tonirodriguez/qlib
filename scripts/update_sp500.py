@@ -21,6 +21,9 @@ import collector
 from collector import Run, YahooCollectorUS1d, YahooNormalize
 
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+
+
 def _install_fake_useragent_fallback():
     if "fake_useragent" in sys.modules:
         return
@@ -184,6 +187,19 @@ collector.SP500NormalizeUS1d = SP500NormalizeUS1d
 collector.SP500NormalizeUS1dExtend = SP500NormalizeUS1dExtend
 
 class SP500Run(Run):
+    def __init__(self, source_dir=None, normalize_dir=None, max_workers=1, interval="1d", region="CN"):
+        if source_dir is None:
+            source_dir = SCRIPT_DIR / "data_collector" / "yahoo" / "source_sp500"
+        if normalize_dir is None:
+            normalize_dir = SCRIPT_DIR / "data_collector" / "yahoo" / "normalize_sp500"
+        super().__init__(
+            source_dir=source_dir,
+            normalize_dir=normalize_dir,
+            max_workers=max_workers,
+            interval=interval,
+            region=region,
+        )
+
     @property
     def collector_class_name(self):
         return "SP500Collector"
@@ -220,12 +236,26 @@ class SP500Run(Run):
 
         if start_date is None:
             start_date = default_start_date
+        else:
+            start_date = pd.Timestamp(start_date).strftime("%Y-%m-%d")
+
+        # Treat end_date as inclusive for the wrapper API. Yahoo's end parameter is exclusive,
+        # so we download through end_date + 1 day while keeping the effective universe date on end_date.
         if end_date is None:
-            end_date = (pd.Timestamp(start_date) + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
-        effective_date = (pd.Timestamp(end_date) - pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+            inclusive_end_date = pd.Timestamp.today().strftime("%Y-%m-%d")
+        else:
+            inclusive_end_date = pd.Timestamp(end_date).strftime("%Y-%m-%d")
+        download_end_date = (pd.Timestamp(inclusive_end_date) + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+        effective_date = inclusive_end_date
         os.environ["SP500_EFFECTIVE_DATE"] = effective_date
 
-        self.download_data(delay=delay, start=start_date, end=end_date, check_data_length=check_data_length)
+        collector.BaseRun.download_data(
+            self,
+            delay=delay,
+            start=start_date,
+            end=download_end_date,
+            check_data_length=check_data_length,
+        )
         self.max_workers = (
             max(multiprocessing.cpu_count() - 2, 1)
             if self.max_workers is None or self.max_workers <= 1
