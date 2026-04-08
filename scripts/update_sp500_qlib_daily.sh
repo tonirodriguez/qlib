@@ -5,6 +5,7 @@ set -euo pipefail
 QLIB_REPO="${QLIB_REPO:-/mnt/c/Users/trodriguez/src/qlib}"         # ruta donde clonaste qlib
 DATA_DIR="${DATA_DIR:-$HOME/.qlib/qlib_data/us_data}"
 PYTHON_BIN="${PYTHON_BIN:-python}"
+START_DATE="2026-03-31"
 TODAY=$(date +%F)
 
 # === CHECKS ===
@@ -21,7 +22,7 @@ export PYTHONPATH="$(pwd):${PYTHONPATH:-}"
 # Ejecutamos el script de python personalizado que filtra las acciones
 $PYTHON_BIN scripts/update_sp500.py update_data_to_bin \
   --qlib_data_1d_dir "$DATA_DIR" \
-  --start_date 2026-03-01 \
+  --start_date "$START_DATE" \
   --end_date "$TODAY" \
   --region US
 
