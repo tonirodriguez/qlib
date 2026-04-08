@@ -7,7 +7,7 @@ conda activate qlib
 
 # 3. Ejecutar el script
 set -euo pipefail
-/ruta/a/tu/script.sh
+
 /mnt/c/Users/toni/src/qlib/scripts/update_sp500_qlib_daily.sh
 /mnt/c/Users/toni/src/qlib/scripts/update_nasdaq_qlib_daily.sh
 /mnt/c/Users/toni/src/qlib/scripts/backup_qlib_us_data.sh
