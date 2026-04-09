@@ -83,7 +83,6 @@ else
   update_args=(
     update_data_to_bin
     --qlib_data_1d_dir "$DATA_DIR"
-    --start_date "$START_DATE" \
     --end_date "$TODAY"
     --delay "$DELAY"
     --region US
