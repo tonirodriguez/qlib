@@ -2,12 +2,13 @@
 set -euo pipefail
 
 # === CONFIG ===
-QLIB_REPO="${QLIB_REPO:-/mnt/c/Users/toni/src/qlib}"         # ruta donde clonaste qlib
+QLIB_REPO="${QLIB_REPO:-/mnt/c/Users/trodriguez/src/qlib}"         # ruta donde clonaste qlib
 DATA_DIR="${DATA_DIR:-$HOME/.qlib/qlib_data/us_data}"
 PYTHON_BIN="${PYTHON_BIN:-python}"
 START_DATE="${START_DATE:-2026-03-31}"
 REBUILD_START_DATE="${REBUILD_START_DATE:-1999-12-31}"
 MAX_WORKERS="${MAX_WORKERS:-1}"
+NORMALIZE_MAX_WORKERS="${NORMALIZE_MAX_WORKERS:-5}"
 DELAY="${DELAY:-0.1}"
 TODAY=$(date +%F)
 MODE="update"
@@ -34,9 +35,15 @@ cd "$QLIB_REPO"
 export PYTHONPATH="$(pwd):${PYTHONPATH:-}"
 export QLIB_REPO
 export QLIB_MAX_WORKERS="$MAX_WORKERS"
+if [ -n "$NORMALIZE_MAX_WORKERS" ]; then
+  export QLIB_NORMALIZE_MAX_WORKERS="$NORMALIZE_MAX_WORKERS"
+fi
 
 if [ "$MODE" = "rebuild" ]; then
   echo "ℹ️  Usando QLIB_MAX_WORKERS=$QLIB_MAX_WORKERS"
+  if [ -n "${QLIB_NORMALIZE_MAX_WORKERS:-}" ]; then
+    echo "ℹ️  Usando QLIB_NORMALIZE_MAX_WORKERS=$QLIB_NORMALIZE_MAX_WORKERS"
+  fi
   echo "ℹ️  Usando DELAY=$DELAY"
   if [ -z "$REBUILD_UNIVERSE_DIR" ]; then
     if [ -s "$DATA_DIR/instruments/all.txt" ] && [ -s "$DATA_DIR/calendars/day.txt" ]; then
@@ -69,6 +76,9 @@ if [ "$MODE" = "rebuild" ]; then
   echo "✅ Reconstrucción completada desde $REBUILD_START_DATE hasta $TODAY."
 else
   echo "ℹ️  Usando QLIB_MAX_WORKERS=$QLIB_MAX_WORKERS"
+  if [ -n "${QLIB_NORMALIZE_MAX_WORKERS:-}" ]; then
+    echo "ℹ️  Usando QLIB_NORMALIZE_MAX_WORKERS=$QLIB_NORMALIZE_MAX_WORKERS"
+  fi
   echo "ℹ️  Usando DELAY=$DELAY"
   update_args=(
     update_data_to_bin

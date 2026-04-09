@@ -3,6 +3,7 @@ import os
 import types
 import shutil
 import multiprocessing
+import numpy as np
 import pandas as pd
 from pathlib import Path
 import fire
@@ -48,6 +49,24 @@ def _parse_mixed_dates(values):
     return parsed.tz_convert(None)
 
 
+def _ensure_naive_datetime_index(values) -> pd.DatetimeIndex:
+    index = pd.DatetimeIndex(pd.to_datetime(values, errors="coerce"))
+    if getattr(index, "tz", None) is not None:
+        index = index.tz_localize(None)
+    return index
+
+
+def _get_cached_calendar_index(calendar_list) -> pd.DatetimeIndex:
+    cache = getattr(_get_cached_calendar_index, "_cache", {})
+    cache_key = id(calendar_list)
+    calendar_index = cache.get(cache_key)
+    if calendar_index is None:
+        calendar_index = _ensure_naive_datetime_index(calendar_list).unique().sort_values()
+        cache[cache_key] = calendar_index
+        setattr(_get_cached_calendar_index, "_cache", cache)
+    return calendar_index
+
+
 def _read_last_instrument_end_date(data_dir: Path) -> pd.Timestamp | None:
     ins_path = data_dir / "instruments" / "all.txt"
     if not ins_path.exists():
@@ -91,8 +110,6 @@ def _resolve_incremental_effective_date(data_dir: Path, requested_effective_date
 
 
 def _patch_yahoo_normalize():
-    original_normalize_yahoo = collector.YahooNormalize.normalize_yahoo
-
     def normalize_yahoo(
         df: pd.DataFrame,
         calendar_list: list = None,
@@ -100,14 +117,57 @@ def _patch_yahoo_normalize():
         symbol_field_name: str = "symbol",
         last_close: float = None,
     ):
+        if df.empty:
+            return df
+
         df = df.copy()
-        if not df.empty and date_field_name in df.columns:
+        if date_field_name in df.columns:
             df[date_field_name] = _parse_mixed_dates(df[date_field_name])
-            if calendar_list is not None:
-                source_dates = df[date_field_name].dropna().tolist()
-                if source_dates:
-                    calendar_list = sorted(set(map(pd.Timestamp, calendar_list)) | set(map(pd.Timestamp, source_dates)))
-        return original_normalize_yahoo(df, calendar_list, date_field_name, symbol_field_name, last_close)
+
+        symbol = df.loc[df[symbol_field_name].first_valid_index(), symbol_field_name]
+        df.set_index(date_field_name, inplace=True)
+        df.index = _ensure_naive_datetime_index(df.index)
+        df = df[~df.index.duplicated(keep="first")]
+
+        if calendar_list is not None and not df.empty:
+            calendar_index = _get_cached_calendar_index(calendar_list)
+            source_index = df.index[df.index.notna()].unique().sort_values()
+            if len(source_index) and not source_index.isin(calendar_index).all():
+                calendar_index = calendar_index.union(source_index).sort_values()
+
+            start_bound = pd.Timestamp(df.index.min()).normalize()
+            end_bound = pd.Timestamp(df.index.max()).normalize() + pd.Timedelta(hours=23, minutes=59)
+            start_pos = calendar_index.searchsorted(start_bound, side="left")
+            end_pos = calendar_index.searchsorted(end_bound, side="right")
+            df = df.reindex(calendar_index[start_pos:end_pos])
+
+        df.sort_index(inplace=True)
+        invalid_volume = df["volume"].isna() | (df["volume"] <= 0)
+        price_columns = [col for col in df.columns if col != symbol_field_name]
+        df.loc[invalid_volume, price_columns] = np.nan
+
+        adjustment_columns = [col for col in ["high", "close", "low", "open", "adjclose"] if col in df.columns]
+        warning_symbol = symbol
+        count = 0
+        while True:
+            change_series = collector.YahooNormalize.calc_change(df, last_close)
+            mask = (change_series >= 89) & (change_series <= 111)
+            if not mask.any():
+                break
+            df.loc[mask, adjustment_columns] = df.loc[mask, adjustment_columns] / 100
+            count += 1
+            if count >= 10:
+                collector.logger.warning(
+                    f"{warning_symbol} `change` is abnormal for {count} consecutive days, please check the specific data file carefully"
+                )
+
+        df["change"] = collector.YahooNormalize.calc_change(df, last_close)
+        normalized_columns = [col for col in [*collector.YahooNormalize.COLUMNS, "change"] if col in df.columns]
+        df.loc[invalid_volume, normalized_columns] = np.nan
+
+        df[symbol_field_name] = symbol
+        df.index.names = [date_field_name]
+        return df.reset_index()
 
     collector.YahooNormalize.normalize_yahoo = staticmethod(normalize_yahoo)
 
@@ -137,12 +197,61 @@ def _patch_mixed_date_parsing():
         df = self._normalize_obj.normalize(df)
         if df is not None and not df.empty:
             if self._end_date is not None:
-                parsed_dates = _parse_mixed_dates(df[self._date_field_name]).dt.normalize()
+                date_series = df[self._date_field_name]
+                if pd.api.types.is_datetime64_any_dtype(date_series):
+                    parsed_dates = pd.DatetimeIndex(date_series).normalize()
+                else:
+                    parsed_dates = _parse_mixed_dates(date_series).dt.normalize()
                 end_date = pd.Timestamp(self._end_date).normalize()
                 df = df[parsed_dates.notna() & (parsed_dates <= end_date)]
             df.to_csv(self._target_dir.joinpath(file_path.name), index=False)
 
     collector.Normalize._executor = _executor
+
+
+def _patch_yahoo_normalize_extend():
+    def _get_old_data(self, qlib_data_dir: [str, Path]):
+        qlib_data_dir = str(Path(qlib_data_dir).expanduser().resolve())
+        collector.qlib.init(provider_uri=qlib_data_dir, expression_cache=None, dataset_cache=None)
+        df = collector.D.features(collector.D.instruments("all"), ["$" + col for col in self.column_list])
+        df.columns = self.column_list
+        if df.empty:
+            return pd.DataFrame(columns=["latest_date", *self.column_list])
+
+        valid_df = df[df["close"].notna()].reset_index()
+        if valid_df.empty:
+            return pd.DataFrame(columns=["latest_date", *self.column_list])
+
+        latest_df = valid_df.groupby("instrument", sort=False, as_index=False).tail(1).copy()
+        latest_df.rename(columns={"datetime": "latest_date"}, inplace=True)
+        latest_df.set_index("instrument", inplace=True)
+        return latest_df.loc[:, ["latest_date", *self.column_list]]
+
+    def normalize(self, df: pd.DataFrame) -> pd.DataFrame:
+        df = collector.YahooNormalize1d.normalize(self, df)
+        df.set_index(self._date_field_name, inplace=True)
+        symbol_name = str(df[self._symbol_field_name].iloc[0]).upper()
+        if symbol_name not in self.old_qlib_data.index:
+            return df.reset_index()
+
+        old_latest_data = self.old_qlib_data.loc[symbol_name]
+        latest_date = old_latest_data["latest_date"]
+        df = df.loc[latest_date:]
+        if df.empty:
+            return df.reset_index()
+
+        new_latest_data = df.iloc[0]
+        for col in self.column_list[:-1]:
+            if pd.isna(new_latest_data[col]) or pd.isna(old_latest_data[col]):
+                continue
+            if col == "volume":
+                df[col] = df[col] / (new_latest_data[col] / old_latest_data[col])
+            else:
+                df[col] = df[col] * (old_latest_data[col] / new_latest_data[col])
+        return df.drop(df.index[0]).reset_index()
+
+    collector.YahooNormalize1dExtend._get_old_data = _get_old_data
+    collector.YahooNormalize1dExtend.normalize = normalize
 
 
 def _patch_sp500_changes_parser():
@@ -212,6 +321,7 @@ def _patch_sp500_changes_parser():
 _install_fake_useragent_fallback()
 _patch_yahoo_normalize()
 _patch_mixed_date_parsing()
+_patch_yahoo_normalize_extend()
 _patch_sp500_changes_parser()
 
 
@@ -268,6 +378,32 @@ class USAllRun(Run):
         if available_memory_gb is not None and available_memory_gb < 6:
             return 1
         return min(cpu_based, 2)
+
+    def _resolve_normalize_workers(self):
+        env_value = os.environ.get("QLIB_NORMALIZE_MAX_WORKERS")
+        if env_value:
+            try:
+                return max(int(env_value), 1)
+            except ValueError:
+                collector.logger.warning(f"Ignoring invalid QLIB_NORMALIZE_MAX_WORKERS={env_value!r}")
+
+        env_value = os.environ.get("NORMALIZE_MAX_WORKERS")
+        if env_value:
+            try:
+                return max(int(env_value), 1)
+            except ValueError:
+                collector.logger.warning(f"Ignoring invalid NORMALIZE_MAX_WORKERS={env_value!r}")
+
+        if self.max_workers is not None and self.max_workers > 1:
+            return self.max_workers
+
+        cpu_based = max(multiprocessing.cpu_count() - 1, 1)
+        available_memory_gb = self._get_available_memory_gb()
+        if available_memory_gb is not None and available_memory_gb < 6:
+            return 1
+        if available_memory_gb is not None and available_memory_gb < 12:
+            return min(cpu_based, 2)
+        return min(cpu_based, 8)
 
     @staticmethod
     def _find_valid_universe_dir(base_dir: Path, target_name: str):
@@ -345,16 +481,22 @@ class USAllRun(Run):
         collector.logger.info(f"Using US_ALL_EFFECTIVE_DATE={effective_date_str}")
 
         self.download_data(delay=delay, start=trading_date, end=end_date, check_data_length=check_data_length)
-        self.max_workers = self._resolve_dump_workers()
-        collector.logger.info(f"Using max_workers={self.max_workers} for incremental bin dump")
+        normalize_workers = self._resolve_normalize_workers()
+        collector.logger.info(f"Using max_workers={normalize_workers} for incremental normalization")
+        original_max_workers = self.max_workers
+        self.max_workers = normalize_workers
         self.normalize_data_1d_extend(qlib_data_1d_dir)
+        dump_workers = self._resolve_dump_workers()
+        collector.logger.info(f"Using max_workers={dump_workers} for incremental bin dump")
+        self.max_workers = dump_workers
 
         collector.DumpDataUpdate(
             data_path=self.normalize_dir,
             qlib_dir=qlib_data_1d_dir,
             exclude_fields="symbol,date",
-            max_workers=self.max_workers,
+            max_workers=dump_workers,
         ).dump()
+        self.max_workers = original_max_workers
 
         self._refresh_us_indexes(qlib_data_1d_dir)
 
@@ -425,9 +567,14 @@ class USAllRun(Run):
                 "Clean rebuild aborted: no source CSV files were downloaded. "
                 "The dataset will not be overwritten with empty calendars or instruments."
             )
-        self.max_workers = self._resolve_dump_workers()
-        collector.logger.info(f"Using max_workers={self.max_workers} for clean rebuild bin dump")
+        normalize_workers = self._resolve_normalize_workers()
+        collector.logger.info(f"Using max_workers={normalize_workers} for clean rebuild normalization")
+        original_max_workers = self.max_workers
+        self.max_workers = normalize_workers
         self.normalize_data(end_date=end_date)
+        dump_workers = self._resolve_dump_workers()
+        collector.logger.info(f"Using max_workers={dump_workers} for clean rebuild bin dump")
+        self.max_workers = dump_workers
         normalized_files = list(self.normalize_dir.glob("*.csv"))
         if not normalized_files:
             raise RuntimeError(
@@ -440,8 +587,9 @@ class USAllRun(Run):
             data_path=self.normalize_dir,
             qlib_dir=str(qlib_data_1d_dir),
             exclude_fields="symbol,date",
-            max_workers=self.max_workers,
+            max_workers=dump_workers,
         ).dump()
+        self.max_workers = original_max_workers
 
         calendar_path = qlib_data_1d_dir / "calendars" / "day.txt"
         instruments_path = qlib_data_1d_dir / "instruments" / "all.txt"
