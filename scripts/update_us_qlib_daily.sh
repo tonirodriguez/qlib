@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEFAULT_QLIB_REPO="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 # === CONFIG ===
-QLIB_REPO="${QLIB_REPO:-/mnt/c/Users/trodriguez/src/qlib}"         # ruta donde clonaste qlib
+QLIB_REPO="${QLIB_REPO:-$DEFAULT_QLIB_REPO}"         # repo detectado desde la ubicación del script
 DATA_DIR="${DATA_DIR:-$HOME/.qlib/qlib_data/us_data}"
 PYTHON_BIN="${PYTHON_BIN:-python}"
 START_DATE="${START_DATE:-2026-03-31}"
 REBUILD_START_DATE="${REBUILD_START_DATE:-1999-12-31}"
-MAX_WORKERS="${MAX_WORKERS:-1}"
+MAX_WORKERS="${MAX_WORKERS:-4}"
 NORMALIZE_MAX_WORKERS="${NORMALIZE_MAX_WORKERS:-5}"
 DELAY="${DELAY:-0.1}"
 TODAY=$(date +%F)
@@ -18,6 +21,24 @@ if [ "${1:-}" = "--clean-rebuild" ]; then
   MODE="rebuild"
   shift
 fi
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --universe_data|--universe_data_dir)
+      if [ $# -lt 2 ]; then
+        echo "❌ Falta el valor para $1"
+        exit 1
+      fi
+      REBUILD_UNIVERSE_DIR="$2"
+      shift 2
+      ;;
+    *)
+      echo "❌ Opción no soportada: $1"
+      echo "   Usa --clean-rebuild [--universe_data DIR] o ajusta REBUILD_UNIVERSE_DIR."
+      exit 1
+      ;;
+  esac
+done
 
 # === CHECKS ===
 if [ ! -d "$QLIB_REPO/scripts/data_collector/yahoo" ]; then
