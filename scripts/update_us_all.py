@@ -127,7 +127,7 @@ def _patch_yahoo_normalize():
         symbol = df.loc[df[symbol_field_name].first_valid_index(), symbol_field_name]
         df.set_index(date_field_name, inplace=True)
         df.index = _ensure_naive_datetime_index(df.index)
-        df = df[~df.index.duplicated(keep="first")]
+        df = df[~df.index.duplicated(keep="last")]
 
         if calendar_list is not None and not df.empty:
             calendar_index = _get_cached_calendar_index(calendar_list)
