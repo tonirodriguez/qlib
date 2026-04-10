@@ -3,11 +3,18 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEFAULT_QLIB_REPO="$(cd "$SCRIPT_DIR/.." && pwd)"
+DEFAULT_PYTHON_BIN="/home/toni/miniconda3/envs/qlib/bin/python"
 
 # === CONFIG ===
 QLIB_REPO="${QLIB_REPO:-$DEFAULT_QLIB_REPO}"         # repo detectado desde la ubicación del script
 DATA_DIR="${DATA_DIR:-$HOME/.qlib/qlib_data/us_data}"
-PYTHON_BIN="${PYTHON_BIN:-python}"
+if [ -z "${PYTHON_BIN:-}" ]; then
+  if [ -x "$DEFAULT_PYTHON_BIN" ]; then
+    PYTHON_BIN="$DEFAULT_PYTHON_BIN"
+  else
+    PYTHON_BIN="python"
+  fi
+fi
 START_DATE="${START_DATE:-2026-03-31}"
 REBUILD_START_DATE="${REBUILD_START_DATE:-1999-12-31}"
 MAX_WORKERS="${MAX_WORKERS:-4}"
