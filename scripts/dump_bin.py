@@ -208,6 +208,9 @@ class DumpDataBase:
     def save_calendars(self, calendars_data: list):
         self._calendars_dir.mkdir(parents=True, exist_ok=True)
         calendars_path = str(self._calendars_dir.joinpath(f"{self.freq}.txt").expanduser().resolve())
+        if self.freq == "day":
+            calendars_data = pd.Series(pd.to_datetime(calendars_data, errors="coerce")).dropna().dt.normalize().unique()
+            calendars_data = sorted(map(pd.Timestamp, calendars_data))
         result_calendars_list = [self._format_datetime(x) for x in calendars_data]
         np.savetxt(calendars_path, result_calendars_list, fmt="%s", encoding="utf-8")
 
@@ -323,7 +326,7 @@ class DumpDataBase:
             return
 
         # try to remove dup rows or it will cause exception when reindex.
-        df = df.drop_duplicates(self.date_field_name)
+        df = df.drop_duplicates(self.date_field_name, keep="last")
 
         # features save dir
         features_dir = self._features_dir.joinpath(code_to_fname(code).lower())
@@ -491,8 +494,11 @@ class DumpDataUpdate(DumpDataBase):
 
         # load all csv files
         self._all_data = self._load_all_source_data()  # type: pd.DataFrame
-        self._new_calendar_list = self._old_calendar_list + sorted(
-            filter(lambda x: x > self._old_calendar_list[-1], self._all_data[self.date_field_name].unique())
+        new_calendar_values = pd.Series(pd.to_datetime(self._all_data[self.date_field_name], errors="coerce")).dropna()
+        if self.freq == "day":
+            new_calendar_values = new_calendar_values.dt.normalize()
+        self._new_calendar_list = sorted(
+            set(self._old_calendar_list).union(filter(lambda x: x > self._old_calendar_list[-1], new_calendar_values))
         )
 
     def _load_all_source_data(self):
@@ -543,11 +549,14 @@ class DumpDataUpdate(DumpDataBase):
                     effective_end = (
                         min(instrument_end, last_bin_end) if last_bin_end is not None else instrument_end
                     )
-                    _update_calendars = (
-                        _df[_df[self.date_field_name] > effective_end][self.date_field_name]
-                        .sort_values()
-                        .to_list()
-                    )
+                    update_dates = pd.Series(
+                        pd.to_datetime(
+                            _df[_df[self.date_field_name] > effective_end][self.date_field_name], errors="coerce"
+                        )
+                    ).dropna()
+                    if self.freq == "day":
+                        update_dates = update_dates.dt.normalize()
+                    _update_calendars = sorted(set(update_dates.to_list()))
                     if _update_calendars:
                         self._update_instruments[_code][self.INSTRUMENTS_END_FIELD] = self._format_datetime(_end)
                         futures[executor.submit(self._dump_bin, _df, _update_calendars)] = _code
