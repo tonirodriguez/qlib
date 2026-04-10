@@ -515,6 +515,7 @@ class USAllRun(Run):
 
         qlib_data_1d_dir = Path(qlib_data_1d_dir).expanduser().resolve()
         universe_dir = Path(universe_data_dir).expanduser().resolve() if universe_data_dir else None
+        universe_matches_target = universe_dir == qlib_data_1d_dir if universe_dir is not None else False
         backup_dir = None
 
         if backup_existing and qlib_data_1d_dir.exists():
@@ -524,6 +525,8 @@ class USAllRun(Run):
                 raise FileExistsError(f"Backup dir already exists: {backup_dir}")
             shutil.move(str(qlib_data_1d_dir), str(backup_dir))
             collector.logger.warning(f"Existing dataset moved to backup: {backup_dir}")
+            if universe_matches_target:
+                universe_dir = backup_dir
 
         if universe_dir is None:
             if backup_dir is not None:
