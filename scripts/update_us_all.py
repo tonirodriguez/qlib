@@ -8,6 +8,11 @@ import pandas as pd
 from pathlib import Path
 import fire
 
+try:
+    from scripts.data_collector.base import _write_csv_with_retry
+except ModuleNotFoundError:
+    from data_collector.base import _write_csv_with_retry
+
 # Resolver el repo de Qlib de forma robusta
 DEFAULT_QLIB_REPO = "/mnt/d/src/qlib"
 QLIB_REPO = os.environ.get("QLIB_REPO", DEFAULT_QLIB_REPO)
@@ -95,6 +100,22 @@ def _read_last_calendar_date(data_dir: Path) -> pd.Timestamp | None:
     if pd.isna(last_date):
         return None
     return last_date.normalize()
+
+
+def _should_use_tmp_work_dir(path: Path) -> bool:
+    resolved = Path(path).expanduser().resolve()
+    return resolved.as_posix().startswith("/mnt/")
+
+
+def _resolve_work_base_dir() -> Path:
+    env_value = os.environ.get("QLIB_US_WORK_DIR") or os.environ.get("QLIB_WORK_DIR")
+    if env_value:
+        return Path(env_value).expanduser().resolve()
+
+    default_base_dir = Path(__file__).resolve().parent / "data_collector" / "yahoo"
+    if _should_use_tmp_work_dir(default_base_dir):
+        return Path("/tmp/qlib_us_work")
+    return default_base_dir
 
 
 def _resolve_incremental_effective_date(data_dir: Path, requested_effective_date: pd.Timestamp) -> pd.Timestamp:
@@ -204,7 +225,7 @@ def _patch_mixed_date_parsing():
                     parsed_dates = _parse_mixed_dates(date_series).dt.normalize()
                 end_date = pd.Timestamp(self._end_date).normalize()
                 df = df[parsed_dates.notna() & (parsed_dates <= end_date)]
-            df.to_csv(self._target_dir.joinpath(file_path.name), index=False)
+            _write_csv_with_retry(df, self._target_dir.joinpath(file_path.name), index=False)
 
     collector.Normalize._executor = _executor
 
@@ -353,6 +374,22 @@ collector.USAllCollector = USAllCollector
 
 
 class USAllRun(Run):
+    def __init__(self, source_dir=None, normalize_dir=None, max_workers=1, interval="1d", region="us"):
+        work_base_dir = _resolve_work_base_dir()
+        using_tmp_work_dir = _should_use_tmp_work_dir(Path(__file__).resolve().parent / "data_collector" / "yahoo")
+
+        if source_dir is None:
+            source_dir = work_base_dir / "source"
+        if normalize_dir is None:
+            normalize_dir = work_base_dir / "normalize"
+
+        super().__init__(source_dir=source_dir, normalize_dir=normalize_dir, max_workers=max_workers, interval=interval, region=region)
+
+        if using_tmp_work_dir:
+            collector.logger.info(
+                f"Using temporary work directories outside /mnt for Yahoo source/normalize data: {work_base_dir}"
+            )
+
     @staticmethod
     def _get_available_memory_gb():
         try:
