@@ -17,6 +17,29 @@ from joblib import Parallel, delayed
 from qlib.utils import code_to_fname
 
 
+def _write_csv_with_retry(df: pd.DataFrame, target_path: [str, Path], index: bool = False, retries: int = 3):
+    target_path = Path(target_path)
+    last_error = None
+
+    for attempt in range(retries + 1):
+        try:
+            df.to_csv(target_path, index=index)
+            return
+        except OSError as exc:
+            last_error = exc
+            if exc.errno != 5 or attempt >= retries:
+                raise
+
+            logger.warning(
+                f"Transient I/O error while writing {target_path} "
+                f"(attempt {attempt + 1}/{retries + 1}): {exc}. Retrying..."
+            )
+            time.sleep(0.5 * (attempt + 1))
+
+    if last_error is not None:
+        raise last_error
+
+
 class BaseCollector(abc.ABC):
     CACHE_FLAG = "CACHED"
     NORMAL_FLAG = "NORMAL"
@@ -170,7 +193,7 @@ class BaseCollector(abc.ABC):
         if instrument_path.exists():
             _old_df = pd.read_csv(instrument_path)
             df = pd.concat([_old_df, df], sort=False)
-        df.to_csv(instrument_path, index=False)
+        _write_csv_with_retry(df, instrument_path, index=False)
 
     def cache_small_data(self, symbol, df):
         if len(df) < self.check_data_length:
@@ -307,7 +330,7 @@ class Normalize:
             if self._end_date is not None:
                 _mask = pd.to_datetime(df[self._date_field_name]) <= pd.Timestamp(self._end_date)
                 df = df[_mask]
-            df.to_csv(self._target_dir.joinpath(file_path.name), index=False)
+            _write_csv_with_retry(df, self._target_dir.joinpath(file_path.name), index=False)
 
     def normalize(self):
         logger.info("normalize data......")
