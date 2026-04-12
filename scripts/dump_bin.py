@@ -145,6 +145,16 @@ class DumpDataBase:
         datetime_d = pd.Timestamp(datetime_d)
         return datetime_d.strftime(self.calendar_format)
 
+    def _normalize_datetime_values(self, values) -> pd.Series:
+        if isinstance(values, (pd.Series, pd.Index)):
+            raw_values = values
+        else:
+            raw_values = list(values)
+        values = pd.Series(pd.to_datetime(raw_values, errors="coerce"))
+        if self.freq == "day":
+            values = values.dt.normalize()
+        return values
+
     def _get_date(
         self, file_or_df: [Path, pd.DataFrame], *, is_begin_end: bool = False, as_set: bool = False
     ) -> Iterable[pd.Timestamp]:
@@ -155,7 +165,7 @@ class DumpDataBase:
         if df.empty or self.date_field_name not in df.columns.tolist():
             _calendars = pd.Series(dtype=np.float32)
         else:
-            _calendars = df[self.date_field_name]
+            _calendars = self._normalize_datetime_values(df[self.date_field_name]).dropna()
 
         if is_begin_end and as_set:
             return (_calendars.min(), _calendars.max()), set(_calendars)
@@ -169,7 +179,7 @@ class DumpDataBase:
     def _get_source_data(self, file_path: Path) -> pd.DataFrame:
         df = read_as_df(file_path, low_memory=False)
         if self.date_field_name in df.columns:
-            df[self.date_field_name] = pd.to_datetime(df[self.date_field_name])
+            df[self.date_field_name] = self._normalize_datetime_values(df[self.date_field_name])
         # df.drop_duplicates([self.date_field_name], inplace=True)
         return df
 
@@ -208,9 +218,8 @@ class DumpDataBase:
     def save_calendars(self, calendars_data: list):
         self._calendars_dir.mkdir(parents=True, exist_ok=True)
         calendars_path = str(self._calendars_dir.joinpath(f"{self.freq}.txt").expanduser().resolve())
-        if self.freq == "day":
-            calendars_data = pd.Series(pd.to_datetime(calendars_data, errors="coerce")).dropna().dt.normalize().unique()
-            calendars_data = sorted(map(pd.Timestamp, calendars_data))
+        calendars_data = self._normalize_datetime_values(calendars_data).dropna().unique()
+        calendars_data = sorted(map(pd.Timestamp, calendars_data))
         result_calendars_list = [self._format_datetime(x) for x in calendars_data]
         np.savetxt(calendars_path, result_calendars_list, fmt="%s", encoding="utf-8")
 
@@ -229,8 +238,10 @@ class DumpDataBase:
 
     def data_merge_calendar(self, df: pd.DataFrame, calendars_list: List[pd.Timestamp]) -> pd.DataFrame:
         # calendars
-        calendars_df = pd.DataFrame(data=calendars_list, columns=[self.date_field_name])
+        calendars_df = pd.DataFrame(data=self._normalize_datetime_values(calendars_list).dropna(), columns=[self.date_field_name])
         calendars_df[self.date_field_name] = calendars_df[self.date_field_name].astype("datetime64[ns]")
+        df = df.copy()
+        df[self.date_field_name] = self._normalize_datetime_values(df[self.date_field_name])
         cal_df = calendars_df[
             (calendars_df[self.date_field_name] >= df[self.date_field_name].min())
             & (calendars_df[self.date_field_name] <= df[self.date_field_name].max())
@@ -366,7 +377,7 @@ class DumpDataAll(DumpDataBase):
 
     def _dump_calendars(self):
         logger.info("start dump calendars......")
-        self._calendars_list = sorted(map(pd.Timestamp, self._kwargs["all_datetime_set"]))
+        self._calendars_list = sorted(map(pd.Timestamp, self._normalize_datetime_values(self._kwargs["all_datetime_set"]).dropna().unique()))
         self.save_calendars(self._calendars_list)
         logger.info("end of calendars dump.\n")
 
