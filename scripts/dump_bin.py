@@ -242,6 +242,10 @@ class DumpDataBase:
         calendars_df[self.date_field_name] = calendars_df[self.date_field_name].astype("datetime64[ns]")
         df = df.copy()
         df[self.date_field_name] = self._normalize_datetime_values(df[self.date_field_name])
+        df = df.dropna(subset=[self.date_field_name])
+        if not df.empty:
+            df = df.sort_values([self.date_field_name], kind="stable")
+            df = df.drop_duplicates(subset=[self.date_field_name], keep="last")
         cal_df = calendars_df[
             (calendars_df[self.date_field_name] >= df[self.date_field_name].min())
             & (calendars_df[self.date_field_name] <= df[self.date_field_name].max())

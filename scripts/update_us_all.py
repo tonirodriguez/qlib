@@ -2,6 +2,7 @@ import sys
 import os
 import types
 import shutil
+import csv
 import multiprocessing
 import numpy as np
 import pandas as pd
@@ -100,6 +101,58 @@ def _read_last_calendar_date(data_dir: Path) -> pd.Timestamp | None:
     if pd.isna(last_date):
         return None
     return last_date.normalize()
+
+
+def _sanitize_normalized_daily_csv(file_path: Path) -> dict | None:
+    df = pd.read_csv(file_path)
+    if df.empty or "date" not in df.columns:
+        return None
+
+    parsed_dates = pd.to_datetime(df["date"], errors="coerce")
+    valid_mask = parsed_dates.notna()
+    if not valid_mask.all():
+        df = df.loc[valid_mask].copy()
+        parsed_dates = parsed_dates.loc[valid_mask]
+    if df.empty:
+        return None
+
+    normalized_dates = parsed_dates.dt.normalize()
+    duplicate_rows = int(normalized_dates.duplicated(keep=False).sum())
+    rows_with_time = int((parsed_dates != normalized_dates).sum())
+    if duplicate_rows == 0 and rows_with_time == 0:
+        return None
+
+    cleaned_df = df.copy()
+    cleaned_df["date"] = normalized_dates.dt.strftime("%Y-%m-%d")
+    cleaned_df["_date_sort"] = normalized_dates
+    cleaned_df = cleaned_df.sort_values(["_date_sort"], kind="stable")
+    cleaned_df = cleaned_df.drop_duplicates(subset=["_date_sort"], keep="last")
+    cleaned_df = cleaned_df.drop(columns=["_date_sort"])
+    cleaned_df.to_csv(file_path, index=False, quoting=csv.QUOTE_MINIMAL)
+
+    return {
+        "file_name": file_path.name,
+        "rows_with_time": rows_with_time,
+        "duplicate_rows_removed": int(len(df) - len(cleaned_df)),
+    }
+
+
+def _sanitize_normalize_dir(normalize_dir: Path):
+    summaries = []
+    for file_path in sorted(normalize_dir.glob("*.csv")):
+        summary = _sanitize_normalized_daily_csv(file_path)
+        if summary is not None:
+            summaries.append(summary)
+
+    if summaries:
+        total_time_rows = sum(item["rows_with_time"] for item in summaries)
+        total_removed = sum(item["duplicate_rows_removed"] for item in summaries)
+        collector.logger.warning(
+            "Sanitized normalized daily CSV files before dump_bin: "
+            f"files={len(summaries)}, rows_with_time={total_time_rows}, duplicate_rows_removed={total_removed}"
+        )
+    else:
+        collector.logger.info("Normalized daily CSV files are already deduplicated by date")
 
 
 def _should_use_tmp_work_dir(path: Path) -> bool:
@@ -523,6 +576,7 @@ class USAllRun(Run):
         original_max_workers = self.max_workers
         self.max_workers = normalize_workers
         self.normalize_data_1d_extend(qlib_data_1d_dir)
+        _sanitize_normalize_dir(Path(self.normalize_dir))
         dump_workers = self._resolve_dump_workers()
         collector.logger.info(f"Using max_workers={dump_workers} for incremental bin dump")
         self.max_workers = dump_workers
@@ -612,6 +666,7 @@ class USAllRun(Run):
         original_max_workers = self.max_workers
         self.max_workers = normalize_workers
         self.normalize_data(end_date=end_date)
+        _sanitize_normalize_dir(Path(self.normalize_dir))
         dump_workers = self._resolve_dump_workers()
         collector.logger.info(f"Using max_workers={dump_workers} for clean rebuild bin dump")
         self.max_workers = dump_workers
