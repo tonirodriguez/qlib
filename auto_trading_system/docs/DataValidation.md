@@ -53,3 +53,46 @@ QLIB_US_WORK_DIR=/home/toni/.qlib/yahoo_us_work ./scripts/update_us_qlib_daily.s
 ```
 
 Entonces los CSV quedarían en `/home/toni/.qlib/yahoo_us_work/source` y `/home/toni/.qlib/yahoo_us_work/normalize`.
+
+## Tipos de Issues (Errores) que pueden aparecer en raw_issues.csv
+
+Sí. En `validation_script1.py`, los tipos (`issue`) que pueden aparecer en `raw_issues.csv` son estos:
+
+| Issue | Severidad | Qué indica |
+|---|---:|---|
+| `invalid_date` | `error` | La fecha no se pudo parsear. En `value` queda la fecha original problemática. |
+| `duplicate_symbol_date` | `error` | Hay más de una fila para el mismo `symbol` y la misma fecha diaria normalizada. Marca todas las filas duplicadas. |
+| `missing_open` | `warning` | `open` está vacío o no se pudo convertir a número. |
+| `missing_high` | `warning` | `high` está vacío o no se pudo convertir a número. |
+| `missing_low` | `warning` | `low` está vacío o no se pudo convertir a número. |
+| `missing_close` | `error` | `close` está vacío o no se pudo convertir a número. Bloqueante. |
+| `missing_volume` | `error` | `volume` está vacío o no se pudo convertir a número. Bloqueante. |
+| `non_positive_open` | `error` | `open <= 0`. |
+| `non_positive_high` | `error` | `high <= 0`. |
+| `non_positive_low` | `error` | `low <= 0`. |
+| `non_positive_close` | `error` | `close <= 0`. |
+| `negative_volume` | `error` | `volume < 0`. |
+| `high_less_than_low` | `error` | `high < low`, inconsistente para OHLC. |
+| `open_outside_high_low` | `error` | `open` está fuera del rango `[low, high]`. |
+| `close_outside_high_low` | `error` | `close` está fuera del rango `[low, high]`. |
+| `very_low_price` | `warning` | `close < 0.5` por defecto. Puede ser válido, pero se marca como sospechoso. |
+| `large_raw_return` | `warning` | Retorno diario absoluto mayor a `0.40` por defecto. Posible split, ajuste raro o dato erróneo. |
+| `volume_spike_gt_50x_20d_median` | `warning` | Volumen mayor que 50 veces la mediana móvil de 20 días. |
+| `zero_volume` | `warning` | `volume == 0`. Puede pasar en activos ilíquidos, pero es sospechoso. |
+| `high_missing_close_ratio` | `error` | Para un símbolo, más del `5%` de sus filas tienen `close` ausente. |
+
+Además, hay un caso que **no aparece como fila en `raw_issues.csv`** porque aborta directamente:
+
+```text
+Missing required columns
+```
+
+Eso ocurre si el CSV no tiene alguna columna obligatoria: `date`, `symbol`, `open`, `high`, `low`, `close`, `volume`.
+
+Los umbrales actuales son:
+
+```python
+min_price = 0.5
+max_abs_daily_return = 0.40
+max_missing_ratio_per_symbol = 0.05
+```
