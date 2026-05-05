@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+from datetime import datetime
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -198,15 +199,55 @@ def validate_raw_prices(
     # Duplicates
     dup_mask = df.duplicated(["symbol", "date"], keep=False)
     if dup_mask.any():
-        issues.append(
-            pd.DataFrame({
-                "symbol": df.loc[dup_mask, "symbol"],
-                "date": df.loc[dup_mask, "date"],
-                "issue": "duplicate_symbol_date",
-                "severity": "error",
-                "value": np.nan,
-            })
-        )
+        dup_issues_list = []
+        indices_to_drop = []
+        
+        check_cols = ["open", "high", "low", "close", "volume"]
+        
+        for (sym, dt), group in df[dup_mask].groupby(["symbol", "date"]):
+            unique_rows = group.drop_duplicates(subset=check_cols)
+            
+            if len(unique_rows) == 1:
+                dup_issues_list.append({
+                    "symbol": sym, "date": dt,
+                    "issue": "duplicate_identical_rows",
+                    "severity": "warning",
+                    "value": np.nan
+                })
+                indices_to_drop.extend(group.index[1:])
+            else:
+                conflict = False
+                for col in check_cols:
+                    valid_vals = group[col].dropna().unique()
+                    if len(valid_vals) > 1:
+                        conflict = True
+                        break
+                
+                if conflict:
+                    dup_issues_list.append({
+                        "symbol": sym, "date": dt,
+                        "issue": "duplicate_conflicting_values",
+                        "severity": "error",
+                        "value": np.nan
+                    })
+                    indices_to_drop.extend(group.index[:-1])
+                else:
+                    non_nan_counts = group[check_cols].notna().sum(axis=1)
+                    best_idx = non_nan_counts.idxmax()
+                    
+                    dup_issues_list.append({
+                        "symbol": sym, "date": dt,
+                        "issue": "duplicate_more_complete_row",
+                        "severity": "warning",
+                        "value": np.nan
+                    })
+                    indices_to_drop.extend([idx for idx in group.index if idx != best_idx])
+                    
+        if dup_issues_list:
+            issues.append(pd.DataFrame(dup_issues_list))
+            
+        if indices_to_drop:
+            df = df.drop(index=indices_to_drop)
 
     # Basic missingness
     for col in ["open", "high", "low", "close", "volume"]:
@@ -345,6 +386,7 @@ def validate_raw_prices(
 def validate_price_csv_dir(
     source_dir: Path,
     report_dir: Path,
+    clean_dir: Path | None = None,
     limit_files: int | None = None,
     universe_symbols: set[str] | None = None,
 ) -> dict:
@@ -355,6 +397,9 @@ def validate_price_csv_dir(
     issues_path = report_dir / "raw_issues.csv"
     issue_columns = ["symbol", "date", "issue", "severity", "value"]
     pd.DataFrame(columns=issue_columns).to_csv(issues_path, index=False)
+
+    if clean_dir:
+        clean_dir.mkdir(parents=True, exist_ok=True)
 
     rows = 0
     symbols = set()
@@ -370,6 +415,13 @@ def validate_price_csv_dir(
         progress.set_postfix(symbol=display_symbol, errors=errors, warnings=warnings)
 
         clean_df, issues = validate_raw_prices(df_raw)
+        
+        if clean_dir is not None and not clean_df.empty:
+            cols_to_drop = ["source_file", "ret_1d", "volume_median_20"]
+            export_df = clean_df.drop(columns=[c for c in cols_to_drop if c in clean_df.columns]).copy()
+            export_df["date"] = export_df["date"].dt.strftime("%Y-%m-%d")
+            export_df.to_csv(clean_dir / path.name, index=False)
+
         rows += int(len(clean_df))
         symbols.update(clean_df["symbol"].dropna().unique().tolist())
         errors += int((issues["severity"] == "error").sum())
@@ -424,13 +476,18 @@ if __name__ == "__main__":
     universe_symbols = load_universe_symbols(args.universe, args.qlib_data_dir)
     report_dir = Path(args.report_dir).expanduser()
     report_dir.mkdir(parents=True, exist_ok=True)
+    
+    clean_dir = report_dir / f"cleaned_csv_{datetime.now().strftime('%Y-%m-%d')}"
 
     print(f"Loading price CSVs from {source_dir}", flush=True)
     if args.universe:
         print(f"Filtering validation to universe {args.universe!r}: {len(universe_symbols)} historical symbols", flush=True)
+    print(f"Cleaned CSVs will be saved to {clean_dir}", flush=True)
+    
     summary = validate_price_csv_dir(
         source_dir,
         report_dir,
+        clean_dir=clean_dir,
         limit_files=args.limit_files,
         universe_symbols=universe_symbols,
     )

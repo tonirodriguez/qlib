@@ -1,9 +1,9 @@
 {
-  "rows": 4719866,
-  "symbols": 675,
-  "errors": 2097993,
-  "warnings": 56009,
-  "files": 675,
-  "symbols_processed": 675,
-  "universe_symbols": 848
+  "rows": 3039,
+  "symbols": 507,
+  "errors": 15,
+  "warnings": 0,
+  "files": 507,
+  "symbols_processed": 507,
+  "universe_symbols": null
 }
