@@ -6,6 +6,7 @@ DEFAULT_QLIB_REPO="$(cd "$SCRIPT_DIR/.." && pwd)"
 DEFAULT_PYTHON_BIN="/home/toni/miniconda3/envs/qlib/bin/python"
 
 # === CONFIG ===
+QLIB_US_WORK_DIR="${DATA_DIR:-$HOME/.qlib/yahoo_data}"
 QLIB_REPO="${QLIB_REPO:-$DEFAULT_QLIB_REPO}"         # repo detectado desde la ubicación del script
 DATA_DIR="${DATA_DIR:-$HOME/.qlib/qlib_data/us_data}"
 if [ -z "${PYTHON_BIN:-}" ]; then
