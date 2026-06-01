@@ -1,13 +1,20 @@
 import sys
 import os
+from pathlib import Path
 import types
 import shutil
 import csv
 import multiprocessing
 import numpy as np
 import pandas as pd
-from pathlib import Path
 import fire
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SCRIPTS_DIR = REPO_ROOT / "scripts"
+for _path in (REPO_ROOT, SCRIPTS_DIR):
+    _path_str = str(_path)
+    if _path_str not in sys.path:
+        sys.path.insert(0, _path_str)
 
 try:
     from scripts.data_collector.base import _write_csv_with_retry
@@ -15,11 +22,11 @@ except ModuleNotFoundError:
     from data_collector.base import _write_csv_with_retry
 
 # Resolver el repo de Qlib de forma robusta
-DEFAULT_QLIB_REPO = "/mnt/d/src/qlib"
-QLIB_REPO = os.environ.get("QLIB_REPO", DEFAULT_QLIB_REPO)
+DEFAULT_QLIB_REPO = REPO_ROOT
+QLIB_REPO = Path(os.environ.get("QLIB_REPO", DEFAULT_QLIB_REPO)).expanduser().resolve()
 COLLECTOR_DIR = Path(QLIB_REPO) / "scripts" / "data_collector" / "yahoo"
 if not COLLECTOR_DIR.exists():
-    alt_repo = Path(__file__).resolve().parents[2] / "qlib"
+    alt_repo = REPO_ROOT
     alt_collector_dir = alt_repo / "scripts" / "data_collector" / "yahoo"
     if alt_collector_dir.exists():
         COLLECTOR_DIR = alt_collector_dir
