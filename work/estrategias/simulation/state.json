@@ -1,7 +1,8 @@
 {
   "start_capital_eur": 20000.0,
   "start_capital_usd": 22599.999999999996,
-  "cash_usd": 2.0463630789890885e-12,
+  "cash_usd": -10.499999999999995,
+  "entry_cost": 10.499999999999995,
   "positions": {
     "INTC": {
       "shares": 7.204794863457961,
