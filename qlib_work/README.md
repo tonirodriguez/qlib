@@ -103,6 +103,9 @@ Aprender y aplicar **Qlib** (plataforma de inversión cuantitativa con ML de Mic
 
 | Fecha | Documento | Resumen |
 |---|---|---|
+| 2026-08-14 | `comisiones_interactive_brokers.md` | Comisiones reales de IB España y cómo caracterizarlas en Qlib (open/close cost, conversión por precio del universo) |
+| 2026-08-14 | `resultados_retorno.md` | Resultados de retorno (exceso y absoluto) con aclaraciones metodológicas; validación del vol-targeting |
+| 2026-08-14 | `experimento_v1_v2_diagnostico.md` | Resultados v1-v5, comparativa, diagnóstico, test de dirección, retorno absoluto |
 | 2026-08-14 | `README.md` (este) | Creación del espacio de trabajo: plan, bibliografía, registro de avance |
 | 2026-08-14 | `bibliografia.md` | Lista detallada de libros recomendados por nivel y tema |
 | 2026-08-14 | `plan_aprendizaje.md` | Plan de estudio y fases del proyecto |
