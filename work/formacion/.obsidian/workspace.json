@@ -1,0 +1,233 @@
+{
+  "main": {
+    "id": "fec255978a84029f",
+    "type": "split",
+    "children": [
+      {
+        "id": "711709c8e5bef1ac",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "acfb497d33467f4e",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "03 Strategies/SpaceX IPO.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "SpaceX IPO"
+            }
+          },
+          {
+            "id": "f0cfeb736c2f55d3",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "01 Literature/formacion/qlib/Estrategia Qlib 1.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Estrategia Qlib 1"
+            }
+          }
+        ],
+        "currentTab": 1
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "ba2cb434b31c887c",
+    "type": "split",
+    "children": [
+      {
+        "id": "c0c340e716d00b13",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "3b861c9fb6ab39ca",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Explorador de archivos"
+            }
+          },
+          {
+            "id": "733ae28deb5e399d",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "black",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Buscar"
+            }
+          },
+          {
+            "id": "0bc7328b666ac729",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Marcadores"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 459.5
+  },
+  "right": {
+    "id": "c25aa21582547a36",
+    "type": "split",
+    "children": [
+      {
+        "id": "4c8b0c883ff7bb83",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "a0dd97929f554dcf",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "03 Strategies/SpaceX IPO.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Enlaces entrantes de SpaceX IPO"
+            }
+          },
+          {
+            "id": "239ab7154ff4c2d0",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "03 Strategies/SpaceX IPO.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Enlaces salientes de SpaceX IPO"
+            }
+          },
+          {
+            "id": "3efb3e73cc085cd6",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Etiquetas"
+            }
+          },
+          {
+            "id": "c54f408ab5ba06dc",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "Todas las propiedades"
+            }
+          },
+          {
+            "id": "38742fa4465720ae",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "03 Strategies/SpaceX IPO.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Esquema de SpaceX IPO"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Abrir selector rápido": false,
+      "graph:Abrir vista gráfica": false,
+      "canvas:Crear nuevo lienzo": false,
+      "daily-notes:Abrir la nota de hoy": false,
+      "templates:Insertar plantilla": false,
+      "command-palette:Abrir paleta de comandos": false,
+      "bases:Crear nueva base": false
+    }
+  },
+  "active": "f0cfeb736c2f55d3",
+  "lastOpenFiles": [
+    "01 Literature/formacion/qlib/download-us-market-data.md",
+    "01 Literature/formacion/qlib/comparativa-v4-v5.md",
+    "01 Literature/formacion/qlib/img/comparativa_antes_despues.png",
+    "01 Literature/formacion/qlib/Estrategia Qlib 1.md",
+    "01 Literature/formacion/investing/Investments 2026.md",
+    "01 Literature/formacion/investing/Doing Capitalism Video II.md",
+    "01 Literature/formacion/investing/Conceptos Investment.md",
+    "03 Strategies/SpaceX IPO.md",
+    "03 Strategies/frontier_labs_map.md",
+    "03 Strategies/Bill Brooklyn.md",
+    "04 Experiments/Calidad de los Datos de Qlib.md",
+    "04 Experiments/baselines.md",
+    "04 Experiments/analisis_resultados_SFM_v5_SP500.md",
+    "04 Experiments/analisis_resultados_SFM_v4_run2.md",
+    "04 Experiments/analisis_resultados_SFM_v4_fixes.md",
+    "04 Experiments/analisis_resultados_SFM_v4.md",
+    "04 Experiments/analisis_resultados_SFM_v4_2018_2026.md",
+    "07 Operations/docker-compose-qlib.md",
+    "07 Operations/execute_script_docker.md",
+    "07 Operations/llm-wiki-operations.md",
+    "07 Operations/log-20260528.md",
+    "07 Operations/runbook.md",
+    "Incomes Q2 Google.md",
+    "Analisis ADBE.md",
+    "Estrategia arbitrage Paypal.md",
+    "Diseño SDLC OpenClaw.md",
+    "01 Literature/papers/AI Asset Management - NBER 35273.md",
+    "06 Data",
+    "05 Following"
+  ]
+}

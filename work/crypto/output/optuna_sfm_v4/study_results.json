@@ -1,0 +1,17 @@
+{
+  "best_sharpe_val": 2.4664042534032222,
+  "best_params": {
+    "hidden_dim": 32,
+    "freq_components": 7,
+    "lr": 0.00012315571723666037,
+    "dropout_rate": 0.2,
+    "batch_size": 16,
+    "weight_decay": 0.00045443839603360173,
+    "lookback": 25
+  },
+  "n_trials": 100,
+  "n_complete": 31,
+  "n_pruned": 69,
+  "elapsed_min": 42.12453903357188,
+  "seed": 42
+}
