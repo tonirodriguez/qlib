@@ -1,0 +1,46 @@
+{
+  "decision_sample_end": "2026-03-01T00:00:00+00:00",
+  "instruments": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "XLM",
+    "ADA",
+    "XRP",
+    "DOGE",
+    "LINK",
+    "LTC"
+  ],
+  "methodology": {
+    "half_spread_proxy": "clip(2.5% * median daily high-low range, 1bp, 50bp)",
+    "holdout_fraction": 0.15,
+    "holdout_used": false,
+    "slippage_proxy": "clip(daily volatility * sqrt(order notional / median quote volume), 0.5bp, 200bp)",
+    "source": "daily OHLCV proxy; not historical bid/ask or order-book replay"
+  },
+  "order_notionals": [
+    1000.0,
+    10000.0,
+    100000.0
+  ],
+  "scenario_one_way_costs": {
+    "1000": {
+      "adverse": 0.0026833832265398517,
+      "base": 0.002604833133807921,
+      "optimistic": 0.0022522486785589244,
+      "worst_asset": "LINK"
+    },
+    "10000": {
+      "adverse": 0.0032921967305495725,
+      "base": 0.002804323264534763,
+      "optimistic": 0.002437147478132876,
+      "worst_asset": "XLM"
+    },
+    "100000": {
+      "adverse": 0.005032366785220587,
+      "base": 0.0037729942346269255,
+      "optimistic": 0.003021848821417534,
+      "worst_asset": "XLM"
+    }
+  }
+}

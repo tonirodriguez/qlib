@@ -1,0 +1,80 @@
+{
+  "aggregate": {
+    "full_9": {
+      "fold_observations": 2,
+      "runs": 1,
+      "seeds": [
+        42
+      ],
+      "sharpe_max": 2.03457157244559,
+      "sharpe_mean": -0.07405093114408379,
+      "sharpe_min": -2.1826734347337577,
+      "sharpe_std": 2.108622503589674
+    },
+    "original_5": {
+      "fold_observations": 2,
+      "runs": 1,
+      "seeds": [
+        42
+      ],
+      "sharpe_max": 3.0582535717233377,
+      "sharpe_mean": 0.37539013082041395,
+      "sharpe_min": -2.3074733100825098,
+      "sharpe_std": 2.6828634409029237
+    },
+    "reduced_8_no_xlm": {
+      "fold_observations": 2,
+      "runs": 1,
+      "seeds": [
+        42
+      ],
+      "sharpe_max": 1.782216433656957,
+      "sharpe_mean": -0.4392422947445733,
+      "sharpe_min": -2.6607010231461037,
+      "sharpe_std": 2.2214587284015304
+    }
+  },
+  "plan": [
+    {
+      "instruments": [
+        "BTC",
+        "ETH",
+        "SOL",
+        "XLM",
+        "ADA"
+      ],
+      "seed": 42,
+      "universe": "original_5"
+    },
+    {
+      "instruments": [
+        "BTC",
+        "ETH",
+        "SOL",
+        "XLM",
+        "ADA",
+        "XRP",
+        "DOGE",
+        "LINK",
+        "LTC"
+      ],
+      "seed": 42,
+      "universe": "full_9"
+    },
+    {
+      "instruments": [
+        "BTC",
+        "ETH",
+        "SOL",
+        "ADA",
+        "XRP",
+        "DOGE",
+        "LINK",
+        "LTC"
+      ],
+      "seed": 42,
+      "universe": "reduced_8_no_xlm"
+    }
+  ],
+  "protocol": "same nested settings per universe; final holdout not evaluated"
+}

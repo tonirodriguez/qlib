@@ -1,0 +1,154 @@
+{
+  "asset_statistics": {
+    "ADA": {
+      "annualized_volatility": 0.9476977940839291,
+      "median_daily_quote_volume": 61122425.64875,
+      "observations": 933
+    },
+    "BTC": {
+      "annualized_volatility": 0.4801279548098605,
+      "median_daily_quote_volume": 1708147505.9127264,
+      "observations": 933
+    },
+    "DOGE": {
+      "annualized_volatility": 0.9264976232360713,
+      "median_daily_quote_volume": 147988766.8261,
+      "observations": 933
+    },
+    "ETH": {
+      "annualized_volatility": 0.6787978379076194,
+      "median_daily_quote_volume": 1061100086.544729,
+      "observations": 933
+    },
+    "LINK": {
+      "annualized_volatility": 0.8945961575504175,
+      "median_daily_quote_volume": 53285054.32044,
+      "observations": 933
+    },
+    "LTC": {
+      "annualized_volatility": 0.7315209036150844,
+      "median_daily_quote_volume": 37831961.28695,
+      "observations": 933
+    },
+    "SOL": {
+      "annualized_volatility": 0.8733623387050656,
+      "median_daily_quote_volume": 530431064.6795701,
+      "observations": 933
+    },
+    "XLM": {
+      "annualized_volatility": 0.9007268740621088,
+      "median_daily_quote_volume": 10455744.74515,
+      "observations": 933
+    },
+    "XRP": {
+      "annualized_volatility": 0.8068479593644039,
+      "median_daily_quote_volume": 243918805.7525,
+      "observations": 933
+    }
+  },
+  "cluster_members": {
+    "1": [
+      "XLM",
+      "XRP"
+    ],
+    "2": [
+      "ADA",
+      "BTC",
+      "DOGE",
+      "ETH",
+      "LINK",
+      "SOL"
+    ],
+    "3": [
+      "LTC"
+    ]
+  },
+  "clusters": {
+    "ADA": 2,
+    "BTC": 2,
+    "DOGE": 2,
+    "ETH": 2,
+    "LINK": 2,
+    "LTC": 3,
+    "SOL": 2,
+    "XLM": 1,
+    "XRP": 1
+  },
+  "decision_sample": {
+    "end": "2026-03-01T00:00:00+00:00",
+    "rows": 934,
+    "start": "2023-08-11T00:00:00+00:00"
+  },
+  "focus_pairs": [
+    {
+      "pair": "XRP/XLM",
+      "pearson": 0.7542328417416386,
+      "rolling_90d_max": 0.9422582006076665,
+      "rolling_90d_median": 0.8428280939321842,
+      "rolling_90d_min": 0.5181532253593238,
+      "spearman": 0.8455245711149381
+    },
+    {
+      "pair": "LTC/BTC",
+      "pearson": 0.6043817664052903,
+      "rolling_90d_max": 0.8492884218739504,
+      "rolling_90d_median": 0.6736407787280834,
+      "rolling_90d_min": 0.3570887955320012,
+      "spearman": 0.6280025573266887
+    }
+  ],
+  "highest_absolute_correlations": [
+    {
+      "correlation": 0.7990913084773048,
+      "pair": "BTC/ETH"
+    },
+    {
+      "correlation": 0.7650247545357233,
+      "pair": "BTC/DOGE"
+    },
+    {
+      "correlation": 0.7542328417416382,
+      "pair": "XLM/XRP"
+    },
+    {
+      "correlation": 0.743124813505299,
+      "pair": "ETH/DOGE"
+    },
+    {
+      "correlation": 0.740653691152961,
+      "pair": "ETH/LINK"
+    },
+    {
+      "correlation": 0.7380049572127952,
+      "pair": "BTC/SOL"
+    },
+    {
+      "correlation": 0.733030831369769,
+      "pair": "ADA/XRP"
+    },
+    {
+      "correlation": 0.7132777933207777,
+      "pair": "ADA/LINK"
+    },
+    {
+      "correlation": 0.7108650345253831,
+      "pair": "ETH/SOL"
+    },
+    {
+      "correlation": 0.70682110873262,
+      "pair": "ADA/DOGE"
+    }
+  ],
+  "methodology": {
+    "cluster_distance": 0.35,
+    "distance_metric": "1 - abs(Pearson correlation)",
+    "holdout_fraction": 0.15,
+    "holdout_used": false,
+    "linkage": "average"
+  },
+  "reserved_holdout": {
+    "end": "2026-08-13T00:00:00+00:00",
+    "rows": 165,
+    "start": "2026-03-02T00:00:00+00:00"
+  }
+}

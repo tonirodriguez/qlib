@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "status": "proposed_before_formal_run",
+  "objective": "Compare universe definitions under identical nested validation without evaluating the final holdout",
+  "universes": {
+    "original_5": ["BTC", "ETH", "SOL", "XLM", "ADA"],
+    "full_9": ["BTC", "ETH", "SOL", "XLM", "ADA", "XRP", "DOGE", "LINK", "LTC"],
+    "reduced_8_no_xlm": ["BTC", "ETH", "SOL", "ADA", "XRP", "DOGE", "LINK", "LTC"]
+  },
+  "data": {
+    "provider": "data/qlib_crypto",
+    "frequency": "day",
+    "final_holdout_fraction": 0.15,
+    "final_holdout_must_remain_unevaluated": true,
+    "cost_calibration_source": "train-only OHLCV proxy",
+    "order_notional": 10000
+  },
+  "pilot_budget": {
+    "seeds": [42, 43],
+    "nested_folds": 3,
+    "trials_per_fold": 5,
+    "trial_epochs": 10,
+    "final_epochs": 15,
+    "patience": 5
+  },
+  "formal_budget": {
+    "seeds": [42, 43, 44],
+    "nested_folds": 3,
+    "trials_per_fold": 30,
+    "trial_epochs": 60,
+    "final_epochs": 60,
+    "patience": 10
+  },
+  "predeclared_gates": {
+    "minimum_seed_count": 3,
+    "minimum_outer_fold_count_per_seed": 3,
+    "calibrated_cost_sharpe_median_min": 0.0,
+    "calibrated_cost_positive_fold_fraction_min": 0.6666666667,
+    "maximum_drawdown_worst_fold_min": -0.5,
+    "adverse_cost_sharpe_mean_min": 0.0,
+    "outperform_benchmark_fold_fraction_min": 0.5,
+    "reject_if_single_fold_drives_conclusion": true,
+    "reject_if_results_change_sign_across_most_seeds": true
+  },
+  "selection_rule": {
+    "primary_metric": "median calibrated-cost Sharpe across all outer folds and seeds",
+    "secondary_metrics": [
+      "worst-fold maximum drawdown",
+      "adverse-cost Sharpe mean",
+      "benchmark outperformance fraction",
+      "dispersion across seeds"
+    ],
+    "minimum_improvement_over_next_best": 0.1,
+    "allow_no_selection": true
+  },
+  "holdout_policy": {
+    "open_only_after_one_universe_passes_all_gates": true,
+    "open_once": true,
+    "do_not_retune_after_opening": true,
+    "record_immutable_result": true
+  }
+}

@@ -1,0 +1,121 @@
+{
+  "aggregate": {
+    "sharpe_max": 2.0367178458030684,
+    "sharpe_mean": -0.06259267662303891,
+    "sharpe_min": -2.161903199049146,
+    "sharpe_std": 2.0993105224261073
+  },
+  "decision_rows": 934,
+  "final_holdout": {
+    "end": "2026-08-13T00:00:00",
+    "evaluated": false,
+    "rows": 165,
+    "start": "2026-03-02T00:00:00"
+  },
+  "folds": [
+    {
+      "best_params": {
+        "batch_size": 16,
+        "dropout_rate": 0.35,
+        "freq_components": 20,
+        "hidden_dim": 64,
+        "lookback": 45,
+        "lr": 0.0029106359131330704,
+        "weight_decay": 1.3066739238053272e-05
+      },
+      "best_validation_sharpe": 0.4333171290468281,
+      "boundaries": {
+        "test_end": 747,
+        "test_start": 560,
+        "train_end": 467,
+        "train_start": 0,
+        "validation_end": 560,
+        "validation_start": 467
+      },
+      "date_ranges": {
+        "test": [
+          "2025-02-21T00:00:00",
+          "2025-08-26T00:00:00"
+        ],
+        "train": [
+          "2023-08-11T00:00:00",
+          "2024-11-19T00:00:00"
+        ],
+        "validation": [
+          "2024-11-20T00:00:00",
+          "2025-02-20T00:00:00"
+        ]
+      },
+      "fold": 1,
+      "test_metrics": {
+        "benchmark_final": 1.7935327291488647,
+        "direction_acc": 0.5011820330969267,
+        "equity_final": 1.5848291037964886,
+        "max_drawdown": -0.21994709945838875,
+        "outperformance": -0.2087036253523762,
+        "sharpe": 2.0367178458030684,
+        "test_loss": 0.002825802657753229,
+        "turnover": 0.0
+      }
+    },
+    {
+      "best_params": {
+        "batch_size": 32,
+        "dropout_rate": 0.2,
+        "freq_components": 14,
+        "hidden_dim": 32,
+        "lookback": 35,
+        "lr": 0.0001848340281629337,
+        "weight_decay": 0.00021487229685265524
+      },
+      "best_validation_sharpe": 2.3142984100636417,
+      "boundaries": {
+        "test_end": 934,
+        "test_start": 747,
+        "train_end": 654,
+        "train_start": 0,
+        "validation_end": 747,
+        "validation_start": 654
+      },
+      "date_ranges": {
+        "test": [
+          "2025-08-27T00:00:00",
+          "2026-03-01T00:00:00"
+        ],
+        "train": [
+          "2023-08-11T00:00:00",
+          "2025-05-25T00:00:00"
+        ],
+        "validation": [
+          "2025-05-26T00:00:00",
+          "2025-08-26T00:00:00"
+        ]
+      },
+      "fold": 2,
+      "test_metrics": {
+        "benchmark_final": 0.4204656779766083,
+        "direction_acc": 0.4922737306843267,
+        "equity_final": 0.4340667157083059,
+        "max_drawdown": -0.6183792068276643,
+        "outperformance": 0.01360103773169763,
+        "sharpe": -2.161903199049146,
+        "test_loss": 0.00629003532230854,
+        "turnover": 0.04
+      }
+    }
+  ],
+  "instruments": [
+    "btc",
+    "eth",
+    "sol",
+    "xlm",
+    "ada",
+    "xrp",
+    "doge",
+    "link",
+    "ltc"
+  ],
+  "n_trials_per_fold": 1,
+  "protocol": "nested_walk_forward",
+  "seed": 42
+}

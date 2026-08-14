@@ -1,0 +1,229 @@
+[59880:MainThread](2026-08-14 21:37:51,267) INFO - qlib.Initialization - [config.py:473] - default_conf: client.
+[59880:MainThread](2026-08-14 21:37:56,645) INFO - qlib.Initialization - [__init__.py:82] - qlib successfully initialized based on client settings.
+[59880:MainThread](2026-08-14 21:37:56,648) INFO - qlib.Initialization - [__init__.py:84] - data_path={'__DEFAULT_FREQ': PosixPath('/Users/toni/src/qlib/data/qlib_crypto')}
+[I 2026-08-14 21:37:57,113] A new study created in memory with name: sfm_nested_fold_1
+[I 2026-08-14 21:38:20,254] Trial 0 finished with value: -1.7144119402737907 and parameters: {'hidden_dim': 64, 'freq_components': 20, 'lr': 0.0029106359131330704, 'dropout_rate': 0.35, 'batch_size': 16, 'weight_decay': 1.3066739238053272e-05, 'lookback': 45}. Best is trial 0 with value: -1.7144119402737907.
+[I 2026-08-14 21:38:40,427] A new study created in memory with name: sfm_nested_fold_2
+[I 2026-08-14 21:38:48,244] Trial 0 finished with value: -3.664851701867452 and parameters: {'hidden_dim': 32, 'freq_components': 14, 'lr': 0.0001848340281629337, 'dropout_rate': 0.2, 'batch_size': 32, 'weight_decay': 0.00021487229685265524, 'lookback': 35}. Best is trial 0 with value: -3.664851701867452.
+   📡 Solicitando '['btc', 'eth', 'sol', 'ada', 'xrp', 'doge', 'link', 'ltc']' desde 2023-08-11 hasta 2026-08-14...
+
+==============================================================
+📊 DIAGNÓSTICO DE DATOS
+==============================================================
+   Consulta original:    2023-08-11 → 2026-08-14
+   Filas sin procesar:   1099
+   Activos solicitados:  ['btc', 'eth', 'sol', 'ada', 'xrp', 'doge', 'link', 'ltc']
+       btc:      0 NaN (  0.0%)    [2023-08-11 → 2026-08-13]
+       eth:      0 NaN (  0.0%)    [2023-08-11 → 2026-08-13]
+       sol:      0 NaN (  0.0%)    [2023-08-11 → 2026-08-13]
+       ada:      0 NaN (  0.0%)    [2023-08-11 → 2026-08-13]
+       xrp:      0 NaN (  0.0%)    [2023-08-11 → 2026-08-13]
+      doge:      0 NaN (  0.0%)    [2023-08-11 → 2026-08-13]
+      link:      0 NaN (  0.0%)    [2023-08-11 → 2026-08-13]
+       ltc:      0 NaN (  0.0%)    [2023-08-11 → 2026-08-13]
+   ✅ Filas útiles:       1099
+   Rango efectivo:       2023-08-11 → 2026-08-13
+   Años de datos:        3.0
+
+   📐 Matrix final:
+      Dimensiones:       1099 filas × 24 columnas
+      Features:          24 (close=8, pct=8, ratio=8)
+      Rango temporal:    2023-08-11 → 2026-08-13
+      Días totales:      1099
+      Años cubiertos:    3.0
+      NaN restantes:     0
+      Inf restantes:     0
+      Valores extremos:  sin clipping global (se ajusta solo con train)
+      Stats rápidos:     μ=3238.0475  σ=15787.1879  min=-0.2442  max=124658.5391
+
+==============================================================
+{
+  "aggregate": {
+    "sharpe_max": 1.782216433656957,
+    "sharpe_mean": -0.4392422947445733,
+    "sharpe_min": -2.6607010231461037,
+    "sharpe_std": 2.2214587284015304
+  },
+  "decision_rows": 934,
+  "final_holdout": {
+    "end": "2026-08-13T00:00:00",
+    "evaluated": false,
+    "rows": 165,
+    "start": "2026-03-02T00:00:00"
+  },
+  "folds": [
+    {
+      "best_params": {
+        "batch_size": 16,
+        "dropout_rate": 0.35,
+        "freq_components": 20,
+        "hidden_dim": 64,
+        "lookback": 45,
+        "lr": 0.0029106359131330704,
+        "weight_decay": 1.3066739238053272e-05
+      },
+      "best_validation_sharpe": 1.7144119402737907,
+      "boundaries": {
+        "test_end": 747,
+        "test_start": 560,
+        "train_end": 467,
+        "train_start": 0,
+        "validation_end": 560,
+        "validation_start": 467
+      },
+      "cost_scenarios": {
+        "adverse": {
+          "annualized_return": 1.5066477982961204,
+          "calmar": 5.049974991764432,
+          "cvar_95": -0.06808576691150665,
+          "equity_final": 1.4261667106031324,
+          "max_drawdown": -0.2983475760272446,
+          "sharpe": 1.543660555224407,
+          "sortino": 3.066251075427051,
+          "turnover": 0.17142857142857143,
+          "var_95": -0.0569315938949585
+        },
+        "base": {
+          "annualized_return": 2.029405398961988,
+          "calmar": 7.003101999170828,
+          "cvar_95": -0.06752326691150665,
+          "equity_final": 1.534436855071413,
+          "max_drawdown": -0.2897866400492183,
+          "sharpe": 1.782216433656957,
+          "sortino": 3.5546930503429706,
+          "turnover": 0.17142857142857143,
+          "var_95": -0.0554315938949585
+        },
+        "optimistic": {
+          "annualized_return": 2.350674517050015,
+          "calmar": 8.242517279504039,
+          "cvar_95": -0.06741563975811005,
+          "equity_final": 1.5953622254193112,
+          "max_drawdown": -0.28518890971220456,
+          "sharpe": 1.9086670115616247,
+          "sortino": 3.8079554768543247,
+          "turnover": 0.17142857142857143,
+          "var_95": -0.05532419681549072
+        }
+      },
+      "date_ranges": {
+        "test": [
+          "2025-02-21T00:00:00",
+          "2025-08-26T00:00:00"
+        ],
+        "train": [
+          "2023-08-11T00:00:00",
+          "2024-11-19T00:00:00"
+        ],
+        "validation": [
+          "2024-11-20T00:00:00",
+          "2025-02-20T00:00:00"
+        ]
+      },
+      "fold": 1,
+      "test_metrics": {
+        "benchmark_final": 1.7949919700622559,
+        "direction_acc": 0.4920212765957447,
+        "equity_final": 1.534436855071413,
+        "max_drawdown": -0.2897866400492183,
+        "outperformance": -0.26055511499084294,
+        "sharpe": 1.782216433656957,
+        "test_loss": 0.002440116833895445,
+        "turnover": 0.17142857142857143
+      }
+    },
+    {
+      "best_params": {
+        "batch_size": 32,
+        "dropout_rate": 0.2,
+        "freq_components": 14,
+        "hidden_dim": 32,
+        "lookback": 35,
+        "lr": 0.0001848340281629337,
+        "weight_decay": 0.00021487229685265524
+      },
+      "best_validation_sharpe": 3.664851701867452,
+      "boundaries": {
+        "test_end": 934,
+        "test_start": 747,
+        "train_end": 654,
+        "train_start": 0,
+        "validation_end": 747,
+        "validation_start": 654
+      },
+      "cost_scenarios": {
+        "adverse": {
+          "annualized_return": -0.9207697944449629,
+          "calmar": -1.3601731961186836,
+          "cvar_95": -0.10551109910011292,
+          "equity_final": 0.35032620552650695,
+          "max_drawdown": -0.6769504037694642,
+          "sharpe": -2.6927555054734116,
+          "sortino": -3.4069195623399553,
+          "turnover": 0.02,
+          "var_95": -0.06337791681289673
+        },
+        "base": {
+          "annualized_return": -0.9187352454506463,
+          "calmar": -1.3630616042518973,
+          "cvar_95": -0.10551109910011292,
+          "equity_final": 0.3540202015467264,
+          "max_drawdown": -0.6740232741120888,
+          "sharpe": -2.6607010231461037,
+          "sortino": -3.365074117700037,
+          "turnover": 0.02,
+          "var_95": -0.06337791681289673
+        },
+        "optimistic": {
+          "annualized_return": -0.9176312554937338,
+          "calmar": -1.3645988831661768,
+          "cvar_95": -0.10551109910011292,
+          "equity_final": 0.3560019766334414,
+          "max_drawdown": -0.6724549365218317,
+          "sharpe": -2.643500292281365,
+          "sortino": -3.3425246706210747,
+          "turnover": 0.02,
+          "var_95": -0.06337791681289673
+        }
+      },
+      "date_ranges": {
+        "test": [
+          "2025-08-27T00:00:00",
+          "2026-03-01T00:00:00"
+        ],
+        "train": [
+          "2023-08-11T00:00:00",
+          "2025-05-25T00:00:00"
+        ],
+        "validation": [
+          "2025-05-26T00:00:00",
+          "2025-08-26T00:00:00"
+        ]
+      },
+      "fold": 2,
+      "test_metrics": {
+        "benchmark_final": 0.424174964427948,
+        "direction_acc": 0.5041390728476821,
+        "equity_final": 0.3540202015467264,
+        "max_drawdown": -0.6740232741120888,
+        "outperformance": -0.07015476288122158,
+        "sharpe": -2.6607010231461037,
+        "test_loss": 0.013668895699083805,
+        "turnover": 0.02
+      }
+    }
+  ],
+  "instruments": [
+    "btc",
+    "eth",
+    "sol",
+    "ada",
+    "xrp",
+    "doge",
+    "link",
+    "ltc"
+  ],
+  "n_trials_per_fold": 1,
+  "protocol": "nested_walk_forward",
+  "seed": 42
+}

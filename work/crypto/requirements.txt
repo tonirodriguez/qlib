@@ -1,0 +1,16 @@
+# Runtime dependencies for the crypto research workspace.
+# Install together with the repository's normal development dependencies.
+# PyTorch 2.2 is the last macOS x86_64 wheel and requires the NumPy 1.x ABI.
+numpy>=1.26,<2
+torch==2.2.2
+pandas==2.3.3
+scipy==1.17.1
+scikit-learn==1.9.0
+matplotlib==3.11.1
+ccxt==4.5.11
+optuna==4.5.0
+PyWavelets==1.9.0
+python-dotenv==1.2.1
+cryptography==47.0.0
+mlflow-skinny==3.8.1
+setuptools-scm==8.2.0

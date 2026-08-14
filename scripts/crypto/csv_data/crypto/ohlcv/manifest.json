@@ -1,0 +1,71 @@
+{
+  "exchange": "binance",
+  "instruments": {
+    "ADA": {
+      "file": "ADA.csv",
+      "first_timestamp": "2023-08-11T00:00:00+00:00",
+      "last_timestamp": "2026-08-13T00:00:00+00:00",
+      "rows": 1099,
+      "sha256": "4008091810569c8bb8d5921ae2cb3a9467d98f4a9fb9de118781591aae6ec886"
+    },
+    "BTC": {
+      "file": "BTC.csv",
+      "first_timestamp": "2023-08-11T00:00:00+00:00",
+      "last_timestamp": "2026-08-13T00:00:00+00:00",
+      "rows": 1099,
+      "sha256": "68da34743a8e18804b39bb9be85afc65401f0bcd707a04d89d178ab22c702ae5"
+    },
+    "DOGE": {
+      "file": "DOGE.csv",
+      "first_timestamp": "2023-08-11T00:00:00+00:00",
+      "last_timestamp": "2026-08-13T00:00:00+00:00",
+      "rows": 1099,
+      "sha256": "ca796bb29edf2056e9c942fbea18b3fa18c359d9eaaa0921e316dc59b0e069ea"
+    },
+    "ETH": {
+      "file": "ETH.csv",
+      "first_timestamp": "2023-08-11T00:00:00+00:00",
+      "last_timestamp": "2026-08-13T00:00:00+00:00",
+      "rows": 1099,
+      "sha256": "10556ebfda38f0d69ef17cf6a6cbc0e723aba786ef896d69b9a2b36390afa8c8"
+    },
+    "LINK": {
+      "file": "LINK.csv",
+      "first_timestamp": "2023-08-11T00:00:00+00:00",
+      "last_timestamp": "2026-08-13T00:00:00+00:00",
+      "rows": 1099,
+      "sha256": "af3d5e44b3f3bf5b8faad55c2e280f6f74c4ae65dfced35cfd29792e3a8b670e"
+    },
+    "LTC": {
+      "file": "LTC.csv",
+      "first_timestamp": "2023-08-11T00:00:00+00:00",
+      "last_timestamp": "2026-08-13T00:00:00+00:00",
+      "rows": 1099,
+      "sha256": "a5b53e345690e0c4b31c229518883a3e1e7ea83e106323660f4fb40a42f421b3"
+    },
+    "SOL": {
+      "file": "SOL.csv",
+      "first_timestamp": "2023-08-11T00:00:00+00:00",
+      "last_timestamp": "2026-08-13T00:00:00+00:00",
+      "rows": 1099,
+      "sha256": "956ce1d48a484b2263d407f6277cccc35ccd070f4d6606b2d46c3ae20a4377a3"
+    },
+    "XLM": {
+      "file": "XLM.csv",
+      "first_timestamp": "2023-08-11T00:00:00+00:00",
+      "last_timestamp": "2026-08-13T00:00:00+00:00",
+      "rows": 1099,
+      "sha256": "8f7ae87156f8fde6d3e1570c3258ad5b91941bcc0288e8cce2797bf28562798f"
+    },
+    "XRP": {
+      "file": "XRP.csv",
+      "first_timestamp": "2023-08-11T00:00:00+00:00",
+      "last_timestamp": "2026-08-13T00:00:00+00:00",
+      "rows": 1099,
+      "sha256": "5cb4d2c6edf0933630b9c7882b9da890313d9d02e96be65d2148e53293b680ba"
+    }
+  },
+  "quote_asset": "USDT",
+  "source": "ccxt",
+  "timeframe": "1d"
+}

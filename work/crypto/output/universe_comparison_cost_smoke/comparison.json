@@ -1,0 +1,107 @@
+{
+  "aggregate": {
+    "full_9": {
+      "adverse_cost_sharpe_mean": -0.10831471947644888,
+      "calibrated_cost_positive_fold_fraction": 0.5,
+      "calibrated_cost_sharpe_max": 2.031146990976174,
+      "calibrated_cost_sharpe_mean": -0.1129814047964901,
+      "calibrated_cost_sharpe_median": -0.1129814047964901,
+      "calibrated_cost_sharpe_min": -2.2571098005691543,
+      "calibrated_cost_sharpe_std": 2.1441283957726642,
+      "fold_observations": 2,
+      "maximum_drawdown_worst_fold": -0.6289420628865687,
+      "outperform_benchmark_fold_fraction": 0.5,
+      "runs": 1,
+      "seeds": [
+        42
+      ],
+      "sharpe_max": 2.03457157244559,
+      "sharpe_mean": -0.07405093114408379,
+      "sharpe_min": -2.1826734347337577,
+      "sharpe_std": 2.108622503589674
+    },
+    "original_5": {
+      "adverse_cost_sharpe_mean": 0.17768625067805233,
+      "calibrated_cost_positive_fold_fraction": 0.5,
+      "calibrated_cost_sharpe_max": 2.8912851494768153,
+      "calibrated_cost_sharpe_mean": 0.1699357780954731,
+      "calibrated_cost_sharpe_median": 0.1699357780954731,
+      "calibrated_cost_sharpe_min": -2.551413593285869,
+      "calibrated_cost_sharpe_std": 2.721349371381342,
+      "fold_observations": 2,
+      "maximum_drawdown_worst_fold": -0.6535647713104965,
+      "outperform_benchmark_fold_fraction": 0.5,
+      "runs": 1,
+      "seeds": [
+        42
+      ],
+      "sharpe_max": 3.0582535717233377,
+      "sharpe_mean": 0.37539013082041395,
+      "sharpe_min": -2.3074733100825098,
+      "sharpe_std": 2.6828634409029237
+    },
+    "reduced_8_no_xlm": {
+      "adverse_cost_sharpe_mean": -0.5745474751245023,
+      "calibrated_cost_positive_fold_fraction": 0.5,
+      "calibrated_cost_sharpe_max": 1.6041915716022042,
+      "calibrated_cost_sharpe_mean": -0.5412321988084704,
+      "calibrated_cost_sharpe_median": -0.5412321988084704,
+      "calibrated_cost_sharpe_min": -2.686655969219145,
+      "calibrated_cost_sharpe_std": 2.1454237704106744,
+      "fold_observations": 2,
+      "maximum_drawdown_worst_fold": -0.6762551415027311,
+      "outperform_benchmark_fold_fraction": 0.0,
+      "runs": 1,
+      "seeds": [
+        42
+      ],
+      "sharpe_max": 1.782216433656957,
+      "sharpe_mean": -0.4392422947445733,
+      "sharpe_min": -2.6607010231461037,
+      "sharpe_std": 2.2214587284015304
+    }
+  },
+  "plan": [
+    {
+      "instruments": [
+        "BTC",
+        "ETH",
+        "SOL",
+        "XLM",
+        "ADA"
+      ],
+      "seed": 42,
+      "universe": "original_5"
+    },
+    {
+      "instruments": [
+        "BTC",
+        "ETH",
+        "SOL",
+        "XLM",
+        "ADA",
+        "XRP",
+        "DOGE",
+        "LINK",
+        "LTC"
+      ],
+      "seed": 42,
+      "universe": "full_9"
+    },
+    {
+      "instruments": [
+        "BTC",
+        "ETH",
+        "SOL",
+        "ADA",
+        "XRP",
+        "DOGE",
+        "LINK",
+        "LTC"
+      ],
+      "seed": 42,
+      "universe": "reduced_8_no_xlm"
+    }
+  ],
+  "protocol": "same nested settings per universe; final holdout not evaluated"
+}

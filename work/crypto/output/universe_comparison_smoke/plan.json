@@ -1,0 +1,42 @@
+[
+  {
+    "instruments": [
+      "BTC",
+      "ETH",
+      "SOL",
+      "XLM",
+      "ADA"
+    ],
+    "seed": 42,
+    "universe": "original_5"
+  },
+  {
+    "instruments": [
+      "BTC",
+      "ETH",
+      "SOL",
+      "XLM",
+      "ADA",
+      "XRP",
+      "DOGE",
+      "LINK",
+      "LTC"
+    ],
+    "seed": 42,
+    "universe": "full_9"
+  },
+  {
+    "instruments": [
+      "BTC",
+      "ETH",
+      "SOL",
+      "ADA",
+      "XRP",
+      "DOGE",
+      "LINK",
+      "LTC"
+    ],
+    "seed": 42,
+    "universe": "reduced_8_no_xlm"
+  }
+]

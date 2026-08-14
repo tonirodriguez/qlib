@@ -30,7 +30,11 @@ provider_uri = env_path("CRYPTO_QLIB_OUTPUT_DIR", os.getenv("QLIB_PROVIDER_URI",
 market = os.getenv("CRYPTO_UNIVERSE", os.getenv("QLIB_UNIVERSE", "crypto")).strip()
 fields = [f"${field.lstrip('$')}" for field in env_list("CRYPTO_QLIB_FIELDS", "close,volume")]
 
-qlib.init(provider_uri=str(provider_uri), region=REG_US)
+qlib.init(
+    provider_uri=str(provider_uri),
+    region=REG_US,
+    kernels=int(os.getenv("QLIB_KERNELS", "1")),
+)
 
 instruments = D.instruments(market=market)
 instrument_list = D.list_instruments(instruments, freq=os.getenv("CRYPTO_FREQUENCY", "day"), as_list=True)

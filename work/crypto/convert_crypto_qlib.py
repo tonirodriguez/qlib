@@ -1,8 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
+import hashlib
+import json
 import os
+import shutil
+import tempfile
+import uuid
 
 from dotenv import load_dotenv
 import numpy as np
@@ -153,7 +158,7 @@ def get_config() -> CryptoQlibConfig:
         ohlcv_file_pattern=env_value("CRYPTO_OHLCV_FILE_PATTERN", "{instrument}.csv"),
         output_dir=output_dir,
         date_column=env_value("CRYPTO_DATE_COLUMN", "date"),
-        instruments=env_list("CRYPTO_INSTRUMENTS", "BTC,ETH,SOL,XLM,ADA"),
+        instruments=env_list("CRYPTO_INSTRUMENTS", "BTC,ETH,SOL,XLM,ADA,XRP,DOGE,LINK,LTC"),
         qlib_fields=normalize_qlib_fields(env_list("CRYPTO_QLIB_FIELDS", qlib_fields_default)),
         frequency=frequency,
         universe=universe,
@@ -456,7 +461,7 @@ def write_instrument_features(
     return ranges.get("close", next(iter(ranges.values())))
 
 
-def convert_to_qlib(config: CryptoQlibConfig) -> dict[str, object]:
+def _build_qlib_provider(config: CryptoQlibConfig) -> dict[str, object]:
     source_frames, warnings = load_source_frames(config)
     feature_frames: dict[str, pd.DataFrame] = {}
 
@@ -503,6 +508,108 @@ def convert_to_qlib(config: CryptoQlibConfig) -> dict[str, object]:
         "frequency": config.frequency,
         "warnings": sorted(set(warnings)),
     }
+
+
+def file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def validate_staged_provider(config: CryptoQlibConfig, summary: dict[str, object]) -> None:
+    calendar = config.output_dir / "calendars" / f"{config.frequency}.txt"
+    universe = config.output_dir / "instruments" / f"{config.universe}.txt"
+    if not calendar.is_file() or not universe.is_file():
+        raise RuntimeError("Staged provider is missing calendar or universe files")
+
+    calendar_lines = [line for line in calendar.read_text(encoding="utf-8").splitlines() if line]
+    universe_lines = [line for line in universe.read_text(encoding="utf-8").splitlines() if line]
+    if len(calendar_lines) != summary["rows"]:
+        raise RuntimeError("Staged calendar row count does not match build summary")
+    if len(universe_lines) != summary["instruments"]:
+        raise RuntimeError("Staged universe count does not match build summary")
+
+    expected_instruments = {
+        normalize_instrument(instrument, config.instrument_case) for instrument in config.instruments
+    }
+    actual_instruments = {line.split("\t", 1)[0] for line in universe_lines}
+    if actual_instruments != expected_instruments:
+        raise RuntimeError("Staged universe does not match configured instruments")
+
+    for instrument in expected_instruments:
+        for field in config.qlib_fields:
+            feature = config.output_dir / "features" / instrument / f"{field}.{config.frequency}.bin"
+            if not feature.is_file() or feature.stat().st_size <= 4:
+                raise RuntimeError(f"Missing or empty staged feature: {instrument}/{field}")
+
+
+def write_provider_manifest(config: CryptoQlibConfig, summary: dict[str, object]) -> None:
+    files = sorted(path for path in config.output_dir.rglob("*") if path.is_file())
+    manifest = {
+        "schema_version": 1,
+        "universe": config.universe,
+        "frequency": config.frequency,
+        "ordered_instruments": [
+            normalize_instrument(instrument, config.instrument_case) for instrument in config.instruments
+        ],
+        "fields": list(config.qlib_fields),
+        "rows": summary["rows"],
+        "start": summary["start"],
+        "end": summary["end"],
+        "files": {
+            str(path.relative_to(config.output_dir)): {
+                "bytes": path.stat().st_size,
+                "sha256": file_sha256(path),
+            }
+            for path in files
+        },
+    }
+    (config.output_dir / "manifest.json").write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+
+
+def validate_publish_target(target: Path) -> None:
+    resolved = target.resolve()
+    forbidden = {Path("/").resolve(), PROJECT_ROOT.resolve(), Path.home().resolve()}
+    if resolved in forbidden or not target.name:
+        raise ValueError(f"Unsafe Qlib output directory: {target}")
+
+
+def convert_to_qlib(config: CryptoQlibConfig) -> dict[str, object]:
+    """Build, validate and atomically publish a complete Qlib provider."""
+    target = config.output_dir
+    validate_publish_target(target)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    staging = Path(tempfile.mkdtemp(prefix=f".{target.name}.staging-", dir=target.parent))
+    backup: Path | None = None
+
+    try:
+        staged_config = replace(config, output_dir=staging)
+        summary = _build_qlib_provider(staged_config)
+        validate_staged_provider(staged_config, summary)
+        write_provider_manifest(staged_config, summary)
+
+        if target.exists():
+            backup = target.parent / f".{target.name}.backup-{uuid.uuid4().hex}"
+            target.replace(backup)
+        try:
+            staging.replace(target)
+        except Exception:
+            if backup is not None and backup.exists() and not target.exists():
+                backup.replace(target)
+            raise
+
+        if backup is not None:
+            shutil.rmtree(backup)
+        summary["output_dir"] = str(target)
+        summary["manifest"] = str(target / "manifest.json")
+        return summary
+    finally:
+        if staging.exists():
+            shutil.rmtree(staging)
 
 
 def main() -> None:

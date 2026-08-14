@@ -18,6 +18,13 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
 from sklearn.preprocessing import MinMaxScaler
+from research_utils import (
+    apply_clip_bounds,
+    evaluate_cost_scenarios,
+    fit_clip_bounds,
+    performance_metrics,
+    top1_long_returns,
+)
 
 # ── Semillas globales ──
 SEED = 42
@@ -187,7 +194,8 @@ def load_and_process_crypto_data(cryptos, start_date, end_date,
     market_matrix = np.hstack([df_close.values, df_pct.values, df_ratio.values])
     labels_matrix = df_pct.shift(-1).fillna(0).values
 
-    # 🟢 Verificar integridad numérica tras el denoising
+    # Denoising over the complete series is non-causal. It remains available
+    # only for historical comparison and is disabled in the canonical config.
     if denoise:
         print(f"🌀 Denoising ({denoise_method}) sobre {market_matrix.shape[1]} features...")
         market_matrix = denoise_market_matrix(market_matrix, method=denoise_method)
@@ -197,14 +205,6 @@ def load_and_process_crypto_data(cryptos, start_date, end_date,
     if n_bad > 0:
         print(f"   ⚠️  Corrigiendo {n_bad} valores Inf/NaN residuales")
         market_matrix = np.nan_to_num(market_matrix, nan=0.0, posinf=1.0, neginf=-1.0)
-
-    # Clip extreme values (99.9% percentile)
-    upper = np.percentile(np.abs(market_matrix), 99.9)
-    if upper > 0:
-        n_clipped = (np.abs(market_matrix) > upper).sum()
-        if n_clipped > 0:
-            print(f"   ⚠️  Clippeando {n_clipped} valores extremos (>P99.9 = {upper:.2f})")
-            market_matrix = np.clip(market_matrix, -upper, upper)
 
     # Resumen final de la matrix
     print(f"\n   📐 Matrix final:")
@@ -217,7 +217,7 @@ def load_and_process_crypto_data(cryptos, start_date, end_date,
     n_inf_final = np.isinf(market_matrix).sum()
     print(f"      NaN restantes:     {n_nan_final}")
     print(f"      Inf restantes:     {n_inf_final}")
-    print(f"      Valores extremos:  >P99.9 clipeados")
+    print(f"      Valores extremos:  sin clipping global (se ajusta solo con train)")
     print(f"      Stats rápidos:     μ={np.mean(market_matrix):.4f}  "
           f"σ={np.std(market_matrix):.4f}  "
           f"min={np.min(market_matrix):.4f}  max={np.max(market_matrix):.4f}")
@@ -346,7 +346,7 @@ def train_final(model, combined_loader, test_loader, epochs, lr, weight_decay,
 # =====================================================================
 # 5. EVALUACIÓN (backtesting completo)
 # =====================================================================
-def evaluate_trial(model, X_test, y_test, device):
+def evaluate_trial(model, X_test, y_test, device, one_way_costs=None):
     """Evalúa un modelo entrenado: test loss + backtesting + métricas."""
     model.eval()
     with torch.no_grad():
@@ -355,21 +355,27 @@ def evaluate_trial(model, X_test, y_test, device):
 
     test_loss = float(np.mean((preds - real) ** 2))
 
-    # Top-1 Long: comprar el activo con mayor predicción, solo si es positiva
-    best_asset = np.argmax(preds, axis=1)
-    best_pred = np.max(preds, axis=1)
-    strategy_returns = np.array([
-        real[t, best_asset[t]] if best_pred[t] > 0 else 0.0
-        for t in range(len(best_asset))
-    ])
-    strategy_returns -= 0.001
+    cost_scenarios = evaluate_cost_scenarios(preds, real, periods_per_year=365)
+    strategy_returns, positions = top1_long_returns(
+        preds,
+        real,
+        transaction_cost=0.001,
+        half_spread=0.0002,
+        slippage=0.0003,
+    )
     benchmark_returns = np.mean(real, axis=1)
-
-    equity_sfm = float(np.cumprod(1 + strategy_returns)[-1])
+    metrics = performance_metrics(strategy_returns, periods_per_year=365)
+    equity_sfm = metrics["equity_final"]
     equity_bm = float(np.cumprod(1 + benchmark_returns)[-1])
-
-    sharpe = float(np.mean(strategy_returns) / (np.std(strategy_returns) + 1e-10) * np.sqrt(252))
+    sharpe = metrics["sharpe"]
     direction_acc = float(np.mean((preds > 0) == (real > 0)))
+    turnover = float(np.mean(positions[1:] != positions[:-1])) if len(positions) > 1 else 0.0
+    calibrated_cost_metrics = None
+    if one_way_costs is not None:
+        calibrated_returns, _ = top1_long_returns(
+            preds, real, one_way_costs=np.asarray(one_way_costs, dtype=float)
+        )
+        calibrated_cost_metrics = performance_metrics(calibrated_returns, periods_per_year=365)
 
     return {
         "test_loss": test_loss,
@@ -377,6 +383,14 @@ def evaluate_trial(model, X_test, y_test, device):
         "benchmark_final": equity_bm,
         "sharpe": sharpe,
         "direction_acc": direction_acc,
+        "max_drawdown": metrics["max_drawdown"],
+        "turnover": turnover,
+        "sortino": metrics["sortino"],
+        "calmar": metrics["calmar"],
+        "var_95": metrics["var_95"],
+        "cvar_95": metrics["cvar_95"],
+        "cost_scenarios": cost_scenarios,
+        "calibrated_cost_metrics": calibrated_cost_metrics,
         "outperformance": equity_sfm - equity_bm,
         "strategy_returns": strategy_returns,
         "benchmark_returns": benchmark_returns,
@@ -414,7 +428,7 @@ def objective(trial, cryptos, market_train_scaled, labels_train,
     # Entrenar con early stopping por val_loss (estabilidad)
     best_val_loss, _ = train_trial(
         model, train_loader, val_loader,
-        epochs=60, lr=lr, weight_decay=weight_decay,
+        epochs=int(os.getenv("CRYPTO_TRIAL_EPOCHS", "60")), lr=lr, weight_decay=weight_decay,
         device=device, trial=trial, patience=8
     )
 
@@ -424,16 +438,14 @@ def objective(trial, cryptos, market_train_scaled, labels_train,
         preds = model(X_v.to(device)).cpu().numpy()
     real = y_v.numpy()
 
-    # Estrategia Top-1 Long con filtro: solo comprar si la mejor predicción es positiva
-    best_asset = np.argmax(preds, axis=1)
-    best_pred = np.max(preds, axis=1)  # valor de la mejor predicción
-    strategy_returns = np.array([
-        real[t, best_asset[t]] if best_pred[t] > 0 else 0.0
-        for t in range(len(best_asset))
-    ])
-    strategy_returns -= 0.001  # costes
-
-    val_sharpe = float(np.mean(strategy_returns) / (np.std(strategy_returns) + 1e-10) * np.sqrt(252))
+    strategy_returns, _ = top1_long_returns(
+        preds,
+        real,
+        transaction_cost=0.001,
+        half_spread=0.0002,
+        slippage=0.0003,
+    )
+    val_sharpe = performance_metrics(strategy_returns, periods_per_year=365)["sharpe"]
 
     # Si el Sharpe es muy negativo (< -3), podar el trial
     if val_sharpe < -3.0:
@@ -486,7 +498,7 @@ def evaluate_top_k(study, k, cryptos,
 
         model_path = os.path.join(output_dir, f"sfm_top{i+1}.pth")
         model = train_final(model, combined_loader, None,
-                            epochs=100, lr=params["lr"],
+                            epochs=int(os.getenv("CRYPTO_FINAL_EPOCHS", "100")), lr=params["lr"],
                             weight_decay=params["weight_decay"],
                             device=device, patience=15, model_path=model_path)
 
@@ -528,10 +540,11 @@ def evaluate_top_k(study, k, cryptos,
         "trials": [
             {
                 "rank": r["rank"],
-                "val_loss": r["test_loss"],
+                "test_loss": r["test_loss"],
                 "sharpe": r["sharpe"],
                 "equity_final": r["equity_final"],
                 "outperformance": r["outperformance"],
+                "cost_scenarios": r["cost_scenarios"],
                 "params": {k: float(v) if isinstance(v, (np.floating,)) else v
                            for k, v in r["params"].items()},
             }
@@ -606,6 +619,12 @@ def run_walk_forward(cryptos, market_data, labels_data, study, output_dir,
         labels_val_wf = labels_data[win["val_start"]:win["val_end"]]
         labels_test_wf = labels_data[win["test_start"]:win["test_end"]]
 
+        # Clipping and scaling are both fitted on this window's train only.
+        clip_bounds_wf = fit_clip_bounds(market_train_wf)
+        market_train_wf = apply_clip_bounds(market_train_wf, clip_bounds_wf)
+        market_val_wf = apply_clip_bounds(market_val_wf, clip_bounds_wf)
+        market_test_wf = apply_clip_bounds(market_test_wf, clip_bounds_wf)
+
         # Escalar (fit en train)
         scaler_wf = deepcopy(scaler)
         market_train_scaled = scaler_wf.fit_transform(market_train_wf)
@@ -638,7 +657,7 @@ def run_walk_forward(cryptos, market_data, labels_data, study, output_dir,
 
         model_path = os.path.join(output_dir, f"sfm_wf_w{w+1}.pth")
         model = train_final(model, combined_loader, None,
-                            epochs=100, lr=params["lr"],
+                            epochs=int(os.getenv("CRYPTO_FINAL_EPOCHS", "100")), lr=params["lr"],
                             weight_decay=params["weight_decay"],
                             device=device, patience=15, model_path=model_path)
 
@@ -842,16 +861,28 @@ def plot_walk_forward(wf_results, output_dir):
 # =====================================================================
 if __name__ == "__main__":
     # ── Configuración ──
-    CRYPTOS = ['btc', 'eth', 'sol', 'xlm', 'ada']
-    DENOISE = True
+    CRYPTOS = [
+        item.strip().lower()
+        for item in os.getenv(
+            "CRYPTO_INSTRUMENTS", "BTC,ETH,SOL,XLM,ADA,XRP,DOGE,LINK,LTC"
+        ).split(",")
+        if item.strip()
+    ]
+    DENOISE = False                    # global wavelet denoising leaks future data
     DENOISE_METHOD = "wavelet"
-    N_TRIALS = 100                    # más trials = convergencia más estable
-    N_EPOCHS_FINAL = 100
-    PATIENCE_FINAL = 15
-    TOP_K = 5                         # cuántos mejores trials evaluar
-    DO_WALK_FORWARD = True            # walk-forward validation
+    N_TRIALS = int(os.getenv("CRYPTO_OPTUNA_TRIALS", "100"))
+    N_EPOCHS_FINAL = int(os.getenv("CRYPTO_FINAL_EPOCHS", "100"))
+    PATIENCE_FINAL = int(os.getenv("CRYPTO_FINAL_PATIENCE", "15"))
+    TOP_K = int(os.getenv("CRYPTO_TOP_K", "5"))
+    DO_WALK_FORWARD = False           # requires nested tuning per window
     N_WALK_WINDOWS = 3                # número de ventanas walk-forward
-    OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output/optuna_sfm_v4")
+    OUTPUT_DIR = os.getenv(
+        "CRYPTO_MODEL_OUTPUT_DIR",
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "output/optuna_sfm_v4_causal"),
+    )
+    PROVIDER_URI = os.getenv("CRYPTO_QLIB_OUTPUT_DIR", "data/qlib")
+    START_DATE = os.getenv("CRYPTO_START_DATE", "2018-01-01")
+    END_DATE = os.getenv("CRYPTO_END_DATE", pd.Timestamp.utcnow().strftime("%Y-%m-%d"))
 
     print("=" * 65)
     print("🧠 qlib_sfm_pipeline.v4.py — SFM + Wavelet + Optuna + Top-K + Walk-Forward")
@@ -870,12 +901,16 @@ if __name__ == "__main__":
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     # ── Qlib ──
-    qlib.init(provider_uri='/mnt/e/src/agent_qlib/data/qlib', region=REG_US)
+    qlib.init(
+        provider_uri=PROVIDER_URI,
+        region=REG_US,
+        kernels=int(os.getenv("QLIB_KERNELS", "1")),
+    )
 
     # ── Carga de datos ──
     print("\n📥 Cargando datos desde Qlib...")
     market_data, labels_data, dates_idx = load_and_process_crypto_data(
-        CRYPTOS, "2018-01-01", "2026-06-01",
+        CRYPTOS, START_DATE, END_DATE,
         denoise=DENOISE, denoise_method=DENOISE_METHOD
     )
 
@@ -914,7 +949,11 @@ if __name__ == "__main__":
     print(f"   {'TOTAL':<14} {n_total:<10} {dates_idx[0].strftime('%Y-%m-%d')} → {dates_idx[-1].strftime('%Y-%m-%d')}   100.0%")
     print(f"{'='*62}")
 
-    # ── Escalado ──
+    # Clip and scale using training observations only.
+    clip_bounds = fit_clip_bounds(market_train)
+    market_train = apply_clip_bounds(market_train, clip_bounds)
+    market_val = apply_clip_bounds(market_val, clip_bounds)
+    market_test = apply_clip_bounds(market_test, clip_bounds)
 
     # ── Escalado ──
     scaler = MinMaxScaler(feature_range=(-1, 1))

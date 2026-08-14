@@ -1,15 +1,29 @@
-import ccxt
-import torch
-import numpy as np
-import pandas as pd
-
 def generate_daily_signals(model_multi, scalers, lookback=30):
     """
-    Descarga datos en tiempo real, procesa con Wavelet y predice la dirección de mañana.
+    Legacy prototype retained for reference only.
+
+    This path cannot be used until a versioned artifact bundles the model,
+    preprocessing state, feature schema and training manifest. Keeping the
+    guard here prevents accidental scheduling of the previously broken and
+    training-inconsistent implementation.
     """
+    raise RuntimeError(
+        "Daily crypto signals are disabled: no validated model artifact or "
+        "causal preprocessing contract is available"
+    )
+
+    # Unreachable historical prototype below; remove it when the validated
+    # inference package replaces this file.
+    import ccxt
+    import numpy as np
+    import pandas as pd
+    import torch
     exchange = ccxt.binance()
-    tickers = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XLM/USDT', 'ADA/USDT']
-    cryptos = ['BTC', 'ETH', 'SOL', 'XLM', 'ADA']
+    tickers = [
+        'BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XLM/USDT', 'ADA/USDT',
+        'XRP/USDT', 'DOGE/USDT', 'LINK/USDT', 'LTC/USDT',
+    ]
+    cryptos = ['BTC', 'ETH', 'SOL', 'XLM', 'ADA', 'XRP', 'DOGE', 'LINK', 'LTC']
     
     live_data = {}
     print("📥 Descargando datos de mercado en tiempo real...")
