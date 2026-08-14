@@ -103,6 +103,7 @@ Aprender y aplicar **Qlib** (plataforma de inversión cuantitativa con ML de Mic
 
 | Fecha | Documento | Resumen |
 |---|---|---|
+| 2026-08-14 | `momentum_largo_alpha.md` | 🚀 HALLAZGO CLAVE: momentum 120d + label 120d sobre S&P 500 → IC OOS +0.066 (primer alpha genuino) |
 | 2026-08-14 | `roadmap_aprendizaje.md` | Roadmap de aprendizaje Qlib: direcciones A-E (universo amplio+momentum, factor mining, beta calidad, datos fundamentales, validación) |
 | 2026-08-14 | `meta_quinn_analisis.md` | Quinn: análisis de la posición META (coste $664, hoy ~$595) → mantener + promediar por tramos $540/$480, tope 15% |
 | 2026-08-14 | `ic_y_oos_guia.md` | Guía del IC (Information Coefficient) y del OOS (out-of-sample): qué son, origen, interpretación y cómo usarlos como inversor |
