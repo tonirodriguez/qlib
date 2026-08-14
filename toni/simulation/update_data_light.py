@@ -17,6 +17,7 @@ import urllib.request
 
 SIM_DIR = os.path.dirname(os.path.abspath(__file__))
 OUT_CSV = os.path.join(SIM_DIR, "prices_live.csv")
+#UNIVERSE_FILE = os.path.expanduser("~/.qlib/qlib_data/us_data/instruments/sp500_liquid.txt")
 UNIVERSE_FILE = "/opt/data/profiles/investments/home/.qlib/qlib_data/us_data/instruments/sp500_liquid.txt"
 
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0"
