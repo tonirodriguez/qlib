@@ -143,4 +143,109 @@ Un resultado es **out-of-sample** cuando se obtiene sobre **datos que el modelo 
 
 ---
 
-*Documento de referencia del proyecto Qlib Work. Base: estadística de correlación (Pearson) y teoría de gestión activa (ley fundamental del manejo activo).*
+## 9. ¿Qué es el IR (Information Ratio)?
+
+**IR = Information Ratio (Ratio de Información)**
+
+Es la métrica que mide **cuánto retorno extra (exceso) obtienes por cada unidad de riesgo extra que asumes**. Es, en esencia, un **Sharpe ratio, pero en relación al benchmark en lugar de al efectivo**.
+
+### Fórmula
+
+```
+IR = (Retorno de la cartera − Retorno del benchmark) / Desviación del exceso
+```
+
+Es decir:
+- **Numerador:** el *exceso de retorno* (cuánto ganas por encima del índice de referencia)
+- **Denominador:** la *volatilidad de ese exceso* (cuánto fluctúa esa ventaja, su riesgo)
+
+Un IR de **0.5** significa que por cada 1% de riesgo (volatilidad del exceso) que asumes, obtienes 0.5% de retorno por encima del benchmark.
+
+### Diferencia con el Sharpe
+
+| | Sharpe Ratio | Information Ratio |
+|---|---|---|
+| Referencia | Efectivo / riesgo-free | **Benchmark** (ej. ^NDX) |
+| Mide | Retorno absoluto por unidad de riesgo | **Exceso sobre el índice** por unidad de riesgo |
+| Para qué | ¿Es buena la estrategia en sí? | ¿Supera al mercado de forma consistente? |
+
+---
+
+## 10. Tabla de interpretación del IR
+
+| Valor de IR | Qué significa |
+|---|---|
+| **IR > 1.0** | Excelente — edge muy consistente (nivel de fondos de élite) |
+| **IR 0.5–1.0** | Bueno — supera al benchmark de forma clara |
+| **IR 0.3–0.5** | Aceptable / modesto — hay algo de ventaja |
+| **IR 0–0.3** | Débil — el alpha es marginal |
+| **IR < 0** | La estrategia **pierde** frente al benchmark |
+
+*Referencia: en gestión activa, un IR sostenido >0.5 se considera bueno; la mayoría de fondos profesionales no superan 0.5-1.0.*
+
+---
+
+## 11. Relación entre IR, IC y frecuencia de operar (la ley fundamental)
+
+El IR se puede descomponer según la **ley fundamental de la gestión activa**:
+
+```
+IR ≈ IC × √(BR)
+```
+
+Donde:
+- **IC** = tu ventaja predictiva por operación (correlación predicción→resultado)
+- **BR** (breadth) = el número de **apuestas independientes** al año
+
+**Interpretación clave:**
+- El IR **no depende solo de cuánto aciertas (IC)**, sino también de **cuántas veces al año** puedes aplicar esa ventaja de forma independiente.
+- Puedes tener un IC bajo (0.02-0.03) pero si operas muchísimo con señales independientes → IR alto.
+- O un IC alto pero operando pocas veces → IR bajito.
+
+**Para el inversor:** esto explica por qué una estrategia con IC modesto pero muy activa puede superar a una con mejor IC pero que opera poco.
+
+---
+
+## 12. Cómo usarlo como inversor (lo práctico)
+
+1. **Criterio de selección:**
+   Busca estrategias con **IR OOS > 0.5** (idealmente `>1`). Un IR <0.3 indica que el exceso sobre el índice es marginal y probablemente no compense el esfuerzo y el riesgo.
+
+2. **Diferenciar de la rentabilidad absoluta:**
+   Un +24% absoluto puede ser puro beta (el mercado subió). El IR te dice *cuánto de eso es exceso real sobre el índice*. En nuestro walk-forward, el LightGBM tenía exceso modesto y que se degradaba OOS — señal de IR débil.
+
+3. **Es sensible a los costes:**
+   El IR se calcula **con** o **sin** costes de transacción. Siempre compara la versión **con costes reales** (IB), porque los costes reducen el exceso y por tanto el IR. Un IR que pasa de 0.5 a 0.1 con costes reales es una bandera roja.
+
+4. **Monitorizar en el tiempo:**
+   Como el IC, el IR **decae**. Si cae de forma sostenida, la ventaja sobre el benchmark se erosiona.
+
+5. **Usarlo junto al IC:**
+   - El **IC** te dice si *predices bien* (calidad de la señal).
+   - El **IR** te dice si *eso se traduce en superar al mercado* (rentabilidad ajustada al riesgo del exceso).
+   - Ambos deben ser **positivos y sostenidos out-of-sample** para confiar en la estrategia.
+
+---
+
+## 13. Limitaciones del IR
+
+- Es **relativo al benchmark** — elegir un benchmark fácil infla el IR, uno difícil lo castiga. Hay que comparar contra el índice correcto del universo.
+- **No distingue la dirección del exceso** — un IR alto pero negativo (pierde consistentemente) diría consistencia, no bondad.
+- Depende de la **frecuencia de evaluación** (diario vs semanal cambia ligeramente el valor).
+- Necesita **suficiente histórico** para ser fiable (con pocos datos, el IR puede ser ruido).
+
+---
+
+## 14. Resumen de cómo leer las tres métricas juntas
+
+| Métrica | Responde a | Valor deseable OOS |
+|---|---|---|
+| **IC** | ¿Predices bien (la señal ordena)? | `> 0.02` |
+| **IR** | ¿Superas al benchmark con consistencia? | `> 0.5` |
+| Sharpe | ¿Buen retorno absoluto por unidad de riesgo? | `> 1.0` |
+
+**Las tres deben mirarse sobre datos out-of-sample.** Un backtest que muestra retornos bonitos pero IC≈0 e IR<0.3 está, casi seguro, engañándote con beta y/o overfitting.
+
+---
+
+*Documento de referencia del proyecto Qlib Work. Base: estadística de correlación (Pearson), teoría de gestión activa (ley fundamental del manejo activo) y gestión de riesgo estándar.*
