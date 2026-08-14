@@ -10,7 +10,7 @@ DISEÑO ROBUSTO (evita rate-limit de fuentes externas):
   4. Rebalancea: reconstruye la cartera al nuevo topk (asignación igualitaria)
   5. Guarda estado en state.json para la siguiente semana
 
-Uso: python toni/simulation/simulate.py [--reset]
+Uso: python work/estrategias/simulation/simulate.py [--reset]
 
 NOTA: usa el ÚLTIMO precio disponible en Qlib para cada ticker. Si quieres precio
 intradía/más fresco, se puede añadir una fuente externa puntual para el topk,

@@ -5,11 +5,11 @@ la estrategia reduce la exposición cuando la volatilidad del mercado sube,
 mitigando el momentum-crash (2020/2022).
 
 Uso:
-    python toni/momentum_vt_backtest.py [universo] [topk] [mom_window] [vol_target]
+    python work/estrategias/momentum_vt_backtest.py [universo] [topk] [mom_window] [vol_target]
 """
 import os
 os.environ["MLFLOW_ALLOW_FILE_STORE"] = "true"
-os.environ["MLFLOW_TRACKING_URI"] = "sqlite:////opt/data/qlib/qlib_work/mlflow.db"
+os.environ["MLFLOW_TRACKING_URI"] = "sqlite:////opt/data/qlib/work/qlib_work/mlflow.db"
 import sys, numpy as np, pandas as pd
 
 import qlib

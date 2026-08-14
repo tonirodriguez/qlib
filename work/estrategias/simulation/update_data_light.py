@@ -10,7 +10,7 @@ Este actualizador solo baja los ~292 tickers de sp500_liquid (el universo que us
 la simulación), con peticiones espaciadas para evitar el rate-limit de Yahoo, y
 guarda un CSV local. La simulación (simulate.py) leerá este CSV si existe.
 
-Salida: toni/simulation/prices_live.csv  (index=date, columns=ticker, precios REALES)
+Salida: work/estrategias/simulation/prices_live.csv  (index=date, columns=ticker, precios REALES)
 """
 import os, sys, time, json, datetime
 import urllib.request

@@ -5,11 +5,11 @@ Este script construye la señal de momentum (retorno acumulado 120 días) y la
 ejecuta con TopkDropoutStrategy, rebalanceo mensual, costes Interactive Brokers.
 
 Uso:
-    python toni/momentum_backtest.py [universo] [topk] [mom_window]
+    python work/estrategias/momentum_backtest.py [universo] [topk] [mom_window]
 """
 import os
 os.environ["MLFLOW_ALLOW_FILE_STORE"] = "true"
-os.environ["MLFLOW_TRACKING_URI"] = "sqlite:////opt/data/qlib/qlib_work/mlflow.db"
+os.environ["MLFLOW_TRACKING_URI"] = "sqlite:////opt/data/qlib/work/qlib_work/mlflow.db"
 import sys, numpy as np, pandas as pd
 
 import qlib

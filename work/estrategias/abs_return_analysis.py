@@ -6,7 +6,7 @@ primer elemento, con portfolio_value y benchmark_value por fecha.
 """
 import os
 os.environ["MLFLOW_ALLOW_FILE_STORE"] = "true"
-os.environ["MLFLOW_TRACKING_URI"] = "sqlite:////opt/data/qlib/qlib_work/mlflow.db"
+os.environ["MLFLOW_TRACKING_URI"] = "sqlite:////opt/data/qlib/work/work/qlib_work/mlflow.db"
 
 import numpy as np
 import pandas as pd
@@ -94,9 +94,9 @@ def run_and_report(yml_path, tag):
 
 if __name__ == '__main__':
     print("### v4 (semanal, SIN vol-targeting) ###")
-    pv4, _ = run_and_report('toni/tech_experiment_v4.yml', 'v4 (semanal, SIN vol-targeting)')
+    pv4, _ = run_and_report('work/estrategias/tech_experiment_v4.yml', 'v4 (semanal, SIN vol-targeting)')
     print("\n### v5 (semanal, CON vol-targeting) ###")
-    pv5, _ = run_and_report('toni/tech_experiment_v5.yml', 'v5 (semanal, CON vol-targeting)')
+    pv5, _ = run_and_report('work/estrategias/tech_experiment_v5.yml', 'v5 (semanal, CON vol-targeting)')
 
     print("\n\n" + "="*52)
     print("COMPARATIVA FINAL")

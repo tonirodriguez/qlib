@@ -7,7 +7,7 @@ se sostiene OOS, no era overfitting.
 """
 import os
 os.environ["MLFLOW_ALLOW_FILE_STORE"] = "true"
-os.environ["MLFLOW_TRACKING_URI"] = "sqlite:////opt/data/qlib/qlib_work/mlflow.db"
+os.environ["MLFLOW_TRACKING_URI"] = "sqlite:////opt/data/qlib/work/qlib_work/mlflow.db"
 
 import numpy as np
 import pandas as pd
@@ -25,7 +25,7 @@ START = "2019-01-01"
 END = "2026-08-01"
 LABEL = ["Ref($close, -11) / Ref($close, -1) - 1"]
 
-with open('toni/tech_experiment_v5.yml') as f:
+with open('work/estrategias/tech_experiment_v5.yml') as f:
     cfg = yaml.safe_load(f)
 MODEL_KWARGS = cfg['task']['model']['kwargs']
 

@@ -9,7 +9,7 @@ NOTA: model.fit de Qlib toca MLflow → fijar MLFLOW_ALLOW_FILE_STORE=true.
 """
 import os
 os.environ["MLFLOW_ALLOW_FILE_STORE"] = "true"
-os.environ["MLFLOW_TRACKING_URI"] = "sqlite:////opt/data/qlib/qlib_work/mlflow.db"
+os.environ["MLFLOW_TRACKING_URI"] = "sqlite:////opt/data/qlib/work/qlib_work/mlflow.db"
 
 import qlib
 from qlib.utils import init_instance_by_config
@@ -18,7 +18,7 @@ import yaml, numpy as np, pandas as pd
 
 qlib.init(provider_uri='~/.qlib/qlib_data/us_data', region='us')
 
-with open('toni/tech_experiment_v2.yml') as f:
+with open('work/estrategias/tech_experiment_v2.yml') as f:
     cfg = yaml.safe_load(f)
 
 task_cfg = cfg['task']
