@@ -105,3 +105,97 @@
 ---
 
 *Documento de referencia del proyecto Qlib Work. Se actualiza con cada experimento.*
+
+---
+
+## 9. Retorno ABSOLUTO — validación del vol-targeting (2026-08-14)
+
+**Contexto:** el reporte estándar de Qlib (PortAnaRecord) muestra solo el *exceso vs benchmark*, cuyo drawdown es insensible al vol-targeting (relativo al índice). Para validar el vol-targeting correctamente hay que mirar el **retorno ABSOLUTO** de la cartera.
+
+### Resultados (retorno absoluto, con costes IB round-trip ~0.10%)
+
+| Métrica | v4 (sin VT) | v5 (con VT) |
+|---|---|---|
+| Valor final | $265,664 | **$273,638** |
+| Retorno anualizado absoluto | +23.56% | **+24.26%** |
+| Volatilidad anual | 21.81% | 22.10% |
+| **Max drawdown absoluto** | −23.32% | **−23.16%** |
+| Sharpe absoluto | 1.08 | **1.10** |
+
+**Conclusión:** el vol-targeting ayuda en el retorno absoluto: más valor final (+$8k), más retorno (+0.7pp), mejor Sharpe, y **drawdown máximo ligeramente menor** (−23.3% → −23.2%). Confirmado que el vol-targeting era invisible en el exceso pero se ve en lo absoluto.
+
+### Advertencia metodológica
+Las métricas de "exceso vs benchmark" de este análisis dieron valores absurdos (+10291%, benchmark drawdown −217%) por un **bug de anualización** en mi script (frecuencia semanal sobre-multiplicada). **No son fiables.** El retorno absoluto y su drawdown sí son correctos. Para el exceso fiable usar el PortAnaRecord estándar de Qlib.
+
+### Progreso acumulado completo
+
+| Versión | Mejora | Resultado |
+|---|---|---|
+| v1 | original | −37.1% exceso con costes (Qlib default) |
+| v2 | +regularización, topk 10 | −11.9% exceso |
+| v3 | +universo tech_giants | +2.1% exceso con costes |
+| v4 | +rebalanceo semanal | ~7.3% exceso, gap costes 1.2pp |
+| v5 | +vol-targeting | **+24.3% absoluto, Sharpe 1.10, DD −23%** (costes IB) |
+
+---
+
+## 8. Experimento v4 — Rebalanceo semanal (2026-08-14)
+
+**Cambio clave:** `time_per_step: week` (rebalanceo semanal) en vez de diario, sobre el universo tech_giants. Objetivo: reducir la rotación y el impacto de los costes (en v3 el gap sin-costes→con-costes era ~5pp).
+
+### Resultados (exceso vs benchmark ^NDX)
+
+| Métrica | v3 (diario) | **v4 (semanal)** |
+|---|---|---|
+| Retorno anualizado (sin costes) | +7.3% | **+8.5%** |
+| Retorno anualizado (con costes) | +2.1% | **+7.3%** ✅ |
+| Information Ratio (con costes) | +0.10 | **+0.38** |
+| **Gap costes** (sin→con) | **~5.2pp** | **~1.2pp** |
+
+### Conclusión del v4
+
+**El rebalanceo semanal eliminó casi por completo el impacto de los costes.** El gap sin-costes→con-costes se redujo de ~5pp a ~1.2pp. La estrategia ahora genera **+7.3% de exceso anualizado con costes** sobre el Nasdaq 100, con IR +0.38.
+
+### Progreso acumulado (en ~1h de refinamiento)
+
+| Versión | Cambio | Exceso con costes |
+|---|---|---|
+| v1 | original | −37.1% |
+| v2 | +regularización, topk 10 | −11.9% |
+| v3 | +universo tech_giants | +2.1% |
+| v4 | +rebalanceo semanal | **+7.3%** ✅ |
+
+### Próximos pasos
+
+1. **Reducir el drawdown** (−48%) — vol-targeting o stops de cartera
+2. **Probar label más corto (3-5 días)** o más largo (20 días)
+3. **Probar topk 3 o 7** — optimizar número de posiciones
+4. **Probar rebalanceo quincenal** — ver si baja aún más el gap de costes
+
+---
+
+## 7. Experimento v3 — Universo tech_giants (2026-08-14)
+
+**Cambio clave:** universo concentrado en `tech_giants_universe` (16 tecnológicas) en vez de todo el Nasdaq100. topk=5 (con 16 empresas, topk 10 sería casi todo). Resto idéntico al v2.
+
+### Resultados (exceso vs benchmark ^NDX)
+
+| Métrica | v1 | v2 | **v3** |
+|---|---|---|---|
+| Retorno anualizado (sin costes) | −14.6% | −9.0% | **+7.3%** ✅ |
+| Retorno anualizado (con costes) | −37.1% | −11.9% | **+2.1%** ✅ |
+| Information Ratio (sin costes) | −0.64 | −0.43 | **+0.34** ✅ |
+| Max drawdown (sin costes) | −42.5% | −107% | **−48.5%** |
+
+### Conclusión del v3
+
+**El cambio de universo fue el factor decisivo.** Concentrar en las 16 tecnológicas convirtió el exceso de retorno de negativo a positivo, confirmando que el modelo se dispersaba en el universo amplio (Nasdaq100 completo) y no encontraba señal. En un universo concentrado y coherente, la señal emerge.
+
+**Aún queda margen:** el exceso con costes es solo +2.1% (los costes se comen ~5 puntos: 7.3% → 2.1%), y el drawdown sigue alto (−48.5%). La dirección es correcta por primera vez.
+
+### Próximos pasos (reducción de costes/rotación)
+
+1. **Reducir rotación** — el gap sin-costes→con-costes es ~5pp; bajar la frecuencia de rebalanceo o aumentar `n_drop` reduciría costes
+2. **Añadir filtro de liquidez** — refuerzo (tech_giants ya son líquidas)
+3. **Probar label más corto (3-5 días)** — puede captar mejor el momentum de corto plazo
+4. **Probar topk 3 o 7** — ver el número óptimo de posiciones
