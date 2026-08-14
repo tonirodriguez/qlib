@@ -63,3 +63,16 @@
 ---
 
 *Documento de referencia del proyecto Qlib Work. Se actualiza con cada experimento.*
+
+---
+
+## 6. Actualización — Confirmación de robustez (label 250d)
+
+Se probó el mismo walk-forward con **label a 250 días**. Resultado: IC medio NEGATIVO (mom20 −0.015, mom60 −0.039, mom120 −0.037, mom250 −0.056).
+
+**Por qué el label-250 no confirma:**
+- Años positivos fuertes en 2023 (+0.16) y 2024 (+0.14), pero crash en 2020 (−0.40) y 2022 (−0.19) → más sensible al momentum-crash.
+- **Menos muestras independientes**: cada observación ocupa 250 días de ventana → el IC es menos fiable estadísticamente.
+- Coherente con la literatura: horizontes demasiado largos aumentan el crash risk y reducen el breadth.
+
+**Conclusión:** el punto óptimo es **momentum 120d + label 120d (IC OOS +0.066)**. No se persigue el label-250. El hallazgo sólido del proyecto es momentum de medio plazo (120d) sobre universo amplio.
