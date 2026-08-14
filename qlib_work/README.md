@@ -103,6 +103,7 @@ Aprender y aplicar **Qlib** (plataforma de inversión cuantitativa con ML de Mic
 
 | Fecha | Documento | Resumen |
 |---|---|---|
+| 2026-08-14 | `meta_quinn_analisis.md` | Quinn: análisis de la posición META (coste $664, hoy ~$595) → mantener + promediar por tramos $540/$480, tope 15% |
 | 2026-08-14 | `ic_y_oos_guia.md` | Guía del IC (Information Coefficient) y del OOS (out-of-sample): qué son, origen, interpretación y cómo usarlos como inversor |
 | 2026-08-14 | `walk_forward_diagnostico.md` | Walk-forward: IC OOS 0.008 → el +24% era overfitting; no hay alpha robusto; hoja de ruta |
 | 2026-08-14 | `resultados_retorno.md` | Resultados de retorno (exceso y absoluto) con aclaraciones metodológicas; validación del vol-targeting |
