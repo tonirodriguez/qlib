@@ -28,8 +28,9 @@ echo "   Desde:     $START_DATE hasta $TODAY"
 cd "$QLIB_REPO"
 export PYTHONPATH="$(pwd):${PYTHONPATH:-}"
 export QLIB_REPO
-export QLIB_MAX_WORKERS="${MAX_WORKERS:-4}"
-export QLIB_NORMALIZE_MAX_WORKERS="${NORMALIZE_MAX_WORKERS:-5}"
+# RAM limitada en esta máquina (7.6GB) → workers bajos para evitar OOM
+export QLIB_MAX_WORKERS="${MAX_WORKERS:-1}"
+export QLIB_NORMALIZE_MAX_WORKERS="${NORMALIZE_MAX_WORKERS:-1}"
 export DATA_DIR
 export QLIB_US_WORK_DIR
 

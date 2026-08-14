@@ -127,5 +127,66 @@ Aprender y aplicar **Qlib** (plataforma de inversión cuantitativa con ML de Mic
 - **Repo:** `/opt/data/qlib` (clon de `tonirodriguez/qlib`, rama `main`)
 - **Venv:** `/opt/data/qlib-venv` (Python 3.11.15)
 - **Qlib:** instalado en modo editable desde el repo (`0.9.8.dev153`)
-- **Datos US:** `~/.qlib/qlib_data/us_data` (transferencia en curso)
-- **Scripts personales:** `toni/` (qlib_us_read.py, qlib_us_simple_signal.py, tech_experiment.yml)
+- **Datos US (Qlib):** `~/.qlib/qlib_data/us_data` (12,737 tickers en `all.txt`)
+- **Scripts personales:** `toni/` (qlib_us_read.py, qlib_us_simple_signal.py, tech_experiment*.yml)
+
+---
+
+## 📈 Paper-Trading — Estrategia momentum 120d (dinero ficticio)
+
+**Estado:** EN MARCHA. Simulación con **€20,000 ficticios**, rebalanceo semanal.
+
+### La estrategia (validada)
+- **Señal:** momentum 120d (retorno acumulado 120 días) sobre `sp500_liquid` (292 tickers)
+- **Selección:** topk 30, asignación igualitaria
+- **IC out-of-sample:** +0.066 (primer alpha genuino del proyecto)
+- **Backtest:** +21.7% anual, Sharpe 1.07, max drawdown −18.6%
+
+### Flujo semanal (cronjobs, hora de España)
+| Hora (sábado) | Acción | Qué hace |
+|---|---|---|
+| **00:00** | `update_data_light.py` | Baja sp500_liquid (292 tickers) desde Yahoo → `prices_live.csv` |
+| **15:00** | `simulate.py` | Lee `prices_live.csv`, rebalancea al nuevo topk 30, reporta P&L ficticio por Telegram |
+
+### Archivos de la simulación (`toni/simulation/`)
+- `simulate.py` — lógica de la simulación (capital ficticio, topk, valoración, rebalanceo)
+- `update_data_light.py` — **actualizador LIGERO** de sp500_liquid desde Yahoo
+- `state.json` — estado persistente (cash, posiciones, FX) entre semanas
+- `prices_live.csv` — datos frescos de precios (generado por el actualizador ligero)
+- `state.json` se recrea con `--reset`; la ejecución normal rebalancea sobre el estado previo
+
+### Uso
+```bash
+# Actualizar datos frescos
+python toni/simulation/update_data_light.py
+# Ejecutar simulación (rebalancea sobre estado previo)
+python toni/simulation/simulate.py
+# Reiniciar la simulación con el capital inicial
+python toni/simulation/simulate.py --reset
+```
+
+### Salida
+Cada ejecución muestra: capital inicial, valor actual (USD y EUR), P&L ficticio (USD, EUR y %), y la **tabla de posiciones con acciones fraccionarias y redondeadas a entero** con sus costes.
+
+---
+
+## ⚙️ Configuración específica de ESTA máquina (vinculada a Hermes)
+
+### Limitación de RAM (importante)
+Esta máquina tiene solo **7.6 GB de RAM**. El pipeline de actualización oficial de Qlib (`update_us_qlib_daily.sh` / `update_us_all.py`) normaliza el universo completo `all.txt` (12,737 tickers) → **falla con "Killed" (OOM)**.
+
+**Solución aplicada:** se creó el **actualizador ligero** `update_data_light.py` que baja **solo sp500_liquid** (292 tickers) desde Yahoo con peticiones espaciadas (delay 0.35s, evita rate-limit). Es un **canal PARALELO** — los scripts oficiales de Qlib NO se modifican.
+
+### Regla de oro
+**No tocar los scripts oficiales de actualización de Qlib** (`update_us_qlib_daily.sh`, `update_us_qlib_rebuild.sh`, `update_us_all.py`). Todo lo específico de esta máquina vive en `toni/simulation/` en paralelo.
+
+### El factor de ajuste de precios (dato crítico)
+Qlib guarda `$close` **normalizado** por un factor de splits. El **precio real = `$close / $factor`**. La simulación usa esta corrección (y el CSV del actualizador ligero ya trae precios reales de Yahoo).
+
+### Cronjobs activos (Hermes)
+- **`f8b5bcf189a2`** — Actualizar datos Qlib US (sábado 00:00)
+- **`b4a7ab201e90`** — Simulación momentum (sábado 15:00)
+
+---
+
+*Este registro se actualiza con cada documento/experimento nuevo.*

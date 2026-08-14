@@ -45,17 +45,29 @@ def get_universe():
 
 
 def get_prices(tickers):
-    """DataFrame de PRECIOS REALES (index fecha, columns tickers) desde Qlib.
+    """DataFrame de PRECIOS REALES (index fecha, columns tickers).
 
-    Qlib guarda `$close` NORMALIZADO por un factor de splits. El precio real de
-    mercado es `$close / $factor`. Este helper deshace el factor.
+    Prioridad 1: prices_live.csv (del actualizador ligero update_data_light.py,
+    que baja sp500_liquid desde Yahoo sin tocar el pipeline de Qlib).
+    Prioridad 2: datos de Qlib (close / factor, deshaciendo el factor de splits).
     """
+    # Prioridad 1: CSV fresco del actualizador ligero
+    live_csv = os.path.join(os.path.dirname(os.path.abspath(__file__)), "prices_live.csv")
+    if os.path.exists(live_csv):
+        import pandas as pd
+        df = pd.read_csv(live_csv, index_col=0, parse_dates=True).sort_index()
+        # Solo columnas que estén en el universo
+        cols = [c for c in df.columns if c in tickers]
+        if len(cols) > 0:
+            print(f"   (usando datos frescos de {live_csv}, última fecha {df.index[-1].date()})")
+            return df[cols]
+
+    # Prioridad 2: datos Qlib (deshaciendo factor)
     close = D.features(tickers, ["$close", "$factor"], start_time=START, end_time="2100-12-31", freq="day")
     if close is None or close.empty:
         return None
     c = close["$close"].unstack(level=0).sort_index()
     f = close["$factor"].unstack(level=0).sort_index()
-    # Precio real = close / factor
     real = c / f
     return real
 
