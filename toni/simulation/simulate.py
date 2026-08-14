@@ -45,24 +45,51 @@ def get_universe():
 
 
 def get_prices(tickers):
-    """DataFrame close (index fecha, columns tickers) desde Qlib."""
-    close = D.features(tickers, ["$close"], start_time=START, end_time="2100-12-31", freq="day")
+    """DataFrame de PRECIOS REALES (index fecha, columns tickers) desde Qlib.
+
+    Qlib guarda `$close` NORMALIZADO por un factor de splits. El precio real de
+    mercado es `$close / $factor`. Este helper deshace el factor.
+    """
+    close = D.features(tickers, ["$close", "$factor"], start_time=START, end_time="2100-12-31", freq="day")
     if close is None or close.empty:
         return None
-    df = close["$close"].unstack(level=0).sort_index()
-    return df
+    c = close["$close"].unstack(level=0).sort_index()
+    f = close["$factor"].unstack(level=0).sort_index()
+    # Precio real = close / factor
+    real = c / f
+    return real
 
 
 def load_state():
     if os.path.exists(STATE_FILE):
         with open(STATE_FILE) as f:
-            return json.load(f)
+            state = json.load(f)
+        # Convertir valores numéricos que pudieron guardarse como str a float
+        for k in ("cash_usd", "start_capital_eur", "start_capital_usd", "euro_usd"):
+            if k in state and isinstance(state[k], str):
+                state[k] = float(state[k])
+        for t, pos in state.get("positions", {}).items():
+            for k in ("shares", "cost_usd", "entry_price"):
+                if k in pos and isinstance(pos[k], str):
+                    pos[k] = float(pos[k])
+        return state
     return None
 
 
 def save_state(state):
+    # Convertir a float nativo de Python para JSON (numpy.float no es serializable)
+    positions = {}
+    for t, pos in state.get("positions", {}).items():
+        positions[t] = {
+            "shares": float(pos["shares"]),
+            "cost_usd": float(pos["cost_usd"]),
+            "entry_price": float(pos["entry_price"]),
+        }
+    out = dict(state)
+    out["positions"] = positions
+    out["cash_usd"] = float(out["cash_usd"])
     with open(STATE_FILE, "w") as f:
-        json.dump(state, f, indent=2, default=str)
+        json.dump(out, f, indent=2)
 
 
 def main(reset=False):
@@ -135,10 +162,10 @@ def main(reset=False):
         for t, pos in positions.items():
             s = close[t].dropna() if t in close.columns else None
             if s is not None and len(s) > 0:
-                cur = s.iloc[-1]
-                portfolio_value += pos["shares"] * cur
+                cur = float(s.iloc[-1])
+                portfolio_value += float(pos["shares"]) * cur
             else:
-                portfolio_value += pos["cost_usd"]
+                portfolio_value += float(pos["cost_usd"])
 
         # Simular TopkDropout simple: reasignar igualitariamente a los nuevos topk
         # (aproximación; en Qlib con n_drop este es el comportamiento habitual)
@@ -179,8 +206,28 @@ def main(reset=False):
     print(f"  Valor cartera actual: ${portfolio_value:,.0f} = EUR {portfolio_value/euro_usd:,.0f}")
     print(f"  P&L ficticio:         {pnl_usd:+,.0f} USD = EUR {pnl_usd/euro_usd:+,.0f} ({pnl_pct:+.2f}%)")
     print(f"  Posiciones:           {len(state['positions'])}")
-    print(f"  Top 5:                {', '.join(list(state['positions'].keys())[:5])}")
     print(f"  Fecha de simulación:  {today} (datos de {data_date})")
+
+    # --- Tabla de posiciones: fraccionarias y redondeadas a entero ---
+    print("\n" + "="*60)
+    print("📊 POSICIONES DE LA SIMULACIÓN")
+    print("="*60)
+    print(f"{'Ticker':6}{'Fracc.':>8}{'Entero':>7}{'Precio':>9}{'CosteFr.$':>11}{'CosteEn$':>9}")
+    print("-"*60)
+    tf = 0.0; te = 0.0
+    for t, pos in state["positions"].items():
+        sh = float(pos["shares"])
+        pr = float(pos["entry_price"])
+        ent = round(sh)          # redondeo a entero
+        cf = sh * pr             # coste fraccionario
+        ce = ent * pr            # coste si se usa la versión entera
+        tf += cf; te += ce
+        print(f"{t:6}{sh:>8.2f}{ent:>7}{pr:>9.2f}${cf:>9,.0f}${ce:>8,.0f}")
+    print("-"*60)
+    print(f"{'TOTAL':6}{'':>8}{'':>7}{'':>9}${tf:>9,.0f}${te:>8,.0f}")
+    print(f"\n  Coste versión fraccionaria: ${tf:,.0f} = EUR {tf/euro_usd:,.0f}")
+    print(f"  Coste versión redondeada:   ${te:,.0f} = EUR {te/euro_usd:,.0f}")
+
     print(f"\n✅ Estado guardado en {STATE_FILE}")
     print("   (Próxima ejecución rebalanceará según nuevos datos)")
 

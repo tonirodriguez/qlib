@@ -103,6 +103,7 @@ Aprender y aplicar **Qlib** (plataforma de inversión cuantitativa con ML de Mic
 
 | Fecha | Documento | Resumen |
 |---|---|---|
+| 2026-08-14 | `plan_post_paper_pead.md` | Plan post-paper-trading (validación/escalado), descripción de PEAD/SUE, y cómo conseguir datos fundamentales para Qlib |
 | 2026-08-14 | `lowvol_diagnostico.md` | Factor low-vol: no mejora en mercado alcista (IC +0.13 a favor de high-vol); usar vol como control de riesgo, no selección |
 | 2026-08-14 | `backtest_momentum.md` | Backtest momentum 120d sobre sp500_liquid: +18.5% anual, Sharpe 0.96, DD −19.4% (primer resultado completo) |
 | 2026-08-14 | `momentum_largo_alpha.md` | 🚀 HALLAZGO CLAVE: momentum 120d + label 120d sobre S&P 500 → IC OOS +0.066 (primer alpha genuino) |
