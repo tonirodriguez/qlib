@@ -299,10 +299,39 @@ cada combinación ejecuta tres folds, cinco trials por fold y un entrenamiento
 final. El directorio de trabajo es
 `work/crypto/output/universe_comparison_pilot/`.
 
-Estado al actualizar este documento: ejecución en curso; generado el primer
-checkpoint de `original_5`, seed 42. No existen aún métricas completas del
-piloto y, por tanto, no se toma ninguna decisión. El proceso no consulta el
-holdout final.
+Estado al actualizar este documento: cinco de las seis combinaciones han
+completado sus tres folds y han escrito `nested_results.json`. La sexta,
+`reduced_8_no_xlm` con seed 43, tiene los tres checkpoints de fold pero aún no
+ha consolidado su reporte. El proceso no consulta el holdout final: todas las
+combinaciones registran `final_holdout.evaluated: false`.
+
+Sharpe neto por fold con costes calibrados (train-only, nocional 10.000):
+
+| Combinación | Fold 1 | Fold 2 | Fold 3 | Media | Folds+ | Peor drawdown |
+|---|---:|---:|---:|---:|---:|---:|
+| original_5, seed 42 | -0,84 | 0,92 | -2,56 | -0,83 | 1/3 | -51% |
+| original_5, seed 43 | 1,07 | 1,51 | -2,38 | 0,07 | 2/3 | -56% |
+| full_9, seed 42 | -0,65 | -1,07 | -2,78 | -1,50 | 0/3 | -54% |
+| full_9, seed 43 | -0,87 | 0,95 | -2,95 | -0,96 | 1/3 | -52% |
+| reduced_8 sin XLM, seed 42 | -0,29 | 0,14 | -2,17 | -0,77 | 1/3 | -46% |
+| reduced_8 sin XLM, seed 43 | — | — | — | pendiente | — | — |
+
+Agregado por universo (folds de ambos seeds combinados):
+
+| Universo | n folds | Sharpe medio | Desv. típica | Mín | Máx | Folds positivos |
+|---|---:|---:|---:|---:|---:|---:|
+| Original 5 | 6 | -0,379 | 1,65 | -2,56 | 1,51 | 3/6 |
+| Completo 9 | 6 | -1,229 | 1,33 | -2,95 | 0,95 | 1/6 |
+| Reducido 8 sin XLM | 3 | -0,774 | 1,01 | -2,17 | 0,14 | 1/3 |
+
+Lectura: ningún universo alcanza un Sharpe medio positivo. La dispersión sigue
+siendo enorme (desviación 1,0-1,7 frente a medias negativas) y el tercer fold es
+sistemáticamente el peor (todas las combinaciones lo cierran por debajo de -2).
+El original de cinco es la variante menos mala y la única con la mitad de folds
+en positivo, pero no supera el umbral. El piloto confirma inestabilidad, no
+rentabilidad; no autoriza abrir el holdout ni tomar ninguna decisión de
+selección. Estos valores corresponden al presupuesto piloto (cinco trials por
+fold, dos seeds) y no al experimento formal.
 
 ### Resultado del smoke comparativo con costes
 
@@ -381,3 +410,188 @@ medir estabilidad, estimar el coste computacional y detectar defectos antes del
 run formal; no puede abrir el holdout porque los gates formales exigen tres
 seeds. Tras revisar el piloto se ejecutará el presupuesto formal sin cambiar
 los umbrales a la vista de los resultados. El holdout continuará bloqueado.
+
+## Plan accionable
+
+Convención: cada tarea es una casilla `[ ]`. Todos los comandos asumen que se
+ejecutan desde la raíz del repositorio con el entorno Conda `crypto` activo:
+
+```bash
+conda activate crypto
+cd <RAIZ_DEL_REPO>   # el directorio que contiene work/, data/, qlib/
+```
+
+El entrenamiento (nested walk-forward con Optuna + PyTorch) es intensivo: en el
+piloto cada combinación tardó del orden de tres horas. Ejecútalo en una máquina
+con el entorno preparado, no en un sandbox efímero. La interfaz de
+`run_nested_walk_forward.py` se controla íntegramente por variables de entorno
+(`CRYPTO_*`); no tiene argumentos de línea de comandos.
+
+### Bloqueante B1 — Cerrar la 6ª combinación del piloto
+
+- [ ] Ejecutar `reduced_8_no_xlm`, seed 43 (la única que falta):
+
+```bash
+CRYPTO_INSTRUMENTS="BTC,ETH,SOL,ADA,XRP,DOGE,LINK,LTC" \
+CRYPTO_SEED=43 \
+CRYPTO_NESTED_OUTPUT_DIR=work/crypto/output/universe_comparison_pilot/reduced_8_no_xlm_seed_43 \
+CRYPTO_NESTED_FOLDS=3 \
+CRYPTO_NESTED_TRIALS=5 \
+CRYPTO_NESTED_FINAL_EPOCHS=15 \
+CRYPTO_NESTED_PATIENCE=5 \
+CRYPTO_ORDER_NOTIONAL=10000 \
+python work/crypto/run_nested_walk_forward.py 2>&1 \
+  | tee work/crypto/output/universe_comparison_pilot/reduced_8_no_xlm_seed_43/run.log
+```
+
+- [ ] Comprobar que se escribió el reporte y que el holdout sigue cerrado:
+
+```bash
+python - <<'PY'
+import json
+p="work/crypto/output/universe_comparison_pilot/reduced_8_no_xlm_seed_43/nested_results.json"
+d=json.load(open(p))
+print("holdout evaluated:", d["final_holdout"]["evaluated"])
+print("folds sharpe:", [round(f["calibrated_cost_metrics"]["sharpe"],2) for f in d["folds"]])
+PY
+```
+
+- [ ] Reconstruir el agregado del piloto (lee los 6 `nested_results.json`, no
+  reentrena) y evaluar los gates predeclarados:
+
+```bash
+CRYPTO_COMPARISON_SEEDS=42,43 \
+CRYPTO_COMPARISON_OUTPUT_DIR=work/crypto/output/universe_comparison_pilot \
+CRYPTO_COMPARISON_REBUILD_ONLY=true \
+python work/crypto/run_universe_comparison.py
+
+CRYPTO_COMPARISON_RESULT=work/crypto/output/universe_comparison_pilot/comparison.json \
+python work/crypto/evaluate_experiment_gates.py
+```
+
+Resultado esperado del gate: rechazo (`holdout_may_be_opened: false`) porque el
+piloto solo tiene dos seeds y el mínimo son tres. Sirve para validar el flujo,
+no para decidir.
+
+### Bloqueante B2 — Modelo de costes realista
+
+Módulo implementado: `work/crypto/execution_costs_v2.py` (tests en
+`tests/crypto/test_execution_costs_v2.py`). Sustituye los proxies de
+`calibrate_execution_costs.py` por un modelo microestructural configurable:
+tiers maker/taker mezclados por fracción taker, half-spread desde bid/ask reales
+(o proxy etiquetado), impacto raíz cuadrada `k·σ·√(Q/L)` con `L` = profundidad
+de order book (o ADV proxy), tope de participación con rechazo de órdenes y
+timing t+1. Cada componente registra su `source` ("orderbook" o "proxy").
+
+- [x] Estructura de tiers maker/taker configurable (`FeeTier`, `select_fee_tier`,
+  `blended_fee`).
+- [x] Half-spread desde bid/ask reales con fallback a proxy etiquetado.
+- [x] Impacto de mercado por profundidad/participación y rechazo de órdenes.
+- [x] Timing t+1 y vector de costes por activo compatible con
+  `top1_long_returns(one_way_costs=...)`.
+- [ ] Alimentar el `DEFAULT_FEE_SCHEDULE` con el schedule real del venue/cuenta.
+- [ ] Conectar datos reales de bid/ask y profundidad (hoy, sin ellos, degrada a
+  proxy correctamente etiquetado).
+- [ ] Integrar el vector de `build_one_way_cost_vector(...)` en cada fold del
+  nested (reemplazando la calibración proxy) y confirmar que el escenario adverso
+  se separa de forma material del calibrado.
+
+```bash
+# calibración con el nuevo modelo (usa proxies mientras no haya quotes/depth reales)
+CRYPTO_TAKER_FRACTION=1.0 CRYPTO_IMPACT_COEFFICIENT=1.0 CRYPTO_MAX_PARTICIPATION=0.1 \
+python work/crypto/execution_costs_v2.py   # escribe output/cost_calibration_v2/
+python -m pytest tests/crypto/test_execution_costs_v2.py -q
+```
+
+### Bloqueante B3 — Rigor estadístico y baselines
+
+Módulo implementado: `work/crypto/baselines.py` (tests en
+`tests/crypto/test_baselines.py`). Todo en numpy (normal CDF/inversa locales).
+
+- [x] Baselines t+1 sobre la misma matriz de retornos y costes: `cash`,
+  `equal_weight` (rebalanceo diario), `buy_and_hold` (sin rebalanceo) y
+  `momentum` (top-1 por retorno acumulado, sin look-ahead).
+- [x] Bootstrap por bloques circular del Sharpe (`block_bootstrap_sharpe`): CI y
+  `p(Sharpe>0)` preservando autocorrelación.
+- [x] Probabilistic Sharpe Ratio (`probabilistic_sharpe_ratio`) corrigiendo por
+  longitud, skew y kurtosis.
+- [x] Deflated Sharpe Ratio (`deflated_sharpe_ratio` + `expected_max_sharpe`) para
+  corregir multiple testing al comparar universos × seeds.
+- [x] Informe combinado `compare_to_baselines(...)` (métricas + bootstrap + PSR
+  por serie, y flags de si la estrategia bate cada baseline).
+- [ ] Conectar `compare_to_baselines(...)` a la salida del experimento formal y
+  aplicar DSR con `n_trials` = nº de universos × seeds y la varianza observada de
+  los Sharpes por fold.
+- [ ] Regla previa: no interpretar diferencias entre universos dentro de ±1σ
+  como señal.
+
+```bash
+python -m pytest tests/crypto/test_baselines.py -q
+```
+
+### Deseable D1 — Experimento formal (Fase 4)
+
+Solo tras B1–B3. Presupuesto formal ya declarado en `experiment_protocol.json`
+(seeds 42, 43, 44; 30 trials/fold; 60 épocas). Congelar umbrales antes de mirar.
+
+- [ ] Dry-run para revisar la matriz de ejecución sin consumir cómputo:
+
+```bash
+CRYPTO_COMPARISON_SEEDS=42,43,44 \
+CRYPTO_COMPARISON_OUTPUT_DIR=work/crypto/output/universe_comparison_formal \
+CRYPTO_COMPARISON_DRY_RUN=true \
+python work/crypto/run_universe_comparison.py
+```
+
+- [ ] Ejecutar el run formal completo (3 universos × 3 seeds; largo):
+
+```bash
+CRYPTO_COMPARISON_SEEDS=42,43,44 \
+CRYPTO_COMPARISON_OUTPUT_DIR=work/crypto/output/universe_comparison_formal \
+CRYPTO_NESTED_FOLDS=3 \
+CRYPTO_NESTED_TRIALS=30 \
+CRYPTO_NESTED_FINAL_EPOCHS=60 \
+CRYPTO_NESTED_PATIENCE=10 \
+CRYPTO_ORDER_NOTIONAL=10000 \
+python work/crypto/run_universe_comparison.py 2>&1 \
+  | tee work/crypto/output/universe_comparison_formal/run.log
+```
+
+- [ ] Evaluar gates del run formal:
+
+```bash
+CRYPTO_COMPARISON_RESULT=work/crypto/output/universe_comparison_formal/comparison.json \
+python work/crypto/evaluate_experiment_gates.py
+```
+
+- [ ] Analizar distribución por folds/seeds (no solo medias), contribución
+  marginal por activo y por qué el fold 3 es sistemáticamente el peor (¿régimen
+  de mercado?).
+- [ ] Si alguna variante supera todos los gates de forma estable, congelarla y
+  generar el manifest de decisión. Si ninguna, la decisión correcta es
+  no seleccionar y no abrir el holdout.
+
+### Deseable D2 — Holdout final (Fase 5, solo si D1 pasa los gates)
+
+- [ ] Definir los gates cuantitativos del holdout antes de mirarlo.
+- [ ] Abrirlo una sola vez y generar un informe inmutable.
+- [ ] Empaquetar el artefacto reproducible: pesos, arquitectura,
+  hiperparámetros, scaler, clipping, orden de activos/features, esquema, hash del
+  dataset, commit y versiones.
+
+### Deseable D3 — Paper trading (Fase 5, solo si el holdout aprueba)
+
+- [ ] Controles de stale data, exposición, concentración, drawdown y kill switch
+  probado.
+- [ ] Reconciliación diaria de señales contra datos posteriores y precios
+  ejecutables.
+- [ ] Ejecutar un mínimo de 30 días en simulación antes de cualquier decisión.
+
+### Deuda de ingeniería / datos (no bloqueante)
+
+- [ ] Generar lockfile multiplataforma y configurar CI que levante el entorno y
+  corra los 21 tests crypto.
+- [ ] Mover v5 (experimento S&P 500) y sus outputs fuera de `work/crypto`.
+- [ ] Añadir alertas de freshness/gaps y una segunda fuente para reconciliación.
+- [ ] Implementar universo point-in-time con listings/delistings (riesgo de
+  supervivencia).
