@@ -209,8 +209,8 @@ def main(reset=False):
         #    Presupuesto: valor total / TOPK por posición, ajustado por costes.
         buys = []
         remaining_cash_after_sells = cash_usd
-        for t, sh in sells:
-            remaining_cash_after_sells += sh * px[t]  # efectivo liberado por ventas
+        for sh, pr in sells:
+            remaining_cash_after_sells += sh * pr  # efectivo liberado por ventas
         # Restar costes de las ventas
         sell_cost = ib_trades_cost([], sells)
         cash_for_buys = remaining_cash_after_sells - sell_cost
