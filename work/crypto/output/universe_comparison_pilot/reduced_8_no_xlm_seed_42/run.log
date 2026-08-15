@@ -1,0 +1,401 @@
+/Users/runner/work/crossbow/crossbow/arrow/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l1dcachesize'. Detail: [errno 1] Operation not permitted
+/Users/runner/work/crossbow/crossbow/arrow/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l2cachesize'. Detail: [errno 1] Operation not permitted
+/Users/runner/work/crossbow/crossbow/arrow/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l3cachesize'. Detail: [errno 1] Operation not permitted
+[67993:MainThread](2026-08-15 12:20:25,144) INFO - qlib.Initialization - [config.py:473] - default_conf: client.
+[67993:MainThread](2026-08-15 12:20:29,783) INFO - qlib.Initialization - [__init__.py:82] - qlib successfully initialized based on client settings.
+[67993:MainThread](2026-08-15 12:20:29,793) INFO - qlib.Initialization - [__init__.py:84] - data_path={'__DEFAULT_FREQ': PosixPath('/Users/toni/src/qlib/data/qlib_crypto')}
+[I 2026-08-15 12:20:30,321] A new study created in memory with name: sfm_nested_fold_1
+[I 2026-08-15 12:23:37,159] Trial 0 pruned. 
+[I 2026-08-15 12:24:54,364] Trial 1 finished with value: 0.8737271410021984 and parameters: {'hidden_dim': 96, 'freq_components': 16, 'lr': 0.00010994335574766199, 'dropout_rate': 0.5, 'batch_size': 16, 'weight_decay': 2.3102018878452926e-05, 'lookback': 20}. Best is trial 1 with value: 0.8737271410021984.
+[I 2026-08-15 12:26:34,829] Trial 2 finished with value: 0.9872508248199592 and parameters: {'hidden_dim': 64, 'freq_components': 12, 'lr': 0.0007309539835912913, 'dropout_rate': 0.2, 'batch_size': 16, 'weight_decay': 3.8396292998041685e-05, 'lookback': 25}. Best is trial 1 with value: 0.8737271410021984.
+[I 2026-08-15 12:27:53,364] Trial 3 finished with value: 0.7850652367186822 and parameters: {'hidden_dim': 80, 'freq_components': 17, 'lr': 0.00025081156860452336, 'dropout_rate': 0.30000000000000004, 'batch_size': 16, 'weight_decay': 0.000164092867306479, 'lookback': 20}. Best is trial 3 with value: 0.7850652367186822.
+[I 2026-08-15 12:29:21,569] Trial 4 finished with value: -1.3809986172457411 and parameters: {'hidden_dim': 32, 'freq_components': 20, 'lr': 0.00853618986286683, 'dropout_rate': 0.45000000000000007, 'batch_size': 16, 'weight_decay': 0.000233596350262616, 'lookback': 30}. Best is trial 4 with value: -1.3809986172457411.
+[I 2026-08-15 12:31:15,471] A new study created in memory with name: sfm_nested_fold_2
+[I 2026-08-15 12:32:01,534] Trial 0 finished with value: -0.9961727468309756 and parameters: {'hidden_dim': 32, 'freq_components': 14, 'lr': 0.0001848340281629337, 'dropout_rate': 0.2, 'batch_size': 32, 'weight_decay': 0.00021487229685265524, 'lookback': 35}. Best is trial 0 with value: -0.9961727468309756.
+[I 2026-08-15 12:32:20,658] Trial 1 finished with value: -0.7667422234339568 and parameters: {'hidden_dim': 32, 'freq_components': 16, 'lr': 0.0006164530942831308, 'dropout_rate': 0.45000000000000007, 'batch_size': 16, 'weight_decay': 0.0005411246049940446, 'lookback': 20}. Best is trial 0 with value: -0.9961727468309756.
+[I 2026-08-15 13:06:42,069] Trial 2 pruned. 
+[I 2026-08-15 13:17:02,136] Trial 3 finished with value: 0.7933683709752861 and parameters: {'hidden_dim': 80, 'freq_components': 15, 'lr': 0.0001462177509096267, 'dropout_rate': 0.5, 'batch_size': 16, 'weight_decay': 1.0239036664087415e-05, 'lookback': 35}. Best is trial 0 with value: -0.9961727468309756.
+[I 2026-08-15 13:17:16,915] Trial 4 finished with value: -3.6931069989374277 and parameters: {'hidden_dim': 80, 'freq_components': 14, 'lr': 0.009044993688794191, 'dropout_rate': 0.5, 'batch_size': 16, 'weight_decay': 1.6144994436962734e-05, 'lookback': 20}. Best is trial 4 with value: -3.6931069989374277.
+[I 2026-08-15 13:17:51,816] A new study created in memory with name: sfm_nested_fold_3
+[I 2026-08-15 13:18:09,786] Trial 0 finished with value: -0.6677003296181057 and parameters: {'hidden_dim': 112, 'freq_components': 5, 'lr': 0.003085183239507017, 'dropout_rate': 0.25, 'batch_size': 32, 'weight_decay': 6.131392272351954e-05, 'lookback': 30}. Best is trial 0 with value: -0.6677003296181057.
+[I 2026-08-15 13:19:02,502] Trial 1 finished with value: 0.40969617854798307 and parameters: {'hidden_dim': 80, 'freq_components': 16, 'lr': 0.008337818756564025, 'dropout_rate': 0.30000000000000004, 'batch_size': 16, 'weight_decay': 2.7277071286230936e-05, 'lookback': 50}. Best is trial 0 with value: -0.6677003296181057.
+[I 2026-08-15 13:19:43,015] Trial 2 finished with value: 2.1322372143475183 and parameters: {'hidden_dim': 128, 'freq_components': 18, 'lr': 0.001962551783638816, 'dropout_rate': 0.15000000000000002, 'batch_size': 16, 'weight_decay': 8.268146071567754e-05, 'lookback': 45}. Best is trial 0 with value: -0.6677003296181057.
+[I 2026-08-15 13:19:55,533] Trial 3 finished with value: -0.11717201584779693 and parameters: {'hidden_dim': 48, 'freq_components': 15, 'lr': 0.005313108344181227, 'dropout_rate': 0.15000000000000002, 'batch_size': 16, 'weight_decay': 2.2171233364070216e-05, 'lookback': 15}. Best is trial 0 with value: -0.6677003296181057.
+[I 2026-08-15 13:20:08,518] Trial 4 finished with value: -1.0868880678831732 and parameters: {'hidden_dim': 48, 'freq_components': 11, 'lr': 0.0038828430173841874, 'dropout_rate': 0.5, 'batch_size': 16, 'weight_decay': 0.00010751643388858857, 'lookback': 15}. Best is trial 4 with value: -1.0868880678831732.
+   📡 Solicitando '['btc', 'eth', 'sol', 'ada', 'xrp', 'doge', 'link', 'ltc']' desde 2023-08-11 hasta 2026-08-15...
+
+==============================================================
+📊 DIAGNÓSTICO DE DATOS
+==============================================================
+   Consulta original:    2023-08-11 → 2026-08-15
+   Filas sin procesar:   1099
+   Activos solicitados:  ['btc', 'eth', 'sol', 'ada', 'xrp', 'doge', 'link', 'ltc']
+       btc:      0 NaN (  0.0%)    [2023-08-11 → 2026-08-13]
+       eth:      0 NaN (  0.0%)    [2023-08-11 → 2026-08-13]
+       sol:      0 NaN (  0.0%)    [2023-08-11 → 2026-08-13]
+       ada:      0 NaN (  0.0%)    [2023-08-11 → 2026-08-13]
+       xrp:      0 NaN (  0.0%)    [2023-08-11 → 2026-08-13]
+      doge:      0 NaN (  0.0%)    [2023-08-11 → 2026-08-13]
+      link:      0 NaN (  0.0%)    [2023-08-11 → 2026-08-13]
+       ltc:      0 NaN (  0.0%)    [2023-08-11 → 2026-08-13]
+   ✅ Filas útiles:       1099
+   Rango efectivo:       2023-08-11 → 2026-08-13
+   Años de datos:        3.0
+
+   📐 Matrix final:
+      Dimensiones:       1099 filas × 24 columnas
+      Features:          24 (close=8, pct=8, ratio=8)
+      Rango temporal:    2023-08-11 → 2026-08-13
+      Días totales:      1099
+      Años cubiertos:    3.0
+      NaN restantes:     0
+      Inf restantes:     0
+      Valores extremos:  sin clipping global (se ajusta solo con train)
+      Stats rápidos:     μ=3238.0475  σ=15787.1879  min=-0.2442  max=124658.5391
+
+==============================================================
+{
+  "aggregate": {
+    "sharpe_max": 0.36473822544929885,
+    "sharpe_mean": -0.6828104102225466,
+    "sharpe_min": -2.1580922344029285,
+    "sharpe_std": 1.0734322343782148
+  },
+  "decision_rows": 934,
+  "final_holdout": {
+    "end": "2026-08-13T00:00:00",
+    "evaluated": false,
+    "rows": 165,
+    "start": "2026-03-02T00:00:00"
+  },
+  "folds": [
+    {
+      "best_params": {
+        "batch_size": 16,
+        "dropout_rate": 0.45000000000000007,
+        "freq_components": 20,
+        "hidden_dim": 32,
+        "lookback": 30,
+        "lr": 0.00853618986286683,
+        "weight_decay": 0.000233596350262616
+      },
+      "best_validation_sharpe": 1.3809986172457411,
+      "boundaries": {
+        "test_end": 684,
+        "test_start": 560,
+        "train_end": 467,
+        "train_start": 0,
+        "validation_end": 560,
+        "validation_start": 467
+      },
+      "calibrated_cost_metrics": {
+        "annualized_return": -0.33377744470237247,
+        "calmar": -1.2508229922394611,
+        "cvar_95": -0.06693418025970459,
+        "equity_final": 0.9016939842208795,
+        "max_drawdown": -0.2668462657371674,
+        "sharpe": -0.2884386075055335,
+        "sortino": -0.48465533906898633,
+        "var_95": -0.05383521318435669
+      },
+      "cost_calibration": {
+        "one_way_cost_by_asset": {
+          "ada": 0.002921380707597564,
+          "btc": 0.0019064345462859998,
+          "doge": 0.0029354017982227564,
+          "eth": 0.0020976932990918774,
+          "link": 0.0030642518686338164,
+          "ltc": 0.0026234467590190796,
+          "sol": 0.002804178101120346,
+          "xrp": 0.0022968770208258824
+        },
+        "order_notional": 10000.0,
+        "source": "train-only daily OHLCV proxy",
+        "trained_through": "2024-11-19T00:00:00"
+      },
+      "cost_scenarios": {
+        "adverse": {
+          "annualized_return": -0.338771700213779,
+          "calmar": -1.2695388453383911,
+          "cvar_95": -0.06693418025970459,
+          "equity_final": 0.8999668847457849,
+          "max_drawdown": -0.2668462657371675,
+          "sharpe": -0.3003866732982611,
+          "sortino": -0.504422636292042,
+          "turnover": 0.021739130434782608,
+          "var_95": -0.05383521318435669
+        },
+        "base": {
+          "annualized_return": -0.3198271206137595,
+          "calmar": -1.1985444863182824,
+          "cvar_95": -0.06693418025970459,
+          "equity_final": 0.9064676668025253,
+          "max_drawdown": -0.2668462657371673,
+          "sharpe": -0.2550772217140102,
+          "sortino": -0.4295792147639893,
+          "turnover": 0.021739130434782608,
+          "var_95": -0.05383521318435669
+        },
+        "optimistic": {
+          "annualized_return": -0.30952284096162064,
+          "calmar": -1.1599294447331518,
+          "cvar_95": -0.06693418025970459,
+          "equity_final": 0.9099470623536806,
+          "max_drawdown": -0.2668462657371674,
+          "sharpe": -0.23100340170967856,
+          "sortino": -0.38966272328236123,
+          "turnover": 0.021739130434782608,
+          "var_95": -0.05383521318435669
+        }
+      },
+      "date_ranges": {
+        "test": [
+          "2025-02-21T00:00:00",
+          "2025-06-24T00:00:00"
+        ],
+        "train": [
+          "2023-08-11T00:00:00",
+          "2024-11-19T00:00:00"
+        ],
+        "validation": [
+          "2024-11-20T00:00:00",
+          "2025-02-20T00:00:00"
+        ]
+      },
+      "fold": 1,
+      "test_metrics": {
+        "benchmark_final": 1.0137622356414795,
+        "direction_acc": 0.4959677419354839,
+        "equity_final": 0.9064676668025253,
+        "max_drawdown": -0.2668462657371673,
+        "outperformance": -0.10729456883895416,
+        "sharpe": -0.2550772217140102,
+        "test_loss": 0.0016480658669024706,
+        "turnover": 0.021739130434782608
+      }
+    },
+    {
+      "best_params": {
+        "batch_size": 16,
+        "dropout_rate": 0.5,
+        "freq_components": 14,
+        "hidden_dim": 80,
+        "lookback": 20,
+        "lr": 0.009044993688794191,
+        "weight_decay": 1.6144994436962734e-05
+      },
+      "best_validation_sharpe": 3.6931069989374277,
+      "boundaries": {
+        "test_end": 808,
+        "test_start": 684,
+        "train_end": 591,
+        "train_start": 0,
+        "validation_end": 684,
+        "validation_start": 591
+      },
+      "calibrated_cost_metrics": {
+        "annualized_return": -0.2128261607462647,
+        "calmar": -0.5349936438496208,
+        "cvar_95": -0.09805093372000818,
+        "equity_final": 0.934699461165186,
+        "max_drawdown": -0.3978106340878095,
+        "sharpe": 0.14060073101704207,
+        "sortino": 0.1777387479837045,
+        "var_95": -0.05889501571655273
+      },
+      "cost_calibration": {
+        "one_way_cost_by_asset": {
+          "ada": 0.0031622871805873547,
+          "btc": 0.00193118910262064,
+          "doge": 0.0029386156231653647,
+          "eth": 0.00215042690982847,
+          "link": 0.0032229313190576116,
+          "ltc": 0.0027974927723669633,
+          "sol": 0.002839985351010145,
+          "xrp": 0.002464416028265306
+        },
+        "order_notional": 10000.0,
+        "source": "train-only daily OHLCV proxy",
+        "trained_through": "2025-03-23T00:00:00"
+      },
+      "cost_scenarios": {
+        "adverse": {
+          "annualized_return": -0.2459380401461445,
+          "calmar": -0.6140404628181094,
+          "cvar_95": -0.0980341165860494,
+          "equity_final": 0.9234327483561879,
+          "max_drawdown": -0.40052415919957385,
+          "sharpe": 0.08878871367051275,
+          "sortino": 0.1123728306896415,
+          "turnover": 0.20588235294117646,
+          "var_95": -0.05889501571655273
+        },
+        "base": {
+          "annualized_return": -0.05129357151000624,
+          "calmar": -0.13498491463265805,
+          "cvar_95": -0.0975341165860494,
+          "equity_final": 0.985250795438115,
+          "max_drawdown": -0.3799948433948771,
+          "sharpe": 0.36473822544929885,
+          "sortino": 0.45956988720694353,
+          "turnover": 0.20588235294117646,
+          "var_95": -0.05889501571655273
+        },
+        "optimistic": {
+          "annualized_return": 0.07200490567741302,
+          "calmar": 0.19524820087170394,
+          "cvar_95": -0.09726744991938274,
+          "equity_final": 1.0198147312745856,
+          "max_drawdown": -0.36878652574730797,
+          "sharpe": 0.5119906482224644,
+          "sortino": 0.6441846654788002,
+          "turnover": 0.20588235294117646,
+          "var_95": -0.05889501571655273
+        }
+      },
+      "date_ranges": {
+        "test": [
+          "2025-06-25T00:00:00",
+          "2025-10-26T00:00:00"
+        ],
+        "train": [
+          "2023-08-11T00:00:00",
+          "2025-03-23T00:00:00"
+        ],
+        "validation": [
+          "2025-03-24T00:00:00",
+          "2025-06-24T00:00:00"
+        ]
+      },
+      "fold": 2,
+      "test_metrics": {
+        "benchmark_final": 1.082001805305481,
+        "direction_acc": 0.5266990291262136,
+        "equity_final": 0.985250795438115,
+        "max_drawdown": -0.3799948433948771,
+        "outperformance": -0.09675100986736596,
+        "sharpe": 0.36473822544929885,
+        "test_loss": 0.0018129968084394932,
+        "turnover": 0.20588235294117646
+      }
+    },
+    {
+      "best_params": {
+        "batch_size": 16,
+        "dropout_rate": 0.5,
+        "freq_components": 11,
+        "hidden_dim": 48,
+        "lookback": 15,
+        "lr": 0.0038828430173841874,
+        "weight_decay": 0.00010751643388858857
+      },
+      "best_validation_sharpe": 1.0868880678831732,
+      "boundaries": {
+        "test_end": 934,
+        "test_start": 808,
+        "train_end": 715,
+        "train_start": 0,
+        "validation_end": 808,
+        "validation_start": 715
+      },
+      "calibrated_cost_metrics": {
+        "annualized_return": -0.8410026344496828,
+        "calmar": -1.8392333164937567,
+        "cvar_95": -0.08730979760487874,
+        "equity_final": 0.5745436011424021,
+        "max_drawdown": -0.4572571770660475,
+        "sharpe": -2.174773143699238,
+        "sortino": -2.969691951683026,
+        "var_95": -0.06289646029472351
+      },
+      "cost_calibration": {
+        "one_way_cost_by_asset": {
+          "ada": 0.003089246428323653,
+          "btc": 0.0018768493220659135,
+          "doge": 0.002929168005663499,
+          "eth": 0.0021801751164053115,
+          "link": 0.00321683683111677,
+          "ltc": 0.0027994290501939414,
+          "sol": 0.0027869088383088597,
+          "xrp": 0.0024459072596727622
+        },
+        "order_notional": 10000.0,
+        "source": "train-only daily OHLCV proxy",
+        "trained_through": "2025-07-25T00:00:00"
+      },
+      "cost_scenarios": {
+        "adverse": {
+          "annualized_return": -0.8429303512599889,
+          "calmar": -1.837235216201629,
+          "cvar_95": -0.08730979760487874,
+          "equity_final": 0.5724353408852474,
+          "max_drawdown": -0.45880371965597966,
+          "sharpe": -2.189917823646234,
+          "sortino": -2.991806487670235,
+          "turnover": 0.01834862385321101,
+          "var_95": -0.06289646029472351
+        },
+        "base": {
+          "annualized_return": -0.8388493445143244,
+          "calmar": -1.841908777370089,
+          "cvar_95": -0.08730979760487874,
+          "equity_final": 0.5768775517844561,
+          "max_drawdown": -0.4554239355587728,
+          "sharpe": -2.1580922344029285,
+          "sortino": -2.9454665353324656,
+          "turnover": 0.01834862385321101,
+          "var_95": -0.06289646029472351
+        },
+        "optimistic": {
+          "annualized_return": -0.8366344130322403,
+          "calmar": -1.8443626687548522,
+          "cvar_95": -0.08730979760487874,
+          "equity_final": 0.5792556933261052,
+          "max_drawdown": -0.4536170824866155,
+          "sharpe": -2.1409783633257438,
+          "sortino": -2.920233744239655,
+          "turnover": 0.01834862385321101,
+          "var_95": -0.06289646029472351
+        }
+      },
+      "date_ranges": {
+        "test": [
+          "2025-10-27T00:00:00",
+          "2026-03-01T00:00:00"
+        ],
+        "train": [
+          "2023-08-11T00:00:00",
+          "2025-07-25T00:00:00"
+        ],
+        "validation": [
+          "2025-07-26T00:00:00",
+          "2025-10-26T00:00:00"
+        ]
+      },
+      "fold": 3,
+      "test_metrics": {
+        "benchmark_final": 0.559548556804657,
+        "direction_acc": 0.425,
+        "equity_final": 0.5768775517844561,
+        "max_drawdown": -0.4554239355587728,
+        "outperformance": 0.017328994979799117,
+        "sharpe": -2.1580922344029285,
+        "test_loss": 0.0016100098146125674,
+        "turnover": 0.01834862385321101
+      }
+    }
+  ],
+  "instruments": [
+    "btc",
+    "eth",
+    "sol",
+    "ada",
+    "xrp",
+    "doge",
+    "link",
+    "ltc"
+  ],
+  "n_trials_per_fold": 5,
+  "protocol": "nested_walk_forward",
+  "seed": 42
+}

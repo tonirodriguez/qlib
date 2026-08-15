@@ -282,13 +282,6 @@ completarse la parte de microestructura indicada en «Pendiente».
 
 ### Pendiente
 
-- Fijar antes de ejecutar:
-  - número de folds;
-  - trials por fold;
-  - epochs y paciencia;
-  - seeds;
-  - nocional y escenario de costes;
-  - criterio de estabilidad y mejora mínima.
 - Ejecutar el piloto predeclarado: dos seeds, tres folds, cinco trials por fold,
   diez épocas de búsqueda y quince épocas para el modelo final del fold.
 - Ejecutar el experimento formal con presupuesto aprobado.
@@ -297,6 +290,19 @@ completarse la parte de microestructura indicada en «Pendiente».
 - Congelar la variante final y generar manifest de decisión.
 - Revisar y aprobar el protocolo propuesto antes del piloto. Los umbrales son
   conservadores iniciales y no deben cambiarse después de observar resultados.
+
+### Ejecución del piloto
+
+Iniciada el 2026-08-15 en el entorno Conda `crypto`, con la configuración
+predeclarada y nocional 10.000. La matriz contiene tres universos por dos seeds;
+cada combinación ejecuta tres folds, cinco trials por fold y un entrenamiento
+final. El directorio de trabajo es
+`work/crypto/output/universe_comparison_pilot/`.
+
+Estado al actualizar este documento: ejecución en curso; generado el primer
+checkpoint de `original_5`, seed 42. No existen aún métricas completas del
+piloto y, por tanto, no se toma ninguna decisión. El proceso no consulta el
+holdout final.
 
 ### Resultado del smoke comparativo con costes
 
