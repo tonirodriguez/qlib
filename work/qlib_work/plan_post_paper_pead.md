@@ -123,3 +123,13 @@ Qlib/Alpha158 **solo trabaja con OHLCV**. Los datos fundamentales se añaden com
 ---
 
 *Documento de referencia del proyecto Qlib Work. Se actualiza con cada avance.*
+
+---
+
+## Actualización — Fase A en curso (2026-08-19)
+
+**Bloqueo resuelto:** el endpoint `quoteSummary` de Yahoo da 401 (bloqueado). **Solución:** `yahooquery` (la librería del collector de Qlib) funciona y da datos de earnings completos (actual, estimate, surprisePct, reportedDate por trimestre).
+
+**Hallazgo:** `yahooquery.Ticker(t).earnings` devuelve earnings históricos trimestrales con `actual`, `estimate`, `surprisePct` y `reportedDate` — suficiente para calcular SUE y medir PEAD.
+
+**En curso:** `work/estrategias/pead_faseA.py` obtiene earnings del topk, calcula distribución de sorpresas, y guarda `pead_earnings_data.csv` para medir el IC del PEAD (Fase A2).
