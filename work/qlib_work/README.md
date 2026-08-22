@@ -103,6 +103,8 @@ Aprender y aplicar **Qlib** (plataforma de inversión cuantitativa con ML de Mic
 
 | Fecha | Documento | Resumen |
 |---|---|---|
+| 2026-08-22 | `documentacion_pead.md` | Documentación PEAD y workflow de scripts (fetch, faseA, faseA2, combo, eventos, backtest) |
+| 2026-08-22 | `documentacion_momentum.md` | Documentación Momentum 120 y workflow de scripts (walkforward, backtest, vol-targeting, paper-trading) |
 | 2026-08-22 | `estrategia_pead_eventos.md` | Estrategia de eventos PEAD: cómo operar al sorprender resultados (señal SUE, entrada/salida, sizing, combinación con momentum) |
 | 2026-08-22 | `pead_faseC.md` | PEAD Fase C: combo momentum+PEAD IC +0.008 total (+0.023 anual); notas sobre integración por eventos |
 | 2026-08-19 | `pead_hallazgo.md` | 🚀 PEAD con alpha confirmado: sorpresa de earnings predice retorno post-anuncio (IC Spearman 0.19-0.22, long-short +5-7%) |
