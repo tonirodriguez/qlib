@@ -20,6 +20,7 @@ import torch
 from torch.utils.data import DataLoader, TensorDataset
 
 from calibrate_execution_costs import estimate_asset_costs
+from execution_costs_v2 import CostModelConfig, fold_cost_vector_v2, load_fee_schedule
 from research_utils import apply_clip_bounds, fit_clip_bounds
 from temporal_validation import (
     final_holdout_boundary,
@@ -99,6 +100,21 @@ def run() -> dict[str, object]:
     final_epochs = int(os.getenv("CRYPTO_NESTED_FINAL_EPOCHS", "60"))
     order_notional = float(os.getenv("CRYPTO_ORDER_NOTIONAL", "10000"))
     ohlcv_dir = env_path("CRYPTO_OHLCV_DIR", "scripts/crypto/csv_data/crypto/ohlcv")
+
+    # Execution-cost model selector. "proxy" (default) preserves the original
+    # OHLCV proxy; "v2" uses the maker/taker + order-book aware model and, if
+    # present, real quotes/depth CSVs (auto-detected -> component source flips to
+    # "orderbook"). All inputs are read train-only inside each fold.
+    cost_model = os.getenv("CRYPTO_COST_MODEL", "proxy").strip().lower()
+    quotes_dir = env_path("CRYPTO_QUOTES_DIR", "") if os.getenv("CRYPTO_QUOTES_DIR") else None
+    depth_dir = env_path("CRYPTO_DEPTH_DIR", "") if os.getenv("CRYPTO_DEPTH_DIR") else None
+    cost_config = CostModelConfig(
+        fee_schedule=load_fee_schedule(),
+        thirty_day_volume_usd=float(os.getenv("CRYPTO_THIRTY_DAY_VOLUME_USD", "0")),
+        taker_fraction=float(os.getenv("CRYPTO_TAKER_FRACTION", "1.0")),
+        impact_coefficient=float(os.getenv("CRYPTO_IMPACT_COEFFICIENT", "1.0")),
+        max_participation=float(os.getenv("CRYPTO_MAX_PARTICIPATION", "0.1")),
+    )
 
     qlib.init(
         provider_uri=str(provider),
@@ -187,12 +203,50 @@ def run() -> dict[str, object]:
             patience=int(os.getenv("CRYPTO_NESTED_PATIENCE", "10")),
             model_path=str(model_path),
         )
-        one_way_costs = fold_cost_vector(
-            instruments,
-            ohlcv_dir,
-            dates[fold.train_end - 1],
-            order_notional,
-        )
+        if cost_model == "v2":
+            one_way_costs, cost_breakdown = fold_cost_vector_v2(
+                instruments,
+                ohlcv_dir,
+                dates[fold.train_end - 1],
+                order_notional,
+                cost_config,
+                quotes_dir=quotes_dir,
+                depth_dir=depth_dir,
+            )
+            sources = sorted(
+                {
+                    f"{item['half_spread_source']}/{item['market_impact_source']}"
+                    for item in cost_breakdown
+                }
+            )
+            cost_calibration = {
+                "order_notional": order_notional,
+                "trained_through": dates[fold.train_end - 1].isoformat(),
+                "one_way_cost_by_asset": {
+                    asset: float(cost) for asset, cost in zip(instruments, one_way_costs)
+                },
+                "model": "v2_maker_taker_orderbook",
+                "source": "; ".join(f"half_spread/impact={s}" for s in sources),
+                "rejected_assets": [
+                    item["instrument"] for item in cost_breakdown if item["rejected"]
+                ],
+                "breakdown": cost_breakdown,
+            }
+        else:
+            one_way_costs = fold_cost_vector(
+                instruments,
+                ohlcv_dir,
+                dates[fold.train_end - 1],
+                order_notional,
+            )
+            cost_calibration = {
+                "order_notional": order_notional,
+                "trained_through": dates[fold.train_end - 1].isoformat(),
+                "one_way_cost_by_asset": {
+                    asset: float(cost) for asset, cost in zip(instruments, one_way_costs)
+                },
+                "source": "train-only daily OHLCV proxy",
+            }
         metrics = pipeline.evaluate_trial(
             model, X_test, y_test, device, one_way_costs=one_way_costs
         )
@@ -210,15 +264,7 @@ def run() -> dict[str, object]:
                 },
                 "best_validation_sharpe": float(-study.best_value),
                 "best_params": params,
-                "cost_calibration": {
-                    "order_notional": order_notional,
-                    "trained_through": dates[fold.train_end - 1].isoformat(),
-                    "one_way_cost_by_asset": {
-                        asset: float(cost)
-                        for asset, cost in zip(instruments, one_way_costs)
-                    },
-                    "source": "train-only daily OHLCV proxy",
-                },
+                "cost_calibration": cost_calibration,
                 "test_metrics": {
                     key: float(metrics[key])
                     for key in (
@@ -235,6 +281,7 @@ def run() -> dict[str, object]:
     report: dict[str, object] = {
         "protocol": "nested_walk_forward",
         "seed": seed,
+        "cost_model": cost_model,
         "instruments": instruments,
         "decision_rows": decision_end,
         "final_holdout": {

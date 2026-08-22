@@ -279,6 +279,81 @@ def market_data_from_ohlcv(
     )
 
 
+def fee_schedule_from_records(records: list[dict[str, float]]) -> tuple[FeeTier, ...]:
+    """Build a fee schedule from a list of {min_thirty_day_volume_usd, maker, taker}."""
+    schedule = tuple(
+        FeeTier(
+            float(r["min_thirty_day_volume_usd"]),
+            float(r["maker"]),
+            float(r["taker"]),
+        )
+        for r in records
+    )
+    if not schedule:
+        raise ValueError("fee schedule cannot be empty")
+    return schedule
+
+
+def load_fee_schedule(path: str | Path | None = None) -> tuple[FeeTier, ...]:
+    """Load a maker/taker schedule from JSON, or return the default placeholder.
+
+    Resolution order: explicit ``path`` argument, then ``CRYPTO_FEE_SCHEDULE_JSON``,
+    then ``DEFAULT_FEE_SCHEDULE``. JSON format is a list of objects with keys
+    ``min_thirty_day_volume_usd``, ``maker`` and ``taker``. This lets step 4 flip
+    from the placeholder to a real venue schedule with no code change.
+    """
+    source = path if path is not None else os.getenv("CRYPTO_FEE_SCHEDULE_JSON")
+    if not source:
+        return DEFAULT_FEE_SCHEDULE
+    records = json.loads(Path(source).expanduser().read_text(encoding="utf-8"))
+    return fee_schedule_from_records(records)
+
+
+def _train_only_frame(path: Path, cutoff: pd.Timestamp) -> pd.DataFrame | None:
+    """Read a dated CSV keeping only rows at or before ``cutoff`` (causal)."""
+    if path is None or not Path(path).exists():
+        return None
+    frame = pd.read_csv(path)
+    frame["date"] = pd.to_datetime(frame["date"], utc=True)
+    train = frame[frame["date"] <= cutoff]
+    return train if len(train) else None
+
+
+def fold_cost_vector_v2(
+    instruments: list[str] | tuple[str, ...],
+    ohlcv_dir: str | Path,
+    train_end_date,
+    order_notional: float,
+    config: CostModelConfig,
+    quotes_dir: str | Path | None = None,
+    depth_dir: str | Path | None = None,
+) -> tuple[np.ndarray, list[dict[str, object]]]:
+    """Train-only per-asset one-way cost vector using the v2 model, for one fold.
+
+    Reads OHLCV strictly up to ``train_end_date`` (no leakage). If ``quotes_dir`` or
+    ``depth_dir`` hold ``<ASSET>.csv`` files, their train-only medians feed the real
+    bid/ask and depth and the component ``source`` becomes ``"orderbook"``;
+    otherwise the labelled proxies are used. The vector is aligned to ``instruments``
+    and plugs into ``research_utils.top1_long_returns(one_way_costs=...)``.
+    """
+    ohlcv_dir = Path(ohlcv_dir)
+    cutoff = pd.Timestamp(train_end_date)
+    if cutoff.tzinfo is None:
+        cutoff = cutoff.tz_localize("UTC")
+    market_by_instrument: dict[str, AssetMarketData] = {}
+    for instrument in instruments:
+        upper = str(instrument).upper()
+        frame = pd.read_csv(ohlcv_dir / f"{upper}.csv")
+        frame["date"] = pd.to_datetime(frame["date"], utc=True)
+        train_frame = frame[frame["date"] <= cutoff]
+        quotes = _train_only_frame(Path(quotes_dir) / f"{upper}.csv", cutoff) if quotes_dir else None
+        depth = _train_only_frame(Path(depth_dir) / f"{upper}.csv", cutoff) if depth_dir else None
+        market_by_instrument[instrument] = market_data_from_ohlcv(
+            train_frame, instrument, quotes=quotes, depth=depth
+        )
+    return build_one_way_cost_vector(tuple(instruments), market_by_instrument, order_notional, config)
+
+
 def env_path(name: str, default: str) -> Path:
     value = Path(os.getenv(name, default)).expanduser()
     return value if value.is_absolute() else PROJECT_ROOT / value

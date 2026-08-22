@@ -1,0 +1,44 @@
+{
+  "any_universe_passed": false,
+  "comparison": "/sessions/serene-stoic-shannon/mnt/qlib/work/crypto/output/universe_comparison_pilot/comparison.json",
+  "evaluations": {
+    "full_9": {
+      "checks": {
+        "adverse_cost_sharpe": false,
+        "benchmark_outperformance": false,
+        "calibrated_cost_sharpe_median": false,
+        "maximum_drawdown": false,
+        "minimum_outer_fold_count": true,
+        "minimum_seed_count": false,
+        "positive_fold_fraction": false
+      },
+      "passed": false
+    },
+    "original_5": {
+      "checks": {
+        "adverse_cost_sharpe": false,
+        "benchmark_outperformance": false,
+        "calibrated_cost_sharpe_median": true,
+        "maximum_drawdown": false,
+        "minimum_outer_fold_count": true,
+        "minimum_seed_count": false,
+        "positive_fold_fraction": false
+      },
+      "passed": false
+    },
+    "reduced_8_no_xlm": {
+      "checks": {
+        "adverse_cost_sharpe": false,
+        "benchmark_outperformance": false,
+        "calibrated_cost_sharpe_median": false,
+        "maximum_drawdown": false,
+        "minimum_outer_fold_count": true,
+        "minimum_seed_count": false,
+        "positive_fold_fraction": false
+      },
+      "passed": false
+    }
+  },
+  "holdout_may_be_opened": false,
+  "protocol_status": "proposed_before_formal_run"
+}

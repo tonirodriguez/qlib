@@ -1,0 +1,77 @@
+{
+  "config": {
+    "impact_coefficient": 1.0,
+    "max_participation": 0.1,
+    "taker_fraction": 1.0,
+    "thirty_day_volume_usd": 0.0
+  },
+  "decision_sample_end": "2026-03-02T00:00:00+00:00",
+  "instruments": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "ADA",
+    "XRP",
+    "DOGE",
+    "LINK",
+    "LTC"
+  ],
+  "methodology": {
+    "execution_timing": "t+1",
+    "fee": "configurable maker/taker tier schedule, blended by taker_fraction",
+    "half_spread": "real top-of-book when provided, else labelled OHLCV range proxy",
+    "holdout_fraction": 0.15,
+    "holdout_used": false,
+    "market_impact": "sqrt model k*sigma*sqrt(Q/L); L = order-book depth or ADV proxy",
+    "participation_cap": 0.1
+  },
+  "order_notionals": [
+    1000.0,
+    10000.0,
+    100000.0
+  ],
+  "per_notional": {
+    "1000": {
+      "mean_one_way_cost": 0.002404786997797564,
+      "one_way_cost_by_asset": {
+        "ADA": 0.0026367333263409565,
+        "BTC": 0.001821702155758856,
+        "DOGE": 0.0026389926791124518,
+        "ETH": 0.0021353402594557025,
+        "LINK": 0.0027620283437639415,
+        "LTC": 0.002383148630409508,
+        "SOL": 0.0026060744210525235,
+        "XRP": 0.002254276166486573
+      },
+      "rejected_assets": []
+    },
+    "10000": {
+      "mean_one_way_cost": 0.0026557710689023096,
+      "one_way_cost_by_asset": {
+        "ADA": 0.0030705889243136868,
+        "BTC": 0.0018633406655692716,
+        "DOGE": 0.0029115826732080837,
+        "ETH": 0.002209952874502863,
+        "LINK": 0.0032007537160121625,
+        "LTC": 0.0028089087358645027,
+        "SOL": 0.002741831981066883,
+        "XRP": 0.0024392089806810225
+      },
+      "rejected_assets": []
+    },
+    "100000": {
+      "mean_one_way_cost": 0.0034494523900149583,
+      "one_way_cost_by_asset": {
+        "ADA": 0.0044425607895218445,
+        "BTC": 0.0019950131949454503,
+        "DOGE": 0.0037735879219221308,
+        "ETH": 0.0024458986802332436,
+        "LINK": 0.004588125159621769,
+        "LTC": 0.004155280405935767,
+        "SOL": 0.0031711350802992593,
+        "XRP": 0.0030240178876402
+      },
+      "rejected_assets": []
+    }
+  }
+}

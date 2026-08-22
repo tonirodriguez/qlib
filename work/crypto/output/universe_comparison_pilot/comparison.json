@@ -1,0 +1,150 @@
+{
+  "aggregate": {
+    "full_9": {
+      "adverse_cost_sharpe_mean": -1.319062786395351,
+      "calibrated_cost_positive_fold_fraction": 0.16666666666666666,
+      "calibrated_cost_sharpe_max": 0.9460775347576115,
+      "calibrated_cost_sharpe_mean": -1.2289135306188783,
+      "calibrated_cost_sharpe_median": -0.9691880097877184,
+      "calibrated_cost_sharpe_min": -2.945848020839032,
+      "calibrated_cost_sharpe_std": 1.3275253793090775,
+      "fold_observations": 6,
+      "maximum_drawdown_worst_fold": -0.5435952706891521,
+      "outperform_benchmark_fold_fraction": 0.16666666666666666,
+      "runs": 2,
+      "seeds": [
+        42,
+        43
+      ],
+      "sharpe_max": 1.1943615911956453,
+      "sharpe_mean": -0.9290444600051037,
+      "sharpe_min": -2.804206332981975,
+      "sharpe_std": 1.3236907993841003
+    },
+    "original_5": {
+      "adverse_cost_sharpe_mean": -0.35397672518013534,
+      "calibrated_cost_positive_fold_fraction": 0.5,
+      "calibrated_cost_sharpe_max": 1.5146310533848124,
+      "calibrated_cost_sharpe_mean": -0.37941197842668073,
+      "calibrated_cost_sharpe_median": 0.04016183885249591,
+      "calibrated_cost_sharpe_min": -2.5631984434341986,
+      "calibrated_cost_sharpe_std": 1.6531358742942932,
+      "fold_observations": 6,
+      "maximum_drawdown_worst_fold": -0.5579672757153513,
+      "outperform_benchmark_fold_fraction": 0.3333333333333333,
+      "runs": 2,
+      "seeds": [
+        42,
+        43
+      ],
+      "sharpe_max": 1.7135786884127064,
+      "sharpe_mean": -0.20094856762613408,
+      "sharpe_min": -2.4606567937034978,
+      "sharpe_std": 1.6998462795380813
+    },
+    "reduced_8_no_xlm": {
+      "adverse_cost_sharpe_mean": -0.945697052775038,
+      "calibrated_cost_positive_fold_fraction": 0.3333333333333333,
+      "calibrated_cost_sharpe_max": 0.9424311303543064,
+      "calibrated_cost_sharpe_mean": -0.9042205463403831,
+      "calibrated_cost_sharpe_median": -0.5670561444807753,
+      "calibrated_cost_sharpe_min": -3.1994697067528577,
+      "calibrated_cost_sharpe_std": 1.4004083725393939,
+      "fold_observations": 6,
+      "maximum_drawdown_worst_fold": -0.5944274811825603,
+      "outperform_benchmark_fold_fraction": 0.3333333333333333,
+      "runs": 2,
+      "seeds": [
+        42,
+        43
+      ],
+      "sharpe_max": 1.108955143172642,
+      "sharpe_mean": -0.7054454334397824,
+      "sharpe_min": -2.833888630478744,
+      "sharpe_std": 1.3748461069982294
+    }
+  },
+  "plan": [
+    {
+      "instruments": [
+        "BTC",
+        "ETH",
+        "SOL",
+        "XLM",
+        "ADA"
+      ],
+      "seed": 42,
+      "universe": "original_5"
+    },
+    {
+      "instruments": [
+        "BTC",
+        "ETH",
+        "SOL",
+        "XLM",
+        "ADA"
+      ],
+      "seed": 43,
+      "universe": "original_5"
+    },
+    {
+      "instruments": [
+        "BTC",
+        "ETH",
+        "SOL",
+        "XLM",
+        "ADA",
+        "XRP",
+        "DOGE",
+        "LINK",
+        "LTC"
+      ],
+      "seed": 42,
+      "universe": "full_9"
+    },
+    {
+      "instruments": [
+        "BTC",
+        "ETH",
+        "SOL",
+        "XLM",
+        "ADA",
+        "XRP",
+        "DOGE",
+        "LINK",
+        "LTC"
+      ],
+      "seed": 43,
+      "universe": "full_9"
+    },
+    {
+      "instruments": [
+        "BTC",
+        "ETH",
+        "SOL",
+        "ADA",
+        "XRP",
+        "DOGE",
+        "LINK",
+        "LTC"
+      ],
+      "seed": 42,
+      "universe": "reduced_8_no_xlm"
+    },
+    {
+      "instruments": [
+        "BTC",
+        "ETH",
+        "SOL",
+        "ADA",
+        "XRP",
+        "DOGE",
+        "LINK",
+        "LTC"
+      ],
+      "seed": 43,
+      "universe": "reduced_8_no_xlm"
+    }
+  ],
+  "protocol": "same nested settings per universe; final holdout not evaluated"
+}

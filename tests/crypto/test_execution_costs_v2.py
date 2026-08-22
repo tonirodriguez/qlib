@@ -1,4 +1,7 @@
+import json
+
 import numpy as np
+import pandas as pd
 
 from work.crypto.execution_costs_v2 import (
     AssetMarketData,
@@ -7,7 +10,10 @@ from work.crypto.execution_costs_v2 import (
     blended_fee,
     build_one_way_cost_vector,
     estimate_one_way_cost,
+    fee_schedule_from_records,
+    fold_cost_vector_v2,
     half_spread_from_quotes,
+    load_fee_schedule,
     select_fee_tier,
     square_root_impact,
 )
@@ -71,3 +77,78 @@ def test_cost_vector_is_aligned_and_plugs_into_backtester_shape():
     assert [b["instrument"] for b in breakdown] == list(instruments)
     # thinner, more volatile asset should not be the cheapest
     assert vector[2] >= vector[0]
+
+
+def test_load_fee_schedule_default_and_from_json(tmp_path):
+    assert load_fee_schedule() is DEFAULT_FEE_SCHEDULE
+    records = [
+        {"min_thirty_day_volume_usd": 0.0, "maker": 0.0009, "taker": 0.0011},
+        {"min_thirty_day_volume_usd": 5_000_000.0, "maker": 0.0005, "taker": 0.0007},
+    ]
+    path = tmp_path / "fees.json"
+    path.write_text(json.dumps(records), encoding="utf-8")
+    schedule = load_fee_schedule(path)
+    assert len(schedule) == 2
+    assert select_fee_tier(schedule, 6_000_000.0).taker == 0.0007
+
+
+def test_fee_schedule_from_records_rejects_empty():
+    try:
+        fee_schedule_from_records([])
+    except ValueError:
+        return
+    raise AssertionError("expected ValueError for empty schedule")
+
+
+def _write_ohlcv(path, prices, volume=5_000_000.0):
+    dates = pd.date_range("2023-08-11", periods=len(prices), freq="D", tz="UTC")
+    pd.DataFrame(
+        {
+            "date": dates,
+            "open": prices,
+            "high": [p * 1.02 for p in prices],
+            "low": [p * 0.98 for p in prices],
+            "close": prices,
+            "volume": [volume] * len(prices),
+        }
+    ).to_csv(path, index=False)
+
+
+def test_fold_cost_vector_v2_is_train_only_and_uses_proxy_without_quotes(tmp_path):
+    ohlcv = tmp_path / "ohlcv"
+    ohlcv.mkdir()
+    prices = [100.0 + i for i in range(40)]
+    for asset in ("BTC", "ETH"):
+        _write_ohlcv(ohlcv / f"{asset}.csv", prices)
+    cutoff = pd.Timestamp("2023-08-30", tz="UTC")  # only first 20 rows are train
+    vector, breakdown = fold_cost_vector_v2(
+        ["BTC", "ETH"], ohlcv, cutoff, 10_000.0, CostModelConfig()
+    )
+    assert vector.shape == (2,)
+    assert all(b["half_spread_source"] == "proxy" for b in breakdown)
+    assert all(b["market_impact_source"] == "proxy" for b in breakdown)
+
+
+def test_fold_cost_vector_v2_flips_to_orderbook_with_quotes_and_depth(tmp_path):
+    ohlcv = tmp_path / "ohlcv"
+    quotes = tmp_path / "quotes"
+    depth = tmp_path / "depth"
+    for d in (ohlcv, quotes, depth):
+        d.mkdir()
+    prices = [100.0 + i for i in range(40)]
+    dates = pd.date_range("2023-08-11", periods=40, freq="D", tz="UTC")
+    for asset in ("BTC", "ETH"):
+        _write_ohlcv(ohlcv / f"{asset}.csv", prices)
+        pd.DataFrame({"date": dates, "bid": [99.9] * 40, "ask": [100.1] * 40}).to_csv(
+            quotes / f"{asset}.csv", index=False
+        )
+        pd.DataFrame({"date": dates, "depth_notional": [3_000_000.0] * 40}).to_csv(
+            depth / f"{asset}.csv", index=False
+        )
+    cutoff = pd.Timestamp("2023-08-30", tz="UTC")
+    _, breakdown = fold_cost_vector_v2(
+        ["BTC", "ETH"], ohlcv, cutoff, 10_000.0, CostModelConfig(),
+        quotes_dir=quotes, depth_dir=depth,
+    )
+    assert all(b["half_spread_source"] == "orderbook" for b in breakdown)
+    assert all(b["market_impact_source"] == "orderbook" for b in breakdown)
