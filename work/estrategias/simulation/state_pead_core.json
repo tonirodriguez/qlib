@@ -1,0 +1,218 @@
+{
+  "start_capital_eur": 19500.0,
+  "start_capital_usd": 22034.999999999996,
+  "cash_usd": -11.899999999999993,
+  "euro_usd": 1.13,
+  "positions": {
+    "CI": {
+      "shares": 2.3459841735400135,
+      "cost_usd": 651.0340909090909,
+      "entry_price": 277.510009765625,
+      "book": "nucleo"
+    },
+    "ALL": {
+      "shares": 2.564842950843963,
+      "cost_usd": 651.0340909090909,
+      "entry_price": 253.8300018310547,
+      "book": "nucleo"
+    },
+    "AMGN": {
+      "shares": 1.4818794774028063,
+      "cost_usd": 651.0340909090909,
+      "entry_price": 439.3299865722656,
+      "book": "nucleo"
+    },
+    "SHW": {
+      "shares": 1.878398389416865,
+      "cost_usd": 651.0340909090909,
+      "entry_price": 346.5899963378906,
+      "book": "nucleo"
+    },
+    "ADP": {
+      "shares": 2.3184149302705874,
+      "cost_usd": 651.0340909090909,
+      "entry_price": 280.8099975585937,
+      "book": "nucleo"
+    },
+    "JCI": {
+      "shares": 4.551094561483764,
+      "cost_usd": 651.0340909090909,
+      "entry_price": 143.0500030517578,
+      "book": "nucleo"
+    },
+    "AMT": {
+      "shares": 3.703265526778279,
+      "cost_usd": 651.0340909090909,
+      "entry_price": 175.8000030517578,
+      "book": "nucleo"
+    },
+    "AAPL": {
+      "shares": 2.104522637996134,
+      "cost_usd": 651.0340909090909,
+      "entry_price": 309.3500061035156,
+      "book": "nucleo"
+    },
+    "HSY": {
+      "shares": 3.491548146880298,
+      "cost_usd": 651.0340909090909,
+      "entry_price": 186.4600067138672,
+      "book": "nucleo"
+    },
+    "STT": {
+      "shares": 3.479047047087888,
+      "cost_usd": 651.0340909090909,
+      "entry_price": 187.1300048828125,
+      "book": "nucleo"
+    },
+    "CL": {
+      "shares": 7.147936734967368,
+      "cost_usd": 651.0340909090909,
+      "entry_price": 91.08000183105467,
+      "book": "nucleo"
+    },
+    "LOW": {
+      "shares": 3.01279143848518,
+      "cost_usd": 651.0340909090909,
+      "entry_price": 216.08999633789065,
+      "book": "nucleo"
+    },
+    "KMB": {
+      "shares": 5.955851298597963,
+      "cost_usd": 651.0340909090909,
+      "entry_price": 109.30999755859376,
+      "book": "nucleo"
+    },
+    "PH": {
+      "shares": 0.6499032655737043,
+      "cost_usd": 651.0340909090909,
+      "entry_price": 1001.739990234375,
+      "book": "nucleo"
+    },
+    "CSCO": {
+      "shares": 5.863059127713436,
+      "cost_usd": 651.0340909090909,
+      "entry_price": 111.04000091552734,
+      "book": "nucleo"
+    },
+    "EBAY": {
+      "shares": 6.252128186700028,
+      "cost_usd": 651.0340909090909,
+      "entry_price": 104.12999725341795,
+      "book": "nucleo"
+    },
+    "VLO": {
+      "shares": 1.866175882146568,
+      "cost_usd": 651.0340909090909,
+      "entry_price": 348.8599853515625,
+      "book": "nucleo"
+    },
+    "MCO": {
+      "shares": 1.293479459261234,
+      "cost_usd": 651.0340909090909,
+      "entry_price": 503.3200073242188,
+      "book": "nucleo"
+    },
+    "LLY": {
+      "shares": 0.5185869669016061,
+      "cost_usd": 651.0340909090909,
+      "entry_price": 1255.4000244140625,
+      "book": "nucleo"
+    },
+    "TMO": {
+      "shares": 1.0345862200682199,
+      "cost_usd": 651.0340909090909,
+      "entry_price": 629.27001953125,
+      "book": "nucleo"
+    },
+    "RL": {
+      "shares": 1.7473203717436572,
+      "cost_usd": 651.0340909090909,
+      "entry_price": 372.5899963378906,
+      "book": "nucleo"
+    },
+    "ELV": {
+      "shares": 1.62539091481563,
+      "cost_usd": 651.0340909090909,
+      "entry_price": 400.5400085449219,
+      "book": "nucleo"
+    },
+    "MU": {
+      "shares": 0.664771179093777,
+      "cost_usd": 642.6874999999999,
+      "entry_price": 966.780029296875,
+      "book": "tactico"
+    },
+    "HUM": {
+      "shares": 1.6962824422439051,
+      "cost_usd": 642.6874999999999,
+      "entry_price": 378.8800048828125,
+      "book": "tactico"
+    },
+    "INTC": {
+      "shares": 7.135422473382458,
+      "cost_usd": 642.6874999999999,
+      "entry_price": 90.06999969482422,
+      "book": "tactico"
+    },
+    "WDC": {
+      "shares": 1.3988496791416496,
+      "cost_usd": 642.6874999999999,
+      "entry_price": 459.4400024414063,
+      "book": "tactico"
+    },
+    "HPQ": {
+      "shares": 21.63202692038748,
+      "cost_usd": 642.6874999999999,
+      "entry_price": 29.709999084472656,
+      "book": "tactico"
+    },
+    "EXPE": {
+      "shares": 1.9982199740169337,
+      "cost_usd": 642.6874999999999,
+      "entry_price": 321.6300048828125,
+      "book": "tactico"
+    },
+    "TGT": {
+      "shares": 3.8847164562126983,
+      "cost_usd": 642.6874999999999,
+      "entry_price": 165.44000244140625,
+      "book": "tactico"
+    },
+    "BBY": {
+      "shares": 7.48268138976675,
+      "cost_usd": 642.6874999999999,
+      "entry_price": 85.88999938964844,
+      "book": "tactico"
+    },
+    "APA": {
+      "shares": 14.811880826007249,
+      "cost_usd": 642.6874999999999,
+      "entry_price": 43.38999938964844,
+      "book": "tactico"
+    },
+    "NUE": {
+      "shares": 2.6379653044342235,
+      "cost_usd": 642.6874999999999,
+      "entry_price": 243.6300048828125,
+      "book": "tactico"
+    },
+    "A": {
+      "shares": 4.042059748427672,
+      "cost_usd": 642.6874999999999,
+      "entry_price": 159.0,
+      "book": "tactico"
+    },
+    "BAX": {
+      "shares": 24.39967715553928,
+      "cost_usd": 642.6874999999999,
+      "entry_price": 26.34000015258789,
+      "book": "tactico"
+    }
+  },
+  "nucleo_w": 0.65,
+  "tactico_w": 0.35,
+  "gate": 1.0,
+  "created": "2026-08-22",
+  "date": "2026-08-22",
+  "data_date": "2026-08-21"
+}
