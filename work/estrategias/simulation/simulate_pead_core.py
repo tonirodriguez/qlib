@@ -167,10 +167,86 @@ def main(reset=False):
         print(f"   Capital: €{START_CAPITAL_EUR:,.0f} | Costes entrada: ${entry_cost:.2f}")
         print(f"   Vol-gate: {gate:.2f}")
     else:
-        print("(Modo rebalanceo — para reiniciar usa --reset)")
-        print(f"Esta ejecución solo construye el estado inicial. "
-              f"El rebalanceo semanal sobre state_pead_core.json se hará en una ejecución posterior.")
-        # Para esta primera entrega de la semana 1, nos limitamos a crear el estado.
+        # --- REBALANCEO SEMANAL ---
+        euro_usd = state.get("euro_usd", 1.13)
+        cash_usd = float(state["cash_usd"])
+        old_positions = state["positions"]
+
+        # 1. Valorar la cartera actual
+        portfolio_value = cash_usd
+        for t, pos in old_positions.items():
+            if t in prices.columns and len(prices[t].dropna()) > 0:
+                cur = float(prices[t].dropna().iloc[-1])
+                portfolio_value += float(pos["shares"]) * cur
+            else:
+                portfolio_value += float(pos["cost_usd"])
+        old_value = portfolio_value
+
+        # 2. Determinación de libros objetivo (con gate de vol actualizado)
+        gate = get_vol_gate(
+            prices["^GSPC"] if "^GSPC" in prices.columns else prices.mean(axis=1)
+        )
+        core_t, tact_t = select_holdings(mom_ranking, pead_ranking, prices, PEAD_TOPK, MOM_TOPK)
+        target_set = set(core_t) | set(tact_t)
+
+        # 3. Determinar operaciones (vender lo que sale, comprar lo que entra)
+        sells = []
+        buys = []
+        for t, pos in old_positions.items():
+            if t not in target_set or t not in prices.columns:
+                px = float(prices[t].dropna().iloc[-1]) if t in prices.columns else 100.0
+                sells.append((float(pos["shares"]), px))
+        # Capital a desplegar en cada libro (sobre el valor total)
+        core_cash = portfolio_value * NUCLEO_W
+        tact_cash = portfolio_value * TACTICO_W * gate
+
+        # 4. Reconstruir posición objetivo (solo sobre los que estarán)
+        new_positions = {}
+        remaining_cash = portfolio_value  # partimos del total valorado, reagrupamos
+        # Libro núcleo (PEAD)
+        per_core = core_cash / len(core_t) if core_t else 0
+        for t in core_t:
+            px = float(prices[t].dropna().iloc[-1])
+            shares = per_core / px
+            new_positions[t] = {"shares": shares, "cost_usd": shares * px,
+                                "entry_price": px, "book": "nucleo"}
+        # Libro táctico (momentum) — excluye los ya en núcleo
+        tact_target = [t for t in tact_t if t not in set(core_t)]
+        per_tact = tact_cash / len(tact_target) if tact_target else 0
+        for t in tact_target:
+            px = float(prices[t].dropna().iloc[-1])
+            shares = per_tact / px
+            new_positions[t] = {"shares": shares, "cost_usd": shares * px,
+                                "entry_price": px, "book": "tactico"}
+
+        # El cash remanente es lo que no se invierte
+        invested = per_core * len(core_t) + per_tact * len(tact_target)
+        remaining_cash = portfolio_value - invested
+
+        # Coste de rebalanceo
+        cost = su.ib_trades_cost(buys, sells)
+
+        state["positions"] = new_positions
+        state["cash_usd"] = remaining_cash - cost
+        state["gate"] = gate
+        state["date"] = today
+        state["data_date"] = last_price_date
+        su.save_state(state, STATE_FILE)
+
+        # Valor tras rebalanceo
+        val_after = float(state["cash_usd"])
+        p_row = prices.iloc[-1]
+        for t, pos in new_positions.items():
+            if t in p_row.index:
+                val_after += float(pos["shares"]) * float(p_row[t])
+            else:
+                val_after += float(pos["cost_usd"])
+
+        print(f"\n🔄 E3 REBALANCEO: {len(old_positions)} → {len(new_positions)} posiciones")
+        print(f"   Valor anterior: ${old_value:,.0f} → tras costes ${val_after:,.0f}")
+        print(f"   Costes IB: ${cost:.2f} | Vol-gate: {gate:.2f}")
+        start = float(state["start_capital_usd"])
+        print(f"   P&L: ${val_after-start:+,.0f} ({(val_after-start)/start*100:+.2f}%)")
 
     # Resumen
     val = float(state["cash_usd"])
