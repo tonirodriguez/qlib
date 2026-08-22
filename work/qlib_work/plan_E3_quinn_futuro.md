@@ -167,4 +167,22 @@ Si E3 (PEAD+gate) estabiliza el drawdown y bate a E1 y E2 en riesgo-ajustado net
 
 ---
 
+## 🔄 Estado de ejecución (registro vivo)
+
+| Semana | Tarea | Estado | Evidencia / Archivos |
+|---|---|---|---|
+| 1 | Arquitectura E3 (PEAD-núcleo + momentum-táctico) | ✅ Hecho | `simulate_pead_core.py`, `sim_utils.py`, `state_pead_core.json` |
+| 2 | Lab estado + E3 live | ✅ Hecho | `extract_estados.py` → `estados_mercado.csv`; cronjob 17:00; `comparativo_estrategias_2026-08-22.md` |
+| 2 | Documentar 3 KPI de estado | ✅ Hecho | `kpi_estado_mercado.md` (vol_pct, drawdown120, mom_crash) |
+| 3 | Rigor de régimen (`regimen_test.py`, hipótesis falsable) | ⏳ Siguiente | — |
+| 4 | Rigor (cont. + régimen vs decaimiento) | ⏳ | — |
+| 5 | Vol-gating (`vol_gate.py`, grid) | ⏳ | — |
+| 6 | Integración vol-gate en E3 | ⏳ | — |
+| 7 | Medición E1/E2/E3 | ⏳ | — |
+| 8 | Decisión + siguiente ciclo | ⏳ | — |
+
+**Nota hallazgo (22-08):** el KPI `mom_crash` apenas se activa en sp500_liquid a 120d; `vol_pct` y `drawdown120` son la base del análisis de régimen. Detalle en `kpi_estado_mercado.md`.
+
+---
+
 *Plan de referencia del proyecto Qlib Work. Complementa `quinn_regimenes.md` y `cambio_pead_filtro_a_nucleo.md`.*
