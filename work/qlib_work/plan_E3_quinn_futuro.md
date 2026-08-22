@@ -174,14 +174,68 @@ Si E3 (PEAD+gate) estabiliza el drawdown y bate a E1 y E2 en riesgo-ajustado net
 | 1 | Arquitectura E3 (PEAD-núcleo + momentum-táctico) | ✅ Hecho | `simulate_pead_core.py`, `sim_utils.py`, `state_pead_core.json` |
 | 2 | Lab estado + E3 live | ✅ Hecho | `extract_estados.py` → `estados_mercado.csv`; cronjob 17:00; `comparativo_estrategias_2026-08-22.md` |
 | 2 | Documentar 3 KPI de estado | ✅ Hecho | `kpi_estado_mercado.md` (vol_pct, drawdown120, mom_crash) |
-| 3 | Rigor de régimen (`regimen_test.py`, hipótesis falsable) | ⏳ Siguiente | — |
-| 4 | Rigor (cont. + régimen vs decaimiento) | ⏳ | — |
-| 5 | Vol-gating (`vol_gate.py`, grid) | ⏳ | — |
-| 6 | Integración vol-gate en E3 | ⏳ | — |
-| 7 | Medición E1/E2/E3 | ⏳ | — |
-| 8 | Decisión + siguiente ciclo | ⏳ | — |
+| 3 | Rigor de régimen (`regimen_test.py`, hipótesis falsable) | ✅ Hecho | `regimen_test.py` → **régimen confirmado**: calma IC +0.024 vs estrés −0.184 (CI no solapan); `regimen_test_resultado.md` |
+| 4 | Rigor (cont. + régimen vs decaimiento) | ✅ Hecho | `vol_alta` t=−3.06 significativo; **tiempo t=+1.32 NO significativo → es régimen, no decaimiento secular** |
+| 5 | Vol-gating (`vol_gate.py`, grid) | ✅ Hecho | `vol_gate.py`, `vol_gate_test.py` (motor Qlib) → **validado**: gate P75 Sharpe 1.136 vs 0.96 puro, DD −16.6% vs −19.3%; `vol_gate_resultado.md` |
+| 6 | Integración vol-gate en E3 | ✅ Hecho | `simulate_pead_core.py` usa `vol_gate.py` validado (P75/P90 + histéresis) en el libro táctico |
+| 7 | Medición E1/E2/E3 | ⏳ En curso | Requiere semanas de datos en paper-trading (se completará en ~6-8 semanas) |
+| 8 | Decisión + siguiente ciclo | ⏳ Pendiente | Tras la medición de la S7 |
 
 **Nota hallazgo (22-08):** el KPI `mom_crash` apenas se activa en sp500_liquid a 120d; `vol_pct` y `drawdown120` son la base del análisis de régimen. Detalle en `kpi_estado_mercado.md`.
+
+**Documento narrativo:** la secuencia completa y motivos de E1→E2→E3 está en `evolucion_E1_E2_E3.md`.
+
+---
+
+## 📋 Detalle de las Semanas 7 y 8
+
+### Semana 7 — Medición E1/E2/E3 (en curso, pasiva)
+
+**Objetivo:** dejar que las 3 estrategias acumulen **evidencia real en paper-trading** (no backtest), y medir de forma honesta cuál (si alguna) supera a las demás en riesgo-ajustado.
+
+**Qué la hace especial:** a diferencia de las semanas 1-6 (activas, de construcción), la S7 es **pasiva**: el trabajo lo hacen automáticamente los **cronjobs del sábado** (00:00 precios, 01:00 earnings, 15:00 E1, 16:00 E2, 17:00 E3).
+
+**Acciones concretas al llegar a la semana 7:**
+1. **Regenerar el comparativo** `comparativo_estrategias_<fecha>.md` con los P&L acumulados de E1/E2/E3.
+2. **Evaluar las alarmas de Quinn (§5.2):**
+   - ¿El PEAD (núcleo de E3) se degrada? (P&L E3 plano/negativo sostenido) → si SÍ, **parar el proyecto de señales** (el problema es todo el espacio).
+   - ¿El vol-gate solo "funcionó" en el backtest pero no en vivo? → documentar.
+   - ¿Los drawdowns están dentro de lo esperado del backtest?
+3. **Calcular métricas de decisión:** Sharpe/max-DD de cada estrategia en vivo (con los datos del paper), turnover real, costes.
+4. **Comparar con los backtests previos:** ¿E3 se comporta como esperábamos (más estable que E1, PEAD aportando)?
+
+**Criterio de éxito de la S7:** E3 (PEAD-núcleo + vol-gate) tiene **mejor riesgo-ajustado neto** que E1 y E2, con drawdown acotado.
+
+**Entregables:** `comparativo_estrategias_2026-XX-XX.md` actualizado, documento de medición con métricas en vivo.
+
+---
+
+### Semana 8 — Decisión + siguiente ciclo (activa, de análisis)
+
+**Objetivo:** tomar la **decisión global** sobre qué hacer con el sistema, y definir el siguiente ciclo.
+
+**Decisiones a tomar (según los umbrales de Quinn):**
+
+| Evento en la medición | Decisión |
+|---|---|
+| E3 estabiliza DD y bate a E1/E2 en riesgo-ajustado | ✅ Confirmar arquitectura PEAD-núcleo + momentum-táctico |
+| PEAD también se degrada | 🛑 **Parar**: el problema es todo el espacio de señales, no el reponderar |
+| E3 no mejora ni empeora (ruido) | ⚖️ Extender paper-time; no escalar aún |
+| Vol-gate no aporta en vivo | ⚙️ Quitar el gate, momentum a peso bajo fijo, o revisar umbrales |
+
+**Acciones de cierre:**
+1. **Actualizar la documentación general:** `README` del workspace, `quinn_regimenes.md`, plan con los aprendizajes reales (no los previstos).
+2. **Pregunta de escalado (AÚN sin capital real):** si todo es estable, abrir la pregunta de cómo sería pasar a real (límites, tamaño) — pero como **siguiente fase**, con más historial.
+3. **Diversificar a una tercera señal ortogonal** (value/quality) si E3 es estable pero se quiere más alpha — NO más momentum.
+
+**Criterios de parada / no-escalar:**
+- Sin métricas honestas tras 8 semanas → NO escalar.
+- Diseño que dependa de un factor único (momentum O PEAD) → NO escalar.
+- Vol-gating solo "funciona" con un umbral overfit → no confiar en él.
+
+**Entregables:** `README` y documentación actualizada, documento de decisión (`decision_s8.md`), plan de siguiente fase.
+
+**Regla de oro (Quinn):** el capital real NO entra hasta que la estrategia principal tenga un **historial ininterrumpido de varias semanas** y el diseño **no dependa de un factor único**.
 
 ---
 
