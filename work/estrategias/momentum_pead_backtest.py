@@ -26,7 +26,10 @@ START = "2018-01-01"
 END = "2026-08-01"
 
 # Datos de earnings (sorpresa por ticker-trimestre) de la Fase A
-EAR_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pead_earnings_data.csv")
+# Usar el archivo COMPLETO (284 tickers) si existe, si no el parcial (39 tickers)
+EAR_FULL = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pead_earnings_data_full.csv")
+EAR_PART = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pead_earnings_data.csv")
+EAR_FILE = EAR_FULL if os.path.exists(EAR_FULL) else EAR_PART
 
 IB = dict(open_cost=0.0004, close_cost=0.0006, min_cost=1.0,
           limit_threshold=0.095, deal_price="close")
