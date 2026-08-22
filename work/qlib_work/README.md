@@ -103,6 +103,7 @@ Aprender y aplicar **Qlib** (plataforma de inversión cuantitativa con ML de Mic
 
 | Fecha | Documento | Resumen |
 |---|---|---|
+| 2026-08-22 | `guia_purged_cv.md` | 🧬 Guía de Purged Cross-Validation (López de Prado): purge+embargo, cuándo usarla, implementación práctica, aplicación a momentum/PEAD |
 | 2026-08-22 | `documentacion_pead.md` | Documentación PEAD y workflow de scripts (fetch, faseA, faseA2, combo, eventos, backtest) |
 | 2026-08-22 | `documentacion_momentum.md` | Documentación Momentum 120 y workflow de scripts (walkforward, backtest, vol-targeting, paper-trading) |
 | 2026-08-22 | `estrategia_pead_eventos.md` | Estrategia de eventos PEAD: cómo operar al sorprender resultados (señal SUE, entrada/salida, sizing, combinación con momentum) |
