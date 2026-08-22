@@ -16,6 +16,8 @@ Uso: python work/estrategias/simulation/simulate_pead_core.py [--reset]
 """
 import os, sys, json, datetime
 import numpy as np
+_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(_THIS_DIR, ".."))   # para importar vol_gate desde work/estrategias
 import pandas as pd
 
 import sim_utils as su
@@ -46,21 +48,23 @@ GATE = {
 
 
 def get_vol_gate(close_sp500):
-    """Nivel de gate (0..1) basado en la vol realizada 20d del SP500 (percentiles)."""
+    """Nivel de gate (0..1) basado en la vol realizada del mercado.
+
+    Usa el módulo validado vol_gate.py: percentil de vol 20d con umbrales
+    P75/P90 Y histéresis (evita churn). Es el mismo gate que pasó el
+    vol_gate_test.py (Semana 5): el momentum se reduce/pausa en alta vol.
+    """
+    from vol_gate import gate_level_from_pct, vol_percentile
     if close_sp500 is None or len(close_sp500) < VOL_WIN + 10:
         return 1.0
-    s = close_sp500 / close_sp500.shift(1) - 1
-    vol = s.rolling(VOL_WIN).std() * np.sqrt(252)
-    vol = vol.dropna()
-    if vol.empty:
+    try:
+        vol, pct = vol_percentile(close_sp500, vol_win=VOL_WIN, hist_win=252)
+        pct_last = pct.dropna().iloc[-1] if pct.notna().any() else None
+        if pct_last is None:
+            return 1.0
+        return gate_level_from_pct(pct_last, p75=VOL_P75, p90=VOL_P90)
+    except Exception:
         return 1.0
-    # percentil actual vs su propia historia
-    current = vol.iloc[-1]
-    pct = (vol < current).mean()  # fracción de días con vol < actual
-    for (lo, hi), gate in sorted(GATE.items()):
-        if lo <= pct < hi:
-            return gate
-    return 1.0
 
 
 def get_momentum_ranking(prices):
