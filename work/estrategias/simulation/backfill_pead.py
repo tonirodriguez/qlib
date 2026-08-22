@@ -16,7 +16,9 @@ STATE_FILE = os.path.join(SIM_DIR, "state_pead.json")
 QLIB_URI = "/opt/data/profiles/investments/home/.qlib/qlib_data/us_data"
 UNIVERSE_FILE = os.path.join(QLIB_URI, "instruments/sp500_liquid.txt")
 LIVE_CSV = os.path.join(SIM_DIR, "prices_live.csv")
-EAR_FILE = os.path.join(SIM_DIR, "..", "pead_earnings_data_full.csv")
+EAR_FILE = os.path.join(SIM_DIR, "..", "pead_earnings_appended.csv")
+if not os.path.exists(EAR_FILE):
+    EAR_FILE = os.path.join(SIM_DIR, "..", "pead_earnings_data_full.csv")
 if not os.path.exists(EAR_FILE):
     EAR_FILE = os.path.join(SIM_DIR, "..", "pead_earnings_data.csv")
 

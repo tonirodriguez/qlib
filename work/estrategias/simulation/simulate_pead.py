@@ -24,8 +24,10 @@ START_CAPITAL_EUR = 20000.0
 # FILTRO PEAD NEGATIVO: umbral de sorpresa (%). Si la última sorpresa de un
 # ticker es MENOR que esto, se excluye del topk (sustituido por el siguiente).
 PEAD_NEG_THRESHOLD = -5.0
-# Archivo de earnings (sorpresa por ticker) — el completo si existe
-EAR_FILE = os.path.join(SIM_DIR, "..", "pead_earnings_data_full.csv")
+# Archivo de earnings (sorpresa por ticker): prioridad historial append-only
+EAR_FILE = os.path.join(SIM_DIR, "..", "pead_earnings_appended.csv")
+if not os.path.exists(EAR_FILE):
+    EAR_FILE = os.path.join(SIM_DIR, "..", "pead_earnings_data_full.csv")
 if not os.path.exists(EAR_FILE):
     EAR_FILE = os.path.join(SIM_DIR, "..", "pead_earnings_data.csv")
 
