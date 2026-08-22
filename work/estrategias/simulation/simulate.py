@@ -193,8 +193,13 @@ def main(reset=False):
         # Precio de cada ticker hoy
         px = {}
         for t in set(list(positions.keys()) + new_holdings):
-            s = close[t].dropna()
-            px[t] = float(s.iloc[-1]) if len(s) > 0 else prices_get(t)
+            if t in close.columns:
+                s = close[t].dropna()
+                px[t] = float(s.iloc[-1]) if len(s) > 0 else prices_get(t)
+            else:
+                # Ticker sin datos frescos (p.ej. salió del CSV live pero lo tenemos):
+                # usar el precio de compra como fallback para no distorsionar la valoración.
+                px[t] = float(positions.get(t, {}).get("entry_price", prices_get(t)))
 
         current = {t: float(pos["shares"]) for t, pos in positions.items()}
 
@@ -256,8 +261,8 @@ def main(reset=False):
     # --- Resumen y P&L ---
     portfolio_value = state["cash_usd"]
     for t, pos in state["positions"].items():
-        s = close[t].dropna()
-        if len(s) > 0:
+        s = close[t].dropna() if t in close.columns else None
+        if s is not None and len(s) > 0:
             portfolio_value += pos["shares"] * s.iloc[-1]
         else:
             portfolio_value += pos["cost_usd"]
