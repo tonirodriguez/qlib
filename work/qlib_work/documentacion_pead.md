@@ -93,9 +93,10 @@ En nuestro proyecto usamos el **`surprise_pct`** (sencillo): `(EPS_real / EPS_es
 | `pead_faseA2.py [FWD]` | IC sorpresa → retorno post-anuncio | `pead_returns_{FWD}d.csv` |
 | `pead_combo.py [FWD]` | Combinación momentum + PEAD, IC por señal | — (consola) |
 | `pead_eventos.py [FWD][delay][umbral]` | Estrategia de eventos, validación | `pead_eventos_*.csv` |
-| `momentum_pead_backtest.py [univ][topk][λ]` | Backtest combinado momentum+PEAD | Resultado consola |
+| `momentum_pead_backtest.py [univ][topk][λ]` | Backtest combinado momentum+PEAD (suma) | Resultado consola |
+| `momentum_pead_filter_backtest.py [univ][topk][umbral]` | Backtest estrategia 2 (momentum + filtro PEAD) | Resultado consola |
 | `simulation/backfill_pead.py` | Reconstrucción retroactiva estrategia 2 | `state_pead.json` |
-| `simulation/simulate_pead.py [--reset]` | Paper-trading estrategia 2 (momentum + filtro PEAD) | `state_pead.json` |
+| `simulation/simulate_pead.py [--reset]` | Paper-trading estrategia 2 (momentum + filtro PEAD con SUE+frescura) | `state_pead.json` |
 
 ### Fuentes de datos
 - **Earnings:** `yahooquery` (endpoint quoteSummary bloqueado → usamos yahooquery que funciona)
@@ -124,16 +125,45 @@ En nuestro proyecto usamos el **`surprise_pct`** (sencillo): `(EPS_real / EPS_es
 
 - ✅ **Datos earnings append-only** (`pead_earnings_appended.csv`, point-in-time safe) — `pead_fetch_append.py`
 - ✅ **Estrategia 2 en paper-trading** paralela (momentum + filtro PEAD) — `simulate_pead.py`, reconstruida retroactiva 14→22-ago
+- ✅ **Filtro PEAD mejorado con SUE + ventana de frescura** (implementado en `simulate_pead.py`)
 - ✅ **Cronjobs configurados:** sáb 00:00 precios, 01:00 earnings (append-only), 15:00 sim 1, 16:00 sim 2
-- ⏳ **Pendiente Quinn:** backtest OOS (walk-forward) de la estrategia 2 para validarla como la 1
-- ⏳ **Pendiente:** usar SUE (normalización) en vez de surprise% crudo + ventana de frescura (~40 días)
+- ⏳ **Pendiente:** backtest OOS mostró sin edge claro (Sharpe 0.875 vs 1.0) → la validación real será el paper-trading en vivo a 6-12 meses
+- ⏳ **Pendiente:** conseguir más histórico de earnings (hoy solo ~2 años) para robustecer el backtest del filtro
 
 **Regla de oro (Quinn):** fusionar PEAD en paper-trading solo si el backtest combinado mejora el Sharpe del momentum solo sin empeorar el drawdown; el PEAD se usa como filtro/refuerzo, no como señal sumada.
 
-## 6. Historia de decisiones
+## 6. Mejoras del filtro: SUE + ventana de frescura
+
+Por recomendación de Quinn, el filtro PEAD en `simulate_pead.py` se mejoró con dos conceptos:
+
+### SUE (Standardized Unexpected Earnings)
+**Problema del % crudo:** un −5% no significa lo mismo entre tickers (una megacap cubierta casi nunca se desvía >2%; una pequeña volátil se desvía ±20% normalmente). Un umbral fijo de −5% crudo mezcla catástrofes con ruido.
+
+**Solución:** normalizar por la desviación histórica del ticker:
+```
+SUE = surprise_pct / σ_histórica(surprise_pct del ticker)
+```
+El umbral pasa a medirse en **unidades de desviación estándar** (`SUE < −2σ`), comparable entre tickers. Filtra solo eventos verdaderamente catastróficos.
+
+**Verificado (22-ago):** con 254 sorpresas frescas, `SUE < −2` → **0 tickers**, mientras que `surprise < −5%` crudo daría **15**. El SUE evita sobre-filtrar tickers volátiles.
+
+### Ventana de frescura
+**Problema:** el paso del drift post-anuncio dura ~20-60 días hábiles. Una sorpresa de hace 60+ días ya está en el precio → excluir por ella es inútil.
+
+**Solución:** el filtro solo aplica si la sorpresa es reciente:
+```
+solo filtrar si (hoy − fecha_anuncio) ≤ FRESHNESS_DAYS (40 días)
+```
+**Consecuencia correcta (verificado):** en agosto la última sorpresa es de Q2 (julio), > 40 días → **el filtro se apaga** (las estrategias 1 y 2 convergen). El filtro solo "muerde" en las semanas posteriores a cada temporada de resultados.
+
+### Fallback
+Si un ticker no tiene σ histórica suficiente para SUE, se usa el % crudo con `PEAD_NEG_THRESHOLD` (−5%) como fallback conservador.
+
+## 7. Historia de decisiones
 
 - 2026-08-22: el backtest combinado (señal de ranking sumada, 284 tickers) NO supera a momentum solo → se descarta la suma, se implementa el PEAD como filtro (estrategia 2).
 - 2026-08-22: los datos de earnings pasan a **append-only** (point-in-time safe) por recomendación de Quinn, para evitar look-ahead y pérdida de datos.
+- 2026-08-22: el filtro PEAD se mejora con **SUE + ventana de frescura** por recomendación de Quinn (estandarización + solo sorpresas recientes).
 
 ---
 

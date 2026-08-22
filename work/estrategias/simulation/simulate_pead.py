@@ -9,6 +9,7 @@ Comparativa con el momentum 120 puro (simulate.py):
 Estado separado: state_pead.json (no mezcla con el momentum puro).
 """
 import os, sys, json, datetime
+import numpy as np
 import pandas as pd
 
 SIM_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -24,6 +25,12 @@ START_CAPITAL_EUR = 20000.0
 # FILTRO PEAD NEGATIVO: umbral de sorpresa (%). Si la última sorpresa de un
 # ticker es MENOR que esto, se excluye del topk (sustituido por el siguiente).
 PEAD_NEG_THRESHOLD = -5.0
+# MEJORA 1 — SUE: umbral en unidades de desviación estándar (σ). Filtra solo
+# eventos catastróficos REALES del ticker, no % crudo que no es comparable.
+SUE_THRESHOLD = -2.0
+# MEJORA 2 — VENTANA DE FRESCURA: solo se filtra si la sorpresa es reciente.
+# Pasados ~40 días hábiles, la sorpresa ya está en el precio (el drift se agota).
+FRESHNESS_DAYS = 40
 # Archivo de earnings (sorpresa por ticker): prioridad historial append-only
 EAR_FILE = os.path.join(SIM_DIR, "..", "pead_earnings_appended.csv")
 if not os.path.exists(EAR_FILE):
@@ -75,22 +82,35 @@ def get_prices(tickers):
 
 
 def load_last_surprise():
-    """Carga la ÚLTIMA sorpresa de earnings conocida por ticker.
+    """Carga la ÚLTIMA sorpresa de earnings conocida por ticker CON metadatos.
 
-    Devuelve: dict {ticker: surprise_pct} con la sorpresa más reciente de cada
-    ticker (la del trimestre con reported_ts mayor).
+    Devuelve un DataFrame con: ticker, surprise_pct (última), reported_ts (última),
+    y sue (sorpresa normalizada por la σ histórica del ticker).
+
+    SUE = (surprise_pct - 0) / σ_histórica(surprise_pct del ticker)
+    Escala la sorpresa en unidades de desviación, comparable entre tickers.
     """
     if not os.path.exists(EAR_FILE):
         print(f"   ⚠️ No hay datos de earnings ({EAR_FILE}). Filtro PEAD inactivo.")
-        return {}
+        return pd.DataFrame(columns=["ticker", "surprise_pct", "reported_ts", "sue"])
     ear = pd.read_csv(EAR_FILE)
     if "reported_ts" in ear.columns:
+        # Última sorpresa por ticker
         max_ts = ear.groupby("ticker")["reported_ts"].transform("max")
-        last = ear[ear["reported_ts"] == max_ts]
-        return dict(zip(last["ticker"], last["surprise_pct"]))
-    # sin reported_ts -> última fila por ticker
-    last = ear.groupby("ticker").last()
-    return dict(zip(last.index, last["surprise_pct"]))
+        last = ear[ear["reported_ts"] == max_ts].copy()
+        # SUE: normalizar por la desviación estándar histórica de las sorpresas del ticker
+        sigma = ear.groupby("ticker")["surprise_pct"].std().rename("sigma")
+        last = last.merge(sigma, on="ticker", how="left")
+        last["sue"] = last["surprise_pct"] / last["sigma"].replace(0, np.nan)
+        cols = ["ticker", "surprise_pct", "reported_ts", "sue"]
+        # completar NaN de sigma (un solo dato) con un default conservador
+        last["sue"] = last["sue"].fillna(last["surprise_pct"] / 10.0)
+        return last[cols]
+    # sin reported_ts -> última fila por ticker (sin SUE fiable)
+    last = ear.groupby("ticker").last().reset_index()
+    last["sue"] = np.nan
+    return last[["ticker", "surprise_pct", "reported_ts", "sue"]] if "reported_ts" in last.columns else \
+        last[["ticker", "surprise_pct", "sue"]]
 
 
 def load_state():
@@ -153,8 +173,48 @@ def main(reset=False):
     mom_series = pd.Series(mom).dropna().sort_values(ascending=False)
     print(f"Señal momentum calculada en {len(mom_series)} tickers")
 
-    new_holdings = mom_series.head(TOPK).index.tolist()
+    # --- FILTRO PEAD NEGATIVO (con SUE + ventana de frescura) ---
+    surprise_df = load_last_surprise()
+    today_ts = datetime.datetime.now().timestamp()
+    n_filtered = 0
+    excluded = []
+    # Construir Set de tickers a excluir
+    filter_set = set()
+    if not surprise_df.empty:
+        for _, row in surprise_df.iterrows():
+            t = row["ticker"]
+            # (1) VENTANA DE FRESCURA: si la sorpresa es vieja (> FRESHNESS_DAYS),
+            #     no filtra (el drift ya se pagó). reported_ts en segundos.
+            try:
+                reported = float(row["reported_ts"])
+            except (TypeError, ValueError):
+                reported = 0.0
+            if reported > 0:
+                days_old = (today_ts - reported) / 86400.0
+                if days_old > FRESHNESS_DAYS:
+                    continue  # sorpresa vieja -> no filtrar
+            # (2) SUE si está disponible, si no surprise% crudo (fallback)
+            sue = row.get("sue")
+            if pd.notna(sue):
+                is_negative = sue < SUE_THRESHOLD
+            else:
+                is_negative = row["surprise_pct"] < PEAD_NEG_THRESHOLD
+            if is_negative and t in mom_series.index:
+                filter_set.add(t)
+                excluded.append(t)
+                n_filtered += 1
+
+    # Seleccionar topk, excluyendo los filtrados (sustituir por el siguiente del ranking)
+    candidate = [t for t in mom_series.index if t not in filter_set]
+    if len(candidate) < TOPK:
+        # si el filtro elimina demasiados, usar ranking puro (conservador)
+        candidate = mom_series.index.tolist()
+        print(f"   ⚠️ Filtro eliminó demasiados ({len(filter_set)}), usar ranking sin filtrar")
+    new_holdings = candidate[:TOPK]
     print(f"Top {TOPK} seleccionado. Mejor: {new_holdings[0]} ({mom_series.iloc[0]*100:.1f}%)")
+    if n_filtered > 0:
+        print(f"   🔍 Filtro PEAD (SUE<-{SUE_THRESHOLD}σ o surprise<-{PEAD_NEG_THRESHOLD}% fresco): "
+              f"excluidos {len(excluded)}: {excluded}")
 
     today = datetime.date.today().isoformat()
     data_date = close.index[-1].date().isoformat()
