@@ -3,66 +3,66 @@
   "instruments": {
     "ADA": {
       "file": "ADA.csv",
-      "first_timestamp": "2023-08-12T00:00:00+00:00",
-      "last_timestamp": "2026-08-14T00:00:00+00:00",
-      "rows": 1099,
-      "sha256": "c17442402939982b6d02d13aeadca3a7f6a57595bf8b147637f9b6d325d8d44d"
+      "first_timestamp": "2018-04-17T00:00:00+00:00",
+      "last_timestamp": "2026-08-30T00:00:00+00:00",
+      "rows": 3058,
+      "sha256": "4a3f7c96ae10d1de3e58a6cd3e2d0154a61c8da12dee95edebaa7918bfd4ed14"
     },
     "BTC": {
       "file": "BTC.csv",
-      "first_timestamp": "2023-08-12T00:00:00+00:00",
-      "last_timestamp": "2026-08-14T00:00:00+00:00",
-      "rows": 1099,
-      "sha256": "bd6b25f08307682cc105338fac53602dbd79ebeb8fe36d5908838f6fb1e15b51"
+      "first_timestamp": "2017-08-17T00:00:00+00:00",
+      "last_timestamp": "2026-08-30T00:00:00+00:00",
+      "rows": 3301,
+      "sha256": "23663d575cccba0faee5a8d0a90f6a9b3508ecf325c1f43b1cdab5f0db5928a7"
     },
     "DOGE": {
       "file": "DOGE.csv",
-      "first_timestamp": "2023-08-12T00:00:00+00:00",
-      "last_timestamp": "2026-08-14T00:00:00+00:00",
-      "rows": 1099,
-      "sha256": "702485eef460898e2472c249343f8815986518e2a4d6143b9afdaa38e2f1f21b"
+      "first_timestamp": "2019-07-05T00:00:00+00:00",
+      "last_timestamp": "2026-08-30T00:00:00+00:00",
+      "rows": 2614,
+      "sha256": "1310b605b2b965262b85ba3e2294b1847ce45af9d7c9177fcba85fa6e8665809"
     },
     "ETH": {
       "file": "ETH.csv",
-      "first_timestamp": "2023-08-12T00:00:00+00:00",
-      "last_timestamp": "2026-08-14T00:00:00+00:00",
-      "rows": 1099,
-      "sha256": "64bb33940b27d293fe000d9b96cb394945512118e4d5782d7f45eda9aff79737"
+      "first_timestamp": "2017-08-17T00:00:00+00:00",
+      "last_timestamp": "2026-08-30T00:00:00+00:00",
+      "rows": 3301,
+      "sha256": "bcef84862fe6f14e21fc48db2e3f381f60049551ae48ea9296a988d40c1942d0"
     },
     "LINK": {
       "file": "LINK.csv",
-      "first_timestamp": "2023-08-12T00:00:00+00:00",
-      "last_timestamp": "2026-08-14T00:00:00+00:00",
-      "rows": 1099,
-      "sha256": "8302a296fc3debd67ed927afe2042292aeebfc649e3ba8aafe2017b26a71f53d"
+      "first_timestamp": "2019-01-16T00:00:00+00:00",
+      "last_timestamp": "2026-08-30T00:00:00+00:00",
+      "rows": 2784,
+      "sha256": "2372703ee40f66e6980a59a976ae931004f6a904ef95cea65e83b91cb0b12afe"
     },
     "LTC": {
       "file": "LTC.csv",
-      "first_timestamp": "2023-08-12T00:00:00+00:00",
-      "last_timestamp": "2026-08-14T00:00:00+00:00",
-      "rows": 1099,
-      "sha256": "7ca05ba789a14a2dee6a79b25eb2cc32d3e7ec91f3f59d47f1a06dc4d06557e8"
+      "first_timestamp": "2017-12-13T00:00:00+00:00",
+      "last_timestamp": "2026-08-30T00:00:00+00:00",
+      "rows": 3183,
+      "sha256": "bcba32abecefa4a145416ceae6e21eeca067e360682698c9a29de84d2893b225"
     },
     "SOL": {
       "file": "SOL.csv",
-      "first_timestamp": "2023-08-12T00:00:00+00:00",
-      "last_timestamp": "2026-08-14T00:00:00+00:00",
-      "rows": 1099,
-      "sha256": "762a7a3d95d0540b73fdd15461ab60193713368ad3e486e32a5837d50c521d45"
+      "first_timestamp": "2020-08-11T00:00:00+00:00",
+      "last_timestamp": "2026-08-30T00:00:00+00:00",
+      "rows": 2211,
+      "sha256": "eb7418b6c0defa7326ac194bb4995a952789b87aa761e1fe241b0add169448fd"
     },
     "XLM": {
       "file": "XLM.csv",
-      "first_timestamp": "2023-08-12T00:00:00+00:00",
-      "last_timestamp": "2026-08-14T00:00:00+00:00",
-      "rows": 1099,
-      "sha256": "a716b51abdd6c0e9e5f9ee3b496bb536e9cefc527ae86600378ee0e1e676a92e"
+      "first_timestamp": "2018-05-31T00:00:00+00:00",
+      "last_timestamp": "2026-08-30T00:00:00+00:00",
+      "rows": 3014,
+      "sha256": "0654101ed4911c925741c445c9be65c334a4e4e74d464d5a5addca938acd4ffb"
     },
     "XRP": {
       "file": "XRP.csv",
-      "first_timestamp": "2023-08-12T00:00:00+00:00",
-      "last_timestamp": "2026-08-14T00:00:00+00:00",
-      "rows": 1099,
-      "sha256": "4f3bb04e4918a35eb04fee5f1530181a42d9cb0af56c4a4cf076b2948059c9ff"
+      "first_timestamp": "2018-05-04T00:00:00+00:00",
+      "last_timestamp": "2026-08-30T00:00:00+00:00",
+      "rows": 3041,
+      "sha256": "3c2c7875defd5e56817bc50dcbea490d9953fbb86853ef1d4abbbf7b155af2b2"
     }
   },
   "quote_asset": "USDT",

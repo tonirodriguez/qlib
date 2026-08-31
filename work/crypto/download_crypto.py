@@ -84,7 +84,7 @@ def get_config() -> DownloadConfig:
         quote_asset=env_value("CRYPTO_QUOTE_ASSET", "USDT"),
         exchange_id=env_value("CRYPTO_EXCHANGE_ID", "binance"),
         timeframe=env_value("CRYPTO_DOWNLOAD_TIMEFRAME", env_value("CRYPTO_FREQUENCY", "1d")),
-        since_days=env_int("CRYPTO_DOWNLOAD_SINCE_DAYS", 1100),
+        since_days=env_int("CRYPTO_DOWNLOAD_SINCE_DAYS", 10000),
         output_dir=env_path("CRYPTO_OHLCV_DIR", "scripts/crypto/csv_data/crypto/ohlcv"),
         file_pattern=env_value("CRYPTO_OHLCV_FILE_PATTERN", "{instrument}.csv"),
         portfolio_csv=env_path(
