@@ -61,7 +61,7 @@ Hoy se hizo una mejora importante en la **cadena de datos** del frente crypto (e
 | Comparación de universos (piloto) | ⚠️ Rechazado | Investigación pasada; ninguno superó gates predeclarados. No es la vía actual. |
 | Holdout final del piloto | 🔒 Cerrado | Solo aplicable al experimento formal de universos (no bloquea a v8). |
 | **Datos** | ✅ Génesis + incremental | Consolidados en `data/qlib` (CryptoCompare génesis + Coinbase diario, USD garantizado, ver sección siguiente). |
-| Pipeline diario | ✅ Orquestado | `run_daily_pipeline.sh` (Coinbase→convert→señal→paper) sobre `data/qlib`. |
+| Pipeline diario | ✅ Orquestado + automatizado | `run_daily_pipeline.sh` (Coinbase→convert→señal→paper→métricas→notif) sobre `data/qlib`. Cronjob **9:00** (paper v8) + **9:30** (watchdog salud). |
 
 ---
 
@@ -72,6 +72,48 @@ Hoy se hizo una mejora importante en la **cadena de datos** del frente crypto (e
 - **Cartera paper:** capital $10k, cash $6.663,33, posición BTC (0.0429 BTC @ 77.689), 1 trade, fees $3.33. Recién iniciada (día 1).
 
 > El paper trading de v8 es la **estrategia activa** del frente crypto. El `run_daily_pipeline.sh` la alimenta cada día.
+
+---
+
+## 🤖 Automatización diaria y notificaciones (2026-09-01)
+
+La operativa de paper v8 quedó **automatizada y vigilada** con cronjobs Hermes:
+
+| Cronjob Hermes | Horario | Función |
+|---|---|---|
+| **Papel trading v8 diario** | **9:00** | `cron_daily_v8.sh` → `run_daily_pipeline.sh`: Coinbase incremental → convert Qlib → señal → paper → métricas → notifica resumen + métricas a @oscarbot_toni_bot |
+| **Healthcheck v8 (watchdog)** | **9:30** | `watchdog_v8.sh` → `watchdog_v8.py`: comprueba que el pipeline haya corrido (<27h) y que los datos estén al día (≤2 días). Notifica a @oscarbot_toni_bot **solo si hay problema**; silencioso si OK. 30 min después del principal para detectar fallos silenciosos. |
+
+**Notificaciones Telegram** (bot **@oscarbot_toni_bot**, token/chat en `/opt/data/qlib/.env` gitignored):
+- **Resumen diario** del paper (capital, P&L, posiciones) — cada ejecución del pipeline.
+- **Alertas de riesgo** (drawdown, stale, kill-switch, exposición) — si algo bloquea.
+- **Monitor de métricas** (Sharpe, Sortino, Calmar, VaR, drawdown) — fin de pipeline.
+- **Healthcheck** — alerta de pipeline detenido / datos obsoletos, o informe `--report`.
+
+> **Paso 7 casi cerrado:** solo queda pendiente la **credencial de exchange (Binance)**,
+> que es intencionalmente para cuando se decida capital real (no es necesaria para paper).
+
+---
+
+## 🔍 Conclusiones del Backtest y Validación (2026-09-01) — ⚠️ Cautela para producción
+
+Backtest completo (2025→ago-2026, multi-moneda, costes Binance + yield cash USDT) +
+sensibilidad + mini-holdout. Detalle completo en **`checklist_produccion_v8.md`**
+(sección "Conclusiones del Backtest"). Resumen:
+
+| Métrica | Valor |
+|---|---|
+| Retorno USD (todo el periodo) | +4,3% |
+| Retorno EUR (todo el periodo) | **-6,9%** (por FX) |
+| Mejor config en 2026 aislado (holdout real) | **+9,6% USD** (BASE actual) |
+| Max drawdown | -34% |
+
+**Lectura clave para producción:**
+1. El **"Sharpe 2.74" del training era top-1 SIN costes** → espejismo. Con costes reales, el top-1 colapsa a -49%.
+2. La **v8 actual (BASE)** es **"plana pero estable" en USD**; en **EUR es negativa** por el tipo de cambio. El edge del modelo, neto de costes, es **débil**.
+3. La config "optimizada" (+28,6%) **no superó la validación** (mini-holdout): sobreajuste a 2025. La **BASE es la más robusta**.
+4. **El yield del cash USDT (~4,5% APY)** es el componente de valor más fiable y accesible.
+5. ⚠️ **Recomendación: NO producir v8 con capital real todavía**; seguir en paper con la BASE + yield hasta pasar el **holdout final inmutable** (requiere re-entrenar en génesis, Paso 2/GPU).
 
 ---
 
@@ -96,15 +138,16 @@ Sharpe neto medio por universo (6 folds, costes calibrados train-only, nocional 
 ## 🔴 Próximos pasos
 
 > El foco actual está en **operar/monitorizar la estrategia v8 en paper trading** y
-> en llevar la v8 a **producción** siguiendo el plan de pasos del documento único
-> **`checklist_produccion_v8.md`** (risk controls → re-entrenar en génesis → costes
-> reales → testing → holdout → métricas → credenciales).
+> en **producir la v8 SOLO si pasa el holdout final**. Las conclusiones del backtest
+> (2026-09-01) recomiendan **cautela**: la v8 es "plana" en USD y negativa en EUR,
+> con edge neto débil; el valor más fiable es el **yield del cash USDT**.
+> Ver **`checklist_produccion_v8.md`** (sección "Conclusiones del Backtest").
 
 Además, en paralelo:
 - **Validar la cadena de datos diaria.** Confirmar que `data/qlib` se mantiene actualizado y que los 3 scripts de descarga (Coinbase/Binance/CryptoCompare) siguen el formato USD.
 - **Deuda técnica de investigación (menor prioridad):** B2 (costes con datos reales), B3 (baselines + DSR), D1 (experimento de universos).
 
-**Deuda no bloqueante:** lockfile multiplataforma + CI, mover `v5` (S&P) fuera de `work/crypto`, alertas freshness/gaps, universo point-in-time.
+**Deuda no bloqueante:** lockfile multiplataforma + CI, mover `v5` (S&P) fuera de `work/crypto`, universo point-in-time. *(Las **alertas freshness/gaps** ya quedaron implementadas con el watchdog del Paso 7.)*
 
 > 📌 Para el plan detallado de producción de v8, ver **`checklist_produccion_v8.md`** (documento único).
 
@@ -114,9 +157,10 @@ Además, en paralelo:
 
 - **La estrategia v8 es la ganadora y está en paper trading** (arrancó 2026-09-01): señal COMPRA en BTC, cartera $10k, 1 trade inicial. Es el activo principal del frente crypto, no una investigación en pausa.
 - La **infraestructura de datos quedó sólida** hoy (génesis + incremental Coinbase, USD garantizado, UNA base Qlib, pipeline orquestado). Es la base que **sostiene la operativa diaria de v8**.
+- La **operativa quedó automatizada y vigilada** (cron 9:00 + watchdog 9:30, notificaciones a @oscarbot_toni_bot). El Paso 7 está casi cerrado (solo falta credencial de exchange para capital real).
 - El **histórico de génesis** abre la puerta a **re-entrenar v8 con más datos**, una mejora concreta a evaluar.
 - La investigación de universos (piloto) fue una línea que **no prosperó**; el frente no está parado, está operando v8.
 
 ---
 
-*Documento de referencia del frente crypto. Complementa `work/formacion/Estado Crypto.md` y `work/crypto/`. Actualizado 2026-09-01: **v8 en paper trading como estrategia ganadora** + avances de infraestructura de datos.*
+*Documento de referencia del frente crypto. Complementa `work/formacion/Estado Crypto.md` y `work/crypto/`. Actualizado 2026-09-01: **v8 en paper trading** + **backtest/validación (cautela para producción)** + **operativa automatizada y vigilada (cron 9:00 + watchdog 9:30)** + avances de infraestructura de datos.*
