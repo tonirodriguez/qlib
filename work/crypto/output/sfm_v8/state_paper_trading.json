@@ -1,0 +1,18 @@
+{
+  "capital_usd": 10000.0,
+  "cash_usd": 6663.333333333333,
+  "positions": {
+    "BTC": {
+      "shares": 0.04290611712511853,
+      "entry_price": 77689.0,
+      "entry_date": "2026-09-01"
+    }
+  },
+  "total_trades": 1,
+  "wins": 0,
+  "losses": 0,
+  "total_fees_paid": 3.3333333333333335,
+  "peak_capital": 10000.0,
+  "last_updated": "2026-09-01T17:26:13.678582",
+  "created_at": "2026-09-01T17:26:10.988580"
+}
