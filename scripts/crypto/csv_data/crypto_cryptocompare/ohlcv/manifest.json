@@ -1,0 +1,13 @@
+{
+  "endpoint": "/api/v3/klines",
+  "instruments": {
+    "BTC": {
+      "file": "btc.csv",
+      "first_date": "2010-07-17 00:00:00+00:00",
+      "last_date": "2026-08-31 00:00:00+00:00",
+      "rows": 5890,
+      "sha256": "f56d514983843488bee81d5726e3d51485397fee8ba91ec780dd3cd6517ed672"
+    }
+  },
+  "source": "binance-daily-incremental"
+}
