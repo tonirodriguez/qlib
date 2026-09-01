@@ -93,16 +93,20 @@ Sharpe neto medio por universo (6 folds, costes calibrados train-only, nocional 
 
 ---
 
-## 🔴 Próximos pasos (en orden)
+## 🔴 Próximos pasos
 
-> El foco actual está en **operar/monitorizar la estrategia v8 en paper trading** y en mantener su cadena de datos. La investigación de universos (B2/B3/D1) queda como línea paralela de menor prioridad.
+> El foco actual está en **operar/monitorizar la estrategia v8 en paper trading** y
+> en llevar la v8 a **producción** siguiendo el plan de pasos del documento único
+> **`checklist_produccion_v8.md`** (risk controls → re-entrenar en génesis → costes
+> reales → testing → holdout → métricas → credenciales).
 
-1. **Monitorizar el paper trading v8 (diario).** Asegurar que el pipeline diario (`run_daily_pipeline.sh`) corre sin errores: Coinbase incremental → convertir a `data/qlib` → señal diaria → actualizar papel. Vigilar drawdown, stale-data y kill-switch.
-2. **Validar la cadena de datos diaria.** Confirmar que `data/qlib` se mantiene actualizado y que los 3 scripts de descarga (Coinbase/Binance/CryptoCompare) siguen el formato USD.
-3. **Re-entrenar v8 sobre el histórico de génesis (oportunidad).** Ahora que `data/qlib` tiene datos de génesis (2010+ vs 2017 antes), se puede **re-entrenar** el modelo v8 con más historia y comparar si mejora el rendimiento del modelo en producción (sfm_top1..4).
-4. **Deuda técnica de investigación (paralelo):** B2 (costes con datos reales), B3 (baselines + DSR), D1 (experimento formal de universos) quedan a menor prioridad, solo si se quiere revisitar la comparación de universos.
+Además, en paralelo:
+- **Validar la cadena de datos diaria.** Confirmar que `data/qlib` se mantiene actualizado y que los 3 scripts de descarga (Coinbase/Binance/CryptoCompare) siguen el formato USD.
+- **Deuda técnica de investigación (menor prioridad):** B2 (costes con datos reales), B3 (baselines + DSR), D1 (experimento de universos).
 
 **Deuda no bloqueante:** lockfile multiplataforma + CI, mover `v5` (S&P) fuera de `work/crypto`, alertas freshness/gaps, universo point-in-time.
+
+> 📌 Para el plan detallado de producción de v8, ver **`checklist_produccion_v8.md`** (documento único).
 
 ---
 
