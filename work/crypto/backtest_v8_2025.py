@@ -132,14 +132,34 @@ def build_features_matrix(df_close: pd.DataFrame) -> np.ndarray:
     return np.nan_to_num(matrix, nan=0.0, posinf=1.0, neginf=-1.0)
 
 
-def simulate_portfolio(pred_days, pred_list, df_close, cash_yield_apy=CASH_YIELD_APY):
+def simulate_portfolio(
+    pred_days,
+    pred_list,
+    df_close,
+    cash_yield_apy=CASH_YIELD_APY,
+    buy_threshold=HIGH_CONF_THRESHOLD,
+    sell_threshold=None,
+    min_holding_days=0,
+    max_positions=MAX_POSITIONS,
+):
     """Simula la cartera igual que el paper. Retorna (curve, operaciones).
 
-    Si cash_yield_apy > 0, el cash ocioso (en USDT) genera interés diario
-    (compuesto) sobre el capital no invertido, como un stablecoin stake.
+    Parametros de sensibilidad:
+    - buy_threshold:  score minimo para COMPRAR (entrada). Default HIGH_CONF_THRESHOLD.
+    - sell_threshold: score bajo el cual VENDER. Si es None, usa buy_threshold
+                      (sin histeresis = comportamiento original). Si es menor que
+                      buy_threshold, hay histeresis (aguanta la posicion).
+    - min_holding_days: minimo de dias que una posicion debe mantenerse antes de
+                        poder venderse (0 = comportamiento original).
+    - max_positions:   maximo de posiciones simultaneas.
+    - cash_yield_apy:  yield del cash ocioso (0 = sin yield).
+
+    Las posiciones guardan el dia de entrada para el holding minimo.
     """
+    if sell_threshold is None:
+        sell_threshold = buy_threshold
     cash = INITIAL_CAPITAL_USD
-    positions = {}  # symbol(lower) -> shares
+    positions = {}  # symbol(lower) -> {"shares": x, "entry_day": r}
     curve, opers = [], []
     daily_rate = (1.0 + cash_yield_apy) ** (1.0 / 365.0) - 1.0 if cash_yield_apy > 0 else 0.0
     total_interest = 0.0
@@ -155,14 +175,15 @@ def simulate_portfolio(pred_days, pred_list, df_close, cash_yield_apy=CASH_YIELD
             cash += interest
             total_interest += interest
 
-        # 1. Vender posiciones que ya no tienen COMPRA (score <= BUY_THRESHOLD)
+        # 1. Vender posiciones (score < sell_threshold y holding >= min)
         for s_lower in list(positions.keys()):
             ci = idx_map[s_lower.upper()]
-            if scores[ci] <= BUY_THRESHOLD:
+            held = r - positions[s_lower]["entry_day"]
+            if scores[ci] < sell_threshold and held >= min_holding_days:
                 if close_row is not None and s_lower.upper() in close_row.index:
                     px = float(close_row[s_lower.upper()])
                     if px and px == px:
-                        shares = positions[s_lower]
+                        shares = positions[s_lower]["shares"]
                         gross = shares * px
                         fee = gross * COST
                         net = gross - fee
@@ -171,13 +192,13 @@ def simulate_portfolio(pred_days, pred_list, df_close, cash_yield_apy=CASH_YIELD
                                       "shares": shares, "price": px, "fee": round(fee, 2), "net": round(net, 2)})
                         del positions[s_lower]
 
-        # 2. Compras: monedas con score > HIGH_CONF, hasta llenar cupos
+        # 2. Compras: monedas con score > buy_threshold, hasta llenar cupos
         current = len(positions)
-        available = MAX_POSITIONS - current
+        available = max_positions - current
         if available > 0 and close_row is not None:
             candidates = []
             for c in CRYPTOS:
-                if c not in positions and scores[CRYPTOS.index(c)] > HIGH_CONF_THRESHOLD:
+                if c not in positions and scores[CRYPTOS.index(c)] > buy_threshold:
                     candidates.append((c, scores[CRYPTOS.index(c)]))
             candidates.sort(key=lambda kv: -kv[1])
             for c, _sc in candidates[:available]:
@@ -192,7 +213,7 @@ def simulate_portfolio(pred_days, pred_list, df_close, cash_yield_apy=CASH_YIELD
                         fee = capital_per * COST
                         cost = shares * px + fee  # == capital_per
                         if cost <= cash:
-                            positions[c] = shares
+                            positions[c] = {"shares": shares, "entry_day": r}
                             cash -= cost
                             opers.append({"date": str(day.date()), "type": "BUY", "symbol": c.upper(),
                                           "shares": shares, "price": px, "fee": round(fee, 2), "cost": round(cost, 2)})
@@ -202,7 +223,7 @@ def simulate_portfolio(pred_days, pred_list, df_close, cash_yield_apy=CASH_YIELD
         if close_row is not None:
             for c_shar in positions:
                 if close_row is not None and c_shar.upper() in close_row.index:
-                    val += positions[c_shar] * float(close_row[c_shar.upper()])
+                    val += positions[c_shar]["shares"] * float(close_row[c_shar.upper()])
         curve.append((day, val))
 
     return curve, opers, total_interest
