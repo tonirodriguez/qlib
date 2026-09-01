@@ -360,6 +360,18 @@ def print_report_only(state, prices):
 # HISTORIAL
 # =====================================================================
 
+def _save_metrics_from_history():
+    """Guarda el JSON de metricas del paper desde el historial (Paso 6)."""
+    try:
+        from paper_metrics import returns_from_history, compute_metrics, save_metrics
+        if HISTORY_FILE.exists():
+            returns = returns_from_history(HISTORY_FILE, START_CAPITAL)
+            metrics = compute_metrics(returns, START_CAPITAL)
+            save_metrics(metrics)
+    except Exception as exc:  # pragma: no cover
+        print(f"   ⚠️  No se pudieron calcular metricas: {exc}")
+
+
 def append_history(state, total_value, trades):
     """Añade una entrada al historial CSV."""
     today = date.today().isoformat()
@@ -438,6 +450,9 @@ def main():
     # 0) Kill-switch manual: si existe el archivo KILL_SWITCH, parar.
     if KILL_SWITCH_FILE.exists():
         print("   🛑 KILL-SWITCH: archivo KILL_SWITCH presente. Operación bloqueada.")
+        total_kill, _ = value_portfolio(state, active_prices)
+        append_history(state, total_kill, [])
+        _save_metrics_from_history()
         print_report_only(state, active_prices)
         return
 
@@ -456,6 +471,8 @@ def main():
             state["peak_capital"] = total_block
         state["last_updated"] = datetime.utcnow().isoformat()
         save_state(state)
+        append_history(state, total_block, [])
+        _save_metrics_from_history()
         print_report_only(state, active_prices)
         return
 
@@ -475,6 +492,8 @@ def main():
 
     # Guardar historial
     append_history(state, total_value, trades)
+    # Guardar metricas (Paso 6)
+    _save_metrics_from_history()
 
     # Mostrar reporte
     print_portfolio_report(total_value, state["cash_usd"], position_details, trades, state)

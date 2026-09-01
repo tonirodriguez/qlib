@@ -66,15 +66,25 @@ Implementados en `work/crypto/risk_controls.py` + integrados en `sfm_paper_tradi
 
 **Entregable:** suite de tests verde (71) + entorno completo + lockfile. ✅
 
-### Paso 5 — Holdout de evaluación
-- [ ] Definir umbrales antes de abrir el holdout, abrirlo una sola vez, resultado inmutable.
-- [ ] Solo entonces la señal pasa de research-only a evidencia out-of-sample.
+### Paso 5 — Holdout de evaluación ◐ (registrado, apertura bloqueada)
+> ⚠️ **Hallazgo honesto:** un holdout legítimo exige **re-entrenar** dejando el 15%
+> final sin tocar. Eso es el **Paso 2 (GPU)**. El modelo actual ya se entrenó con todos
+> los datos, así que NO se puede abrir un holdout honesto sin re-entrenar.
+- [x] **Umbrales PRE-REGISTRADOS e inmutables** en `work/crypto/config/holdout_thresholds_v8.json`
+  (sharpe≥0.5, sortino≥0.7, max_dd≤0.30, calmar≥0.6, win_rate≥0.40, etc. — definidos ANTES de ver resultados).
+- [x] **Script de evaluación listo** `work/crypto/evaluate_holdout_v8.py` (open_once, resultado inmutable, costes Binance).
+- [ ] **Pendiente (GPU):** re-entrenar en génesis dejando el holdout sin tocar, abrirlo UNA vez, registrar resultado inmutable.
 
-**Entregable:** holdout cerrado con resultado inmutable.
+**Entregable:** umbrales pre-registrados + script listo ✅ · apertura pendiente de re-entrenado (Paso 2).
 
-### Paso 6 — Métricas y monitor del paper
-- [ ] Registrar curva de P&L (`history_paper_trading.csv`).
-- [ ] Métricas: Sharpe, Sortino, Calmar, VaR, CVaR, turnover reportadas a diario.
+### Paso 6 — Métricas y monitor del paper ✅ (2026-09-01)
+- [x] **`work/crypto/paper_metrics.py`**: calcula Sharpe, Sortino, Calmar, VaR, CVaR, max_drawdown, win rate y P&L curve desde `history_paper_trading.csv`.
+- [x] **`sfm_paper_trading.py` guarda historial SIEMPRE** (arreglado: antes los early-returns por riesgo/kill-switch no registraban) + calcula métricas en cada ejecución.
+- [x] **Integrado en `run_daily_pipeline.sh`** como paso 5/5: cada ejecución diaria actualiza `metrics_paper_latest.json`.
+- [x] **Test** `test_paper_metrics.py` (7 tests). Suite total: **78/78 verde**.
+- [ ] Pendiente (solo al tener historia): reportar las métricas con datos reales (>1 día de paper). Hoy solo hay snapshot (+0.34%).
+
+**Entregable:** infraestructura de métricas/monitor integrada. ✅
 
 ### Paso 7 — Credenciales y notificación (solo si se va a capital real)
 - [ ] Credenciales least-privilege con retiros desactivados (exige README). Nunca hardcodear.

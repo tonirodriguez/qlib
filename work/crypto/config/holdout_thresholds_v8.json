@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "purpose": "Umbrales PRE-REGISTRADOS y fijos que se usaran para evaluar el holdout final de la estrategia v8. Se definen ANTES de abrir el holdout (Paso 5 de produccion). Inmutables: no cambiar tras ver el resultado.",
+  "date_registered": "2026-09-01",
+  "status": "PREREGISTERED_NOT_YET_OPEN",
+  "model": "sfm_top3.pth (ensemble Top-K v8)",
+  "holdout": {
+    "_comment": "El holdout NO se ha separado aun: exige re-entrenar (Paso 2, GPU) dejando el 15% final sin tocar. Esta seccion define el plan y los umbrales que se aplicaran al abrirlo.",
+    "fraction": 0.15,
+    "max_signal_age_days": 1,
+    "min_holdout_days": 60
+  },
+  "predeclared_pass_gates": {
+    "_comment": "Para DAR POR BUENA la v8 en holdout, TODAS estas deben cumplirse sobre el retorno neto (con costes reales de Binance). Definidas antes de ver cualquier resultado.",
+    "sharpe_annualized_min": 0.5,
+    "sortino_annualized_min": 0.7,
+    "max_drawdown_max_abs": 0.30,
+    "calmar_min": 0.6,
+    "win_rate_min": 0.40,
+    "positive_returns_fraction_min": 0.50,
+    "outperform_benchmark_min": true,
+    "benchmark": "hodl_equal_weight_basket"
+  },
+  "predeclared_fail_gates": {
+    "_comment": "Si cualquiera se cumple, la v8 se descarta para capital real sin reabrir.",
+    "sharpe_annualized_max_for_reject": 0.0,
+    "max_drawdown_abs_for_reject": 0.50,
+    "sharpe_cl_90_lower_bound_exceeds_zero": false
+  },
+  "decisions": {
+    "open_once": true,
+    "record_immutable_result": true,
+    "do_not_retune_after_opening": true,
+    "do_not_reopen": true
+  }
+}

@@ -97,6 +97,17 @@ END_TIME=$(date +%s)
 echo "   ⏱️  $(($(($END_TIME - $START_TIME))/60)) min $(($(($END_TIME - $START_TIME)) % 60)) seg" | tee -a "$LOG_FILE"
 echo "" | tee -a "$LOG_FILE"
 
+# ── Paso 5: Metricas y monitor del paper (Paso 6 de produccion) ──
+echo "[5/5] 📊 Calculando metricas del paper (Sharpe, Sortino, Calmar, VaR, drawdown)..." | tee -a "$LOG_FILE"
+echo "      $(date '+%H:%M:%S')" | tee -a "$LOG_FILE"
+START_TIME=$(date +%s)
+
+$PYTHON work/crypto/paper_metrics.py --csv "${PROJECT_DIR}/work/crypto/output/sfm_v8/history_paper_trading.csv" >> "$LOG_FILE" 2>&1
+
+END_TIME=$(date +%s)
+echo "   ⏱️  $(($(($END_TIME - $START_TIME)))) seg" | tee -a "$LOG_FILE"
+echo "" | tee -a "$LOG_FILE"
+
 # ── Resumen ──
 echo "==========================================" | tee -a "$LOG_FILE"
 echo "✅ Pipeline completado" | tee -a "$LOG_FILE"
