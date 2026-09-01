@@ -1,0 +1,70 @@
+{
+  "days_per_call": 365,
+  "endpoint": "/coins/{id}/ohlc",
+  "instruments": {
+    "ADA": {
+      "file": "ada.csv",
+      "first_date": "2025-09-01 00:00:00+00:00",
+      "last_date": "2026-08-31 00:00:00+00:00",
+      "rows": 92,
+      "sha256": "ffbe63dee1ce644689d9b5fa1f4cb65443503963ba764522b62bd354fb9c4e60"
+    },
+    "BTC": {
+      "file": "btc.csv",
+      "first_date": "2025-09-01 00:00:00+00:00",
+      "last_date": "2026-08-31 00:00:00+00:00",
+      "rows": 92,
+      "sha256": "7c39257322216604ab978041988b2678a6b97b0930b7fba1e1735ab73e0aa5ce"
+    },
+    "DOGE": {
+      "file": "doge.csv",
+      "first_date": "2025-09-01 00:00:00+00:00",
+      "last_date": "2026-08-31 00:00:00+00:00",
+      "rows": 92,
+      "sha256": "021cef2ce8b888fc0cb4df80562edd600a0d3bf12e0fdfb91b0fa98aa0cc6766"
+    },
+    "ETH": {
+      "file": "eth.csv",
+      "first_date": "2025-09-01 00:00:00+00:00",
+      "last_date": "2026-08-31 00:00:00+00:00",
+      "rows": 92,
+      "sha256": "cda37f04f6503c6e4ff951e7b149a30448485a42e461678cbcd72a3ed89f30ef"
+    },
+    "LINK": {
+      "file": "link.csv",
+      "first_date": "2025-09-01 00:00:00+00:00",
+      "last_date": "2026-08-31 00:00:00+00:00",
+      "rows": 92,
+      "sha256": "3014c0c050079432daef17f02cacf7b95f5f020f594a9dc47ec26c4c50cb9b41"
+    },
+    "LTC": {
+      "file": "ltc.csv",
+      "first_date": "2025-09-01 00:00:00+00:00",
+      "last_date": "2026-08-31 00:00:00+00:00",
+      "rows": 92,
+      "sha256": "fceb712c9a57ecb24a7f239efe343b3f45457c726e43d1a8847a74cb0e927d2f"
+    },
+    "SOL": {
+      "file": "sol.csv",
+      "first_date": "2025-09-01 00:00:00+00:00",
+      "last_date": "2026-08-31 00:00:00+00:00",
+      "rows": 92,
+      "sha256": "65d362cea833e11d829f8522cf4f0ab106f5420b6f1d6ad1fa4bd757a43f6149"
+    },
+    "XLM": {
+      "file": "xlm.csv",
+      "first_date": "2025-09-01 00:00:00+00:00",
+      "last_date": "2026-08-31 00:00:00+00:00",
+      "rows": 92,
+      "sha256": "c94a9aeffffe6e4038d4676463104f3e3cf71128612f562915c51cb95c848c03"
+    },
+    "XRP": {
+      "file": "xrp.csv",
+      "first_date": "2025-09-01 00:00:00+00:00",
+      "last_date": "2026-08-31 00:00:00+00:00",
+      "rows": 92,
+      "sha256": "a7261e0ca7dc9a5c5cb9a393041d81fd908c068c24ef8a51a1bdc8799f4af0e6"
+    }
+  },
+  "source": "coingecko"
+}

@@ -1,0 +1,24 @@
+{
+  "best_objective": -3.7970769651659393,
+  "fwd_days": 1,
+  "best_params": {
+    "hidden_dim": 112,
+    "freq_components": 16,
+    "lr": 0.001151497924635743,
+    "dropout_rate": 0.45000000000000007,
+    "batch_size": 16,
+    "weight_decay": 0.00012638990260144134,
+    "lookback": 30
+  },
+  "n_trials": 100,
+  "n_complete": 58,
+  "n_pruned": 42,
+  "elapsed_min": 48.919234891732536,
+  "seed": 42,
+  "split": "60/20/20 + walk-forward",
+  "lookback_range": "20-60 (step 10)",
+  "features": "close,pct,ratio_5d,vol_20d,ma20_ratio,rango",
+  "denoising": "wavelet_db2_level2_soft",
+  "start_date": "2015-01-01",
+  "end_date": "2026-09-01"
+}

@@ -1,0 +1,23 @@
+{
+  "best_sharpe_val": 3.9389707195607038,
+  "fwd_days": 5,
+  "best_params": {
+    "hidden_dim": 96,
+    "freq_components": 16,
+    "lr": 3.3810643602803935e-05,
+    "dropout_rate": 0.5,
+    "batch_size": 16,
+    "weight_decay": 2.3102018878452926e-05,
+    "lookback": 30
+  },
+  "n_trials": 10,
+  "n_complete": 10,
+  "n_pruned": 0,
+  "elapsed_min": 21.93106863896052,
+  "seed": 42,
+  "split": "60/20/20",
+  "lookback_range": "20-90",
+  "features": "close,pct,ratio_5d,vol_20d,ma20_ratio,rango",
+  "start_date": "2015-01-01",
+  "end_date": "2026-09-01"
+}

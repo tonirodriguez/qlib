@@ -1,0 +1,21 @@
+{
+  "best_sharpe_val": 1.2061130956541595,
+  "best_params": {
+    "hidden_dim": 80,
+    "freq_components": 19,
+    "lr": 0.00033903286537481257,
+    "dropout_rate": 0.2,
+    "batch_size": 32,
+    "weight_decay": 2.6132809163636844e-05,
+    "lookback": 30
+  },
+  "n_trials": 100,
+  "n_complete": 35,
+  "n_pruned": 65,
+  "elapsed_min": 115.49879792928695,
+  "seed": 42,
+  "split": "60/20/20",
+  "lookback_range": "20-90",
+  "start_date": "2015-01-01",
+  "end_date": "2026-08-31"
+}

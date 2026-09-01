@@ -1,0 +1,179 @@
+/home/toni/miniconda3/envs/qlib/lib/python3.12/site-packages/joblib/_multiprocessing_helpers.py:44: UserWarning: [Errno 13] Permission denied.  joblib will operate in serial mode
+  warnings.warn("%s.  joblib will operate in serial mode" % (e,))
+[75804:MainThread](2026-09-01 16:47:15,272) INFO - qlib.Initialization - [config.py:473] - default_conf: client.
+[75804:MainThread](2026-09-01 16:47:15,845) INFO - qlib.Initialization - [__init__.py:82] - qlib successfully initialized based on client settings.
+[75804:MainThread](2026-09-01 16:47:15,845) INFO - qlib.Initialization - [__init__.py:84] - data_path={'__DEFAULT_FREQ': PosixPath('/mnt/c/Users/trodriguez/src/qlib/data/qlib')}
+[I 2026-09-01 16:47:16,513] A new study created in memory with name: sfm_optuna_v8
+=================================================================
+SFM v8 - Label 1d + Denoising + Walk-Forward + Metrica Anti-Overfitting
+=================================================================
+   Cryptos: ['btc', 'eth', 'sol', 'xlm', 'ada', 'xrp', 'doge', 'link', 'ltc']
+   Label: retorno a 1d
+   Features: close, pct, ratio_5d, vol_20d, ma20_ratio, rango
+   Denoising: Wavelet (db2, level=2, soft)
+   Walk-Forward: True
+   Split: Walk-Forward 3 ventanas
+   Lookback: 20-90 (step 10)
+   Trials: 100  |  Top-K: 5
+   Seed: 42
+   Provider: data/qlib
+   Rango: 2015-01-01 -> 2026-09-01
+=================================================================
+
+Cargando datos desde Qlib...
+
+   Cargando 9 criptos desde 2015-01-01 hasta 2026-09-01...
+   Label: retorno a 1 día  |  Features: close, pct, ratio, vol, ma20, rango
+       btc:  3301 valores [2017-08-17 -> 2026-08-30]
+       eth:  3301 valores [2017-08-17 -> 2026-08-30]
+       sol:  2211 valores [2020-08-11 -> 2026-08-30]
+       xlm:  3014 valores [2018-05-31 -> 2026-08-30]
+       ada:  3058 valores [2018-04-17 -> 2026-08-30]
+       xrp:  3041 valores [2018-05-04 -> 2026-08-30]
+      doge:  2614 valores [2019-07-05 -> 2026-08-30]
+      link:  2784 valores [2019-01-16 -> 2026-08-30]
+       ltc:  3183 valores [2017-12-13 -> 2026-08-30]
+
+==============================================================
+DIAGNOSTICO DE DATOS (combinados)
+==============================================================
+   Rango total:          2017-08-17 -> 2026-08-30
+   Filas totales:        3301
+   Anos cubiertos:       9.0
+       btc:  3301 valores,     0 NaN (  0.0%)  [2017-08-17 -> 2026-08-30]
+       eth:  3301 valores,     0 NaN (  0.0%)  [2017-08-17 -> 2026-08-30]
+       sol:  2211 valores,  1090 NaN ( 33.0%)  [2020-08-11 -> 2026-08-30]
+       xlm:  3014 valores,   287 NaN (  8.7%)  [2018-05-31 -> 2026-08-30]
+       ada:  3058 valores,   243 NaN (  7.4%)  [2018-04-17 -> 2026-08-30]
+       xrp:  3041 valores,   260 NaN (  7.9%)  [2018-05-04 -> 2026-08-30]
+      doge:  2614 valores,   687 NaN ( 20.8%)  [2019-07-05 -> 2026-08-30]
+      link:  2784 valores,   517 NaN ( 15.7%)  [2019-01-16 -> 2026-08-30]
+       ltc:  3183 valores,   118 NaN (  3.6%)  [2017-12-13 -> 2026-08-30]
+   🌀 Denoising Wavelet (db2, level=2, soft thresholding)...
+      139176 valores modificados (78.1%)
+   Corrigiendo 23107 valores Inf/NaN residuales
+
+   Matrix final: 3301 filas x 54 columnas
+   Features por moneda: close, pct, ratio_5d, vol_20d, ma20_ratio, rango = 6
+   Total features: 9 x 6 = 54
+   Label: retorno a 1d
+==============================================================
+
+SPLIT TEMPORAL 60/20/20 (ventana principal)
+==============================================================
+   TRAIN          1980       2017-08-17 -> 2023-01-17   60.0%
+   VAL            660        2023-01-18 -> 2024-11-07   20.0%
+   TEST           661        2024-11-08 -> 2026-08-30   20.0%
+   Device: cpu
+
+=================================================================
+FASE 1: OPTUNA (100 trials, metrica anti-overfitting)
+=================================================================
+   Trials: 100  |  Sampler: TPESampler  |  Pruner: MedianPruner
+   Objetivo: minimizar -(Sharpe_val - 0.2*|Sharpe_val - Sharpe_train|)
+  0%|          | 0/100 [00:00<?, ?it/s]                                         0%|          | 0/100 [01:24<?, ?it/s]Best trial: 0. Best value: -3.15953:   0%|          | 0/100 [01:24<?, ?it/s]Best trial: 0. Best value: -3.15953:   1%|          | 1/100 [01:24<2:19:32, 84.57s/it]/home/toni/miniconda3/envs/qlib/lib/python3.12/site-packages/joblib/_multiprocessing_helpers.py:44: UserWarning: [Errno 13] Permission denied.  joblib will operate in serial mode
+  warnings.warn("%s.  joblib will operate in serial mode" % (e,))
+[76695:MainThread](2026-09-01 16:51:42,302) INFO - qlib.Initialization - [config.py:473] - default_conf: client.
+[76695:MainThread](2026-09-01 16:51:42,922) INFO - qlib.Initialization - [__init__.py:82] - qlib successfully initialized based on client settings.
+[76695:MainThread](2026-09-01 16:51:42,924) INFO - qlib.Initialization - [__init__.py:84] - data_path={'__DEFAULT_FREQ': PosixPath('/mnt/c/Users/trodriguez/src/qlib/data/qlib')}
+[I 2026-09-01 16:51:43,815] A new study created in memory with name: sfm_optuna_v8
+[I 2026-09-01 16:52:51,433] Trial 0 finished with value: -1.913765600746111 and parameters: {'hidden_dim': 64, 'freq_components': 20, 'lr': 0.0021079155721315953, 'dropout_rate': 0.35, 'batch_size': 16, 'weight_decay': 1.3066739238053272e-05, 'lookback': 60}. Best is trial 0 with value: -1.913765600746111.
+[I 2026-09-01 16:54:23,052] Trial 1 finished with value: -2.1561168009594027 and parameters: {'hidden_dim': 96, 'freq_components': 16, 'lr': 3.3810643602803935e-05, 'dropout_rate': 0.5, 'batch_size': 16, 'weight_decay': 2.3102018878452926e-05, 'lookback': 20}. Best is trial 1 with value: -2.1561168009594027.
+[I 2026-09-01 16:54:56,886] Trial 2 finished with value: -2.2369146267447615 and parameters: {'hidden_dim': 64, 'freq_components': 12, 'lr': 0.00036886390648910083, 'dropout_rate': 0.2, 'batch_size': 16, 'weight_decay': 3.8396292998041685e-05, 'lookback': 30}. Best is trial 2 with value: -2.2369146267447615.
+[I 2026-09-01 16:56:18,010] Trial 3 finished with value: -2.526424906612733 and parameters: {'hidden_dim': 80, 'freq_components': 16, 'lr': 9.569163955174178e-05, 'dropout_rate': 0.30000000000000004, 'batch_size': 16, 'weight_decay': 0.000164092867306479, 'lookback': 20}. Best is trial 3 with value: -2.526424906612733.
+[I 2026-09-01 16:56:59,381] Trial 4 finished with value: -2.3305267480490572 and parameters: {'hidden_dim': 32, 'freq_components': 20, 'lr': 0.008190186414488711, 'dropout_rate': 0.45000000000000007, 'batch_size': 16, 'weight_decay': 0.000233596350262616, 'lookback': 40}. Best is trial 3 with value: -2.526424906612733.
+[I 2026-09-01 16:58:02,285] Trial 5 finished with value: -1.533112712206361 and parameters: {'hidden_dim': 32, 'freq_components': 12, 'lr': 3.663357677379433e-05, 'dropout_rate': 0.5, 'batch_size': 32, 'weight_decay': 4.201672054372529e-05, 'lookback': 40}. Best is trial 3 with value: -2.526424906612733.
+[I 2026-09-01 16:59:08,207] Trial 6 finished with value: -1.6744245201660448 and parameters: {'hidden_dim': 80, 'freq_components': 4, 'lr': 0.008380418441283403, 'dropout_rate': 0.4, 'batch_size': 16, 'weight_decay': 0.0001569639638866114, 'lookback': 60}. Best is trial 3 with value: -2.526424906612733.
+[I 2026-09-01 17:00:31,778] Trial 7 finished with value: -2.292101429041359 and parameters: {'hidden_dim': 32, 'freq_components': 4, 'lr': 3.901433606550649e-05, 'dropout_rate': 0.2, 'batch_size': 16, 'weight_decay': 0.00045443839603360173, 'lookback': 30}. Best is trial 3 with value: -2.526424906612733.
+[I 2026-09-01 17:01:13,777] Trial 8 finished with value: -1.4129608301850947 and parameters: {'hidden_dim': 48, 'freq_components': 12, 'lr': 6.802303211082056e-05, 'dropout_rate': 0.45000000000000007, 'batch_size': 32, 'weight_decay': 0.0003503398491158688, 'lookback': 20}. Best is trial 3 with value: -2.526424906612733.
+[I 2026-09-01 17:01:27,360] Trial 9 finished with value: -3.563898324889508 and parameters: {'hidden_dim': 32, 'freq_components': 20, 'lr': 0.0018215312378597253, 'dropout_rate': 0.4, 'batch_size': 16, 'weight_decay': 5.211124595788268e-05, 'lookback': 20}. Best is trial 9 with value: -3.563898324889508.
+[I 2026-09-01 17:01:43,547] Trial 10 pruned. 
+[I 2026-09-01 17:02:08,929] Trial 11 finished with value: -0.9708560808115612 and parameters: {'hidden_dim': 112, 'freq_components': 16, 'lr': 0.0002068593475521352, 'dropout_rate': 0.30000000000000004, 'batch_size': 16, 'weight_decay': 0.0001064995449770276, 'lookback': 20}. Best is trial 9 with value: -3.563898324889508.
+[I 2026-09-01 17:03:46,402] Trial 12 finished with value: -1.9232218352957497 and parameters: {'hidden_dim': 80, 'freq_components': 16, 'lr': 0.00014110470702322707, 'dropout_rate': 0.30000000000000004, 'batch_size': 16, 'weight_decay': 7.923346954817205e-05, 'lookback': 30}. Best is trial 9 with value: -3.563898324889508.
+[I 2026-09-01 17:04:24,144] Trial 13 finished with value: -2.748236616665571 and parameters: {'hidden_dim': 64, 'freq_components': 20, 'lr': 0.001329709532648404, 'dropout_rate': 0.25, 'batch_size': 16, 'weight_decay': 0.0008921351803324368, 'lookback': 20}. Best is trial 9 with value: -3.563898324889508.
+[I 2026-09-01 17:04:30,843] Trial 14 pruned. 
+[I 2026-09-01 17:04:44,536] Trial 15 finished with value: -1.7440465819337863 and parameters: {'hidden_dim': 48, 'freq_components': 20, 'lr': 0.0008832335950039002, 'dropout_rate': 0.35, 'batch_size': 16, 'weight_decay': 0.0009954653860128962, 'lookback': 20}. Best is trial 9 with value: -3.563898324889508.
+[I 2026-09-01 17:05:34,439] Trial 16 finished with value: -2.483260474804019 and parameters: {'hidden_dim': 64, 'freq_components': 20, 'lr': 0.003524303193167476, 'dropout_rate': 0.25, 'batch_size': 16, 'weight_decay': 1.040628638980312e-05, 'lookback': 50}. Best is trial 9 with value: -3.563898324889508.
+[I 2026-09-01 17:05:48,583] Trial 17 pruned. 
+[I 2026-09-01 17:05:55,362] Trial 18 pruned. 
+[I 2026-09-01 17:06:00,651] Trial 19 pruned. 
+[I 2026-09-01 17:06:29,722] Trial 20 finished with value: -2.4998384671749143 and parameters: {'hidden_dim': 64, 'freq_components': 12, 'lr': 0.003345902332674129, 'dropout_rate': 0.15000000000000002, 'batch_size': 16, 'weight_decay': 0.0001397548416412125, 'lookback': 40}. Best is trial 9 with value: -3.563898324889508.
+[I 2026-09-01 17:06:37,205] Trial 21 pruned. 
+[I 2026-09-01 17:08:09,208] Trial 22 finished with value: -3.1524514215421986 and parameters: {'hidden_dim': 96, 'freq_components': 16, 'lr': 0.00010355396475943172, 'dropout_rate': 0.35, 'batch_size': 16, 'weight_decay': 0.0006166112198196075, 'lookback': 20}. Best is trial 9 with value: -3.563898324889508.
+[I 2026-09-01 17:08:23,119] Trial 23 pruned. 
+[I 2026-09-01 17:08:48,202] Trial 24 finished with value: -3.2869501858202397 and parameters: {'hidden_dim': 112, 'freq_components': 16, 'lr': 0.002106972915778839, 'dropout_rate': 0.4, 'batch_size': 16, 'weight_decay': 0.0006435567569037556, 'lookback': 20}. Best is trial 9 with value: -3.563898324889508.
+[I 2026-09-01 17:09:23,439] Trial 25 finished with value: -3.1907263153037335 and parameters: {'hidden_dim': 128, 'freq_components': 16, 'lr': 0.002497654254694057, 'dropout_rate': 0.4, 'batch_size': 16, 'weight_decay': 0.00025485000394140535, 'lookback': 30}. Best is trial 9 with value: -3.563898324889508.
+[I 2026-09-01 17:09:34,812] Trial 26 pruned. 
+[I 2026-09-01 17:10:44,611] Trial 27 finished with value: -2.792250649690518 and parameters: {'hidden_dim': 112, 'freq_components': 8, 'lr': 0.005747073247516632, 'dropout_rate': 0.4, 'batch_size': 16, 'weight_decay': 0.00042624027270448745, 'lookback': 30}. Best is trial 9 with value: -3.563898324889508.
+[I 2026-09-01 17:11:22,458] Trial 28 pruned. 
+[I 2026-09-01 17:11:47,340] Trial 29 finished with value: -2.180681767960302 and parameters: {'hidden_dim': 128, 'freq_components': 20, 'lr': 0.004959597510739137, 'dropout_rate': 0.45000000000000007, 'batch_size': 16, 'weight_decay': 0.00010272886527704653, 'lookback': 20}. Best is trial 9 with value: -3.563898324889508.
+[I 2026-09-01 17:12:43,493] Trial 30 finished with value: -2.9518764190733036 and parameters: {'hidden_dim': 112, 'freq_components': 12, 'lr': 0.002353469082418213, 'dropout_rate': 0.35, 'batch_size': 16, 'weight_decay': 7.319094944242488e-05, 'lookback': 50}. Best is trial 9 with value: -3.563898324889508.
+[I 2026-09-01 17:13:07,441] Trial 31 finished with value: -3.4302575357522147 and parameters: {'hidden_dim': 96, 'freq_components': 16, 'lr': 0.0006913754272345661, 'dropout_rate': 0.35, 'batch_size': 16, 'weight_decay': 0.0006405518710800663, 'lookback': 20}. Best is trial 9 with value: -3.563898324889508.
+[I 2026-09-01 17:13:21,398] Trial 32 pruned. 
+[I 2026-09-01 17:13:42,008] Trial 33 finished with value: -2.8523259353561956 and parameters: {'hidden_dim': 112, 'freq_components': 16, 'lr': 0.0015862066310480308, 'dropout_rate': 0.35, 'batch_size': 16, 'weight_decay': 0.0005992446047408286, 'lookback': 20}. Best is trial 9 with value: -3.563898324889508.
+[I 2026-09-01 17:14:00,810] Trial 34 finished with value: -2.3968499087348767 and parameters: {'hidden_dim': 96, 'freq_components': 12, 'lr': 0.0009334107629305579, 'dropout_rate': 0.5, 'batch_size': 16, 'weight_decay': 2.3729930901397968e-05, 'lookback': 20}. Best is trial 9 with value: -3.563898324889508.
+[I 2026-09-01 17:14:16,098] Trial 35 pruned. 
+[I 2026-09-01 17:14:44,352] Trial 36 finished with value: -2.914458132212621 and parameters: {'hidden_dim': 128, 'freq_components': 20, 'lr': 0.002470889112441426, 'dropout_rate': 0.4, 'batch_size': 16, 'weight_decay': 5.40889752280818e-05, 'lookback': 20}. Best is trial 9 with value: -3.563898324889508.
+[I 2026-09-01 17:15:15,764] Trial 37 finished with value: -1.523084058008261 and parameters: {'hidden_dim': 96, 'freq_components': 12, 'lr': 0.006479660209026496, 'dropout_rate': 0.35, 'batch_size': 16, 'weight_decay': 0.00020835799721404558, 'lookback': 20}. Best is trial 9 with value: -3.563898324889508.
+[I 2026-09-01 17:16:02,035] Trial 38 finished with value: -3.312921492749916 and parameters: {'hidden_dim': 112, 'freq_components': 20, 'lr': 0.002903581068976171, 'dropout_rate': 0.5, 'batch_size': 16, 'weight_decay': 0.00036379800564223763, 'lookback': 40}. Best is trial 9 with value: -3.563898324889508.
+[I 2026-09-01 17:18:42,656] Trial 39 finished with value: -2.9394623507523003 and parameters: {'hidden_dim': 112, 'freq_components': 20, 'lr': 0.0002791331128665262, 'dropout_rate': 0.5, 'batch_size': 32, 'weight_decay': 3.1320715764248305e-05, 'lookback': 60}. Best is trial 9 with value: -3.563898324889508.
+[I 2026-09-01 17:19:22,432] Trial 40 finished with value: -2.1762806184568007 and parameters: {'hidden_dim': 80, 'freq_components': 20, 'lr': 0.004239084881884367, 'dropout_rate': 0.5, 'batch_size': 16, 'weight_decay': 0.00036068914131502856, 'lookback': 40}. Best is trial 9 with value: -3.563898324889508.
+[I 2026-09-01 17:20:23,289] Trial 41 finished with value: -2.886068959550638 and parameters: {'hidden_dim': 128, 'freq_components': 16, 'lr': 0.002757323826640378, 'dropout_rate': 0.45000000000000007, 'batch_size': 16, 'weight_decay': 0.0007562983685544894, 'lookback': 40}. Best is trial 9 with value: -3.563898324889508.
+[I 2026-09-01 17:20:49,639] Trial 42 pruned. 
+[I 2026-09-01 17:21:16,770] Trial 43 finished with value: -3.7970769651659393 and parameters: {'hidden_dim': 112, 'freq_components': 16, 'lr': 0.001151497924635743, 'dropout_rate': 0.45000000000000007, 'batch_size': 16, 'weight_decay': 0.00012638990260144134, 'lookback': 30}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:21:36,246] Trial 44 pruned. 
+[I 2026-09-01 17:21:49,113] Trial 45 pruned. 
+[I 2026-09-01 17:22:10,733] Trial 46 finished with value: -3.746729744827025 and parameters: {'hidden_dim': 112, 'freq_components': 20, 'lr': 0.0007222243809214049, 'dropout_rate': 0.45000000000000007, 'batch_size': 32, 'weight_decay': 0.00017464886772066717, 'lookback': 20}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:22:45,857] Trial 47 finished with value: -2.898321032464313 and parameters: {'hidden_dim': 96, 'freq_components': 20, 'lr': 0.0007240864608541719, 'dropout_rate': 0.45000000000000007, 'batch_size': 32, 'weight_decay': 0.00017839343909417803, 'lookback': 30}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:23:17,365] Trial 48 finished with value: -2.9832177161778604 and parameters: {'hidden_dim': 112, 'freq_components': 20, 'lr': 0.000515823248433801, 'dropout_rate': 0.5, 'batch_size': 32, 'weight_decay': 0.00011173094331072822, 'lookback': 20}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:24:04,390] Trial 49 finished with value: -0.9917979432092807 and parameters: {'hidden_dim': 112, 'freq_components': 20, 'lr': 0.00041414704785285017, 'dropout_rate': 0.45000000000000007, 'batch_size': 32, 'weight_decay': 8.301883951447101e-05, 'lookback': 20}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:24:09,048] Trial 50 pruned. 
+[I 2026-09-01 17:24:14,924] Trial 51 pruned. 
+[I 2026-09-01 17:24:26,127] Trial 52 pruned. 
+[I 2026-09-01 17:24:59,163] Trial 53 finished with value: -2.7809079172854947 and parameters: {'hidden_dim': 112, 'freq_components': 12, 'lr': 0.009674409180471662, 'dropout_rate': 0.4, 'batch_size': 16, 'weight_decay': 0.0007111197091369521, 'lookback': 20}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:25:03,812] Trial 54 pruned. 
+[I 2026-09-01 17:26:44,025] Trial 55 finished with value: -2.856022526352933 and parameters: {'hidden_dim': 112, 'freq_components': 16, 'lr': 0.0031717528490085613, 'dropout_rate': 0.35, 'batch_size': 16, 'weight_decay': 0.0005764402833647027, 'lookback': 50}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:27:03,448] Trial 56 finished with value: -3.715678490294307 and parameters: {'hidden_dim': 96, 'freq_components': 20, 'lr': 0.0018942194427884042, 'dropout_rate': 0.30000000000000004, 'batch_size': 16, 'weight_decay': 8.726181651083918e-05, 'lookback': 20}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:27:11,338] Trial 57 pruned. 
+[I 2026-09-01 17:27:19,259] Trial 58 pruned. 
+[I 2026-09-01 17:27:31,466] Trial 59 pruned. 
+[I 2026-09-01 17:27:40,877] Trial 60 pruned. 
+[I 2026-09-01 17:28:15,349] Trial 61 finished with value: -3.1715381970459364 and parameters: {'hidden_dim': 112, 'freq_components': 16, 'lr': 0.0019584140931146556, 'dropout_rate': 0.35, 'batch_size': 16, 'weight_decay': 0.00011438990967786107, 'lookback': 20}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:28:53,046] Trial 62 finished with value: -2.833623135253291 and parameters: {'hidden_dim': 128, 'freq_components': 20, 'lr': 0.0030695734701963366, 'dropout_rate': 0.4, 'batch_size': 16, 'weight_decay': 6.299901718628184e-05, 'lookback': 20}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:29:12,944] Trial 63 finished with value: -2.183193316070887 and parameters: {'hidden_dim': 112, 'freq_components': 16, 'lr': 0.001909897585723995, 'dropout_rate': 0.35, 'batch_size': 16, 'weight_decay': 9.274443877399975e-05, 'lookback': 20}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:29:40,815] Trial 64 finished with value: -2.60973176131932 and parameters: {'hidden_dim': 64, 'freq_components': 20, 'lr': 0.0022113816965813804, 'dropout_rate': 0.45000000000000007, 'batch_size': 16, 'weight_decay': 0.00031483474315139155, 'lookback': 20}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:29:53,792] Trial 65 pruned. 
+[I 2026-09-01 17:30:18,817] Trial 66 finished with value: -1.4781117849006449 and parameters: {'hidden_dim': 48, 'freq_components': 12, 'lr': 0.004051912851299896, 'dropout_rate': 0.5, 'batch_size': 16, 'weight_decay': 0.0001571554712697657, 'lookback': 20}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:30:26,102] Trial 67 pruned. 
+[I 2026-09-01 17:30:39,032] Trial 68 pruned. 
+[I 2026-09-01 17:30:47,280] Trial 69 pruned. 
+[I 2026-09-01 17:31:13,387] Trial 70 finished with value: -3.0228721233074776 and parameters: {'hidden_dim': 128, 'freq_components': 16, 'lr': 0.0013266298258727408, 'dropout_rate': 0.35, 'batch_size': 16, 'weight_decay': 0.00011877387606350247, 'lookback': 20}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:31:44,764] Trial 71 finished with value: -2.524388138989553 and parameters: {'hidden_dim': 128, 'freq_components': 16, 'lr': 0.0027741163465077436, 'dropout_rate': 0.4, 'batch_size': 16, 'weight_decay': 0.00029843994427956893, 'lookback': 30}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:32:32,553] Trial 72 finished with value: -1.7775405938484845 and parameters: {'hidden_dim': 128, 'freq_components': 16, 'lr': 0.005293074273936188, 'dropout_rate': 0.35, 'batch_size': 16, 'weight_decay': 0.0002483145761406101, 'lookback': 40}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:33:02,263] Trial 73 finished with value: -2.5816050525712937 and parameters: {'hidden_dim': 128, 'freq_components': 16, 'lr': 0.0035566204723230187, 'dropout_rate': 0.4, 'batch_size': 16, 'weight_decay': 0.00019142633589446, 'lookback': 30}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:33:28,236] Trial 74 pruned. 
+[I 2026-09-01 17:34:01,689] Trial 75 finished with value: -3.2379706126417256 and parameters: {'hidden_dim': 112, 'freq_components': 16, 'lr': 0.002398646792792571, 'dropout_rate': 0.4, 'batch_size': 16, 'weight_decay': 0.00026123687353285903, 'lookback': 20}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:34:26,542] Trial 76 finished with value: -2.1759146154356253 and parameters: {'hidden_dim': 112, 'freq_components': 20, 'lr': 0.007030261010328494, 'dropout_rate': 0.45000000000000007, 'batch_size': 16, 'weight_decay': 0.00015781820338716946, 'lookback': 20}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:34:46,752] Trial 77 finished with value: -3.409187089212811 and parameters: {'hidden_dim': 112, 'freq_components': 16, 'lr': 0.0010552280776153428, 'dropout_rate': 0.30000000000000004, 'batch_size': 16, 'weight_decay': 9.481100031767755e-05, 'lookback': 20}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:34:55,124] Trial 78 pruned. 
+[I 2026-09-01 17:35:01,164] Trial 79 pruned. 
+[I 2026-09-01 17:35:09,429] Trial 80 pruned. 
+[I 2026-09-01 17:35:43,015] Trial 81 finished with value: -3.6244680777239493 and parameters: {'hidden_dim': 112, 'freq_components': 16, 'lr': 0.0017135081048176037, 'dropout_rate': 0.25, 'batch_size': 16, 'weight_decay': 0.0001407833323868165, 'lookback': 20}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:36:07,897] Trial 82 finished with value: -2.6797933273457386 and parameters: {'hidden_dim': 112, 'freq_components': 16, 'lr': 0.0017171673023489455, 'dropout_rate': 0.2, 'batch_size': 16, 'weight_decay': 0.00013038184501417454, 'lookback': 20}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:36:56,159] Trial 83 finished with value: -2.467510718134872 and parameters: {'hidden_dim': 112, 'freq_components': 16, 'lr': 0.00145843163946237, 'dropout_rate': 0.2, 'batch_size': 16, 'weight_decay': 6.496369221689171e-05, 'lookback': 20}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:37:05,505] Trial 84 pruned. 
+[I 2026-09-01 17:37:14,130] Trial 85 pruned. 
+[I 2026-09-01 17:37:37,897] Trial 86 pruned. 
+[I 2026-09-01 17:37:49,898] Trial 87 pruned. 
+[I 2026-09-01 17:37:55,466] Trial 88 pruned. 
+[I 2026-09-01 17:38:17,304] Trial 89 finished with value: -2.5682669470732216 and parameters: {'hidden_dim': 112, 'freq_components': 20, 'lr': 0.0008591059458721597, 'dropout_rate': 0.2, 'batch_size': 16, 'weight_decay': 1.8514257912868775e-05, 'lookback': 20}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:38:40,684] Trial 90 finished with value: -3.436591766845021 and parameters: {'hidden_dim': 80, 'freq_components': 16, 'lr': 0.0016831389727581935, 'dropout_rate': 0.25, 'batch_size': 16, 'weight_decay': 0.00017311552119525712, 'lookback': 30}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:38:53,898] Trial 91 pruned. 
+[I 2026-09-01 17:39:05,376] Trial 92 pruned. 
+[I 2026-09-01 17:39:25,562] Trial 93 finished with value: -3.275878950385967 and parameters: {'hidden_dim': 112, 'freq_components': 16, 'lr': 0.0010431495572211093, 'dropout_rate': 0.25, 'batch_size': 16, 'weight_decay': 0.00012123779328973047, 'lookback': 20}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:39:32,579] Trial 94 pruned. 
+[I 2026-09-01 17:39:49,737] Trial 95 pruned. 
+[I 2026-09-01 17:40:05,206] Trial 96 pruned. 
+[I 2026-09-01 17:40:11,547] Trial 97 pruned. 
+[I 2026-09-01 17:40:30,761] Trial 98 finished with value: -3.1850815734270808 and parameters: {'hidden_dim': 96, 'freq_components': 16, 'lr': 0.0020614514671674633, 'dropout_rate': 0.5, 'batch_size': 16, 'weight_decay': 6.015272192753348e-05, 'lookback': 20}. Best is trial 43 with value: -3.7970769651659393.
+[I 2026-09-01 17:40:38,971] Trial 99 pruned. 

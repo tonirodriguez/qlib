@@ -183,6 +183,7 @@ conda run -n qlib python work/crypto/qlib_sfm_pipeline.v6.py
 | `CRYPTO_FINAL_EPOCHS` | 100 | Epocas para reentreno final de los top-k |
 | `CRYPTO_TRIAL_EPOCHS` | 60 | Epocas por trial durante la busqueda Optuna |
 | `CRYPTO_TOP_K` | 5 | Modelos top a reentrenar y evaluar en test |
+| `CRYPTO_FWD_DAYS` | 5 | Dias de la label (retorno a N dias). v7 usa 5, v6 usa 1 |
 | `CRYPTO_QLIB_OUTPUT_DIR` | data/qlib | Ruta del provider Qlib |
 | `CRYPTO_MODEL_OUTPUT_DIR` | work/crypto/output/sfm_v6_full_history | Directorio de salida de resultados |
 | `CRYPTO_DOWNLOAD_SINCE_DAYS` | 10000 | Dias de historia a descargar (solo Binance, 10000 ~= 27 anos) |
@@ -208,3 +209,36 @@ conda run -n qlib python work/crypto/qlib_sfm_pipeline.v6.py
 
 5. **El provider Qlib esta en `data/qlib/`**, no en `data/qlib_crypto/`. Asegurate de que
    `CRYPTO_QLIB_OUTPUT_DIR` apunte a `data/qlib` si es necesario.
+
+---
+
+## Pipeline v7 (Label 5d + Features extendidos)
+
+El v7 incorpora las mejoras propuestas tras los resultados del v6:
+
+### Mejoras respecto a v6
+
+| Aspecto | v6 | v7 |
+|---|---|---|
+| Label | retorno a 1 dia | **retorno a 5 dias** (menos ruido) |
+| Features | close, pct, ratio_5d (3 por moneda) | **close, pct, ratio_5d, vol_20d, ma20_ratio, rango** (6 por moneda) |
+| Total features | 27 (9 monedas x 3) | **54** (9 monedas x 6) |
+| Output dir | output/sfm_v6_full_history | **output/sfm_v7_label5d** |
+
+### Ejecutar v7
+
+```bash
+cd /mnt/c/Users/trodriguez/src/qlib
+
+# Smoke test (10 trials)
+CRYPTO_OPTUNA_TRIALS=10 CRYPTO_FINAL_EPOCHS=20 conda run -n qlib python work/crypto/qlib_sfm_pipeline.v7.py
+
+# Completo (100 trials)
+conda run -n qlib python work/crypto/qlib_sfm_pipeline.v7.py
+
+# Solo con las 3 monedas principales (mas rapido)
+CRYPTO_INSTRUMENTS="BTC,ETH,SOL" conda run -n qlib python work/crypto/qlib_sfm_pipeline.v7.py
+
+# Label a 10 dias en lugar de 5
+CRYPTO_FWD_DAYS=10 conda run -n qlib python work/crypto/qlib_sfm_pipeline.v7.py
+```

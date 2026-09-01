@@ -1,0 +1,961 @@
+"""
+qlib_sfm_pipeline.v8.py — SFM Robusto: Denoising + Walk-Forward + Label 1d + Métrica Anti-Overfitting
+
+Lecciones de v1 a v7 que incorporamos:
+  v2: Denoising Wavelet (pywt) — elimina ruido diario, mejora SNR
+  v3: MedianPruner + TPESampler — ahorro computacional (65% pruning en v6)
+  v4: Walk-Forward 3 ventanas — CLAVE del éxito (Sharpe test +1.24)
+  v4: Top-K evaluation (Top-5) — evita p-hacking del mejor trial
+  v4: Evaluación por Sharpe direccional — métrica realista de trading
+  v6/v7: Features extendidos (vol_20d, ma20_ratio, rango) — señal adicional valiosa
+  v6: Clipping causal + MinMaxScaler(-1,1) — prevención de leakage
+
+NUEVO en v8:
+  - Métrica anti-overfitting: objetivo = -(Sharpe_val - 0.2 * |Sharpe_val - Sharpe_train|)
+  - Patience adaptativa: max(5, min(15, epochs // 10))
+  - Direction Accuracy como métrica secundaria
+  - Walk-Forward completo sobre Top-3 tras Optuna
+
+DESCARTADO de v7:
+  - Label 5d → volvemos a label 1d (menos ruido, mejor generalización)
+  - Split único 60/20/20 → walk-forward en su lugar
+
+Arquitectura: SFMCellRefined con frecuencias adaptativas
+Split: Walk-Forward 3 ventanas (60/20/20 → 40/20/40 → 20/20/60)
+Label: retorno a 1 día
+Denoising: Wavelet (pywt) con soft thresholding
+Clipping y scaling causales (solo con train)
+"""
+
+import os, pickle, warnings, json, time, random, math
+from copy import deepcopy
+import numpy as np
+import pandas as pd
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import TensorDataset, DataLoader
+from sklearn.preprocessing import MinMaxScaler
+from research_utils import (
+    apply_clip_bounds,
+    evaluate_cost_scenarios,
+    fit_clip_bounds,
+    performance_metrics,
+    top1_long_returns,
+)
+
+SEED = 42
+random.seed(SEED)
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed_all(SEED)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+# ── Denoising Wavelet ──
+try:
+    import pywt
+    HAS_PYWT = True
+except ImportError:
+    HAS_PYWT = False
+
+# ── Optuna ──
+try:
+    import optuna
+    from optuna.pruners import MedianPruner
+    from optuna.samplers import TPESampler
+    HAS_OPTUNA = True
+except ImportError:
+    HAS_OPTUNA = False
+
+import qlib
+from qlib.config import REG_US
+from qlib.data import D
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+warnings.filterwarnings("ignore")
+
+
+# =====================================================================
+# 1. ARQUITECTURA DEL MODELO SFM
+# =====================================================================
+
+class SFMCellRefined(nn.Module):
+    def __init__(self, input_dim, hidden_dim, freq_components, dropout_rate=0.2):
+        super().__init__()
+        self.hidden_dim = hidden_dim
+        self.K = freq_components
+        self.W_i = nn.Linear(input_dim + hidden_dim, hidden_dim)
+        self.W_f = nn.Linear(input_dim + hidden_dim, hidden_dim)
+        self.W_o = nn.Linear(input_dim + hidden_dim, hidden_dim)
+        self.W_z = nn.Linear(input_dim + hidden_dim, hidden_dim)
+        self.W_omega = nn.Parameter(torch.randn(hidden_dim, hidden_dim))
+        self.dropout = nn.Dropout(dropout_rate)
+
+    def forward(self, x, states):
+        h_prev, c_prev = states
+        combined = torch.cat([x, h_prev], dim=-1)
+        i = torch.sigmoid(self.W_i(combined))
+        f = torch.sigmoid(self.W_f(combined))
+        o = torch.sigmoid(self.W_o(combined))
+        z = torch.tanh(self.W_z(combined))
+        c = f * c_prev + i * z
+        omega = torch.softmax(self.W_omega, dim=-1)
+        freq_adapt = (omega * c.unsqueeze(-1)).sum(dim=1)
+        h = o * torch.tanh(c + freq_adapt)
+        h = self.dropout(h)
+        return h, c
+
+
+class SFMModelRefined(nn.Module):
+    def __init__(self, input_dim, hidden_dim, freq_components, output_dim, dropout_rate=0.2):
+        super().__init__()
+        self.cell = SFMCellRefined(input_dim, hidden_dim, freq_components, dropout_rate)
+        self.fc_out = nn.Linear(hidden_dim, output_dim)
+
+    def forward(self, x):
+        batch_size, seq_len, _ = x.shape
+        h = torch.zeros(batch_size, self.cell.hidden_dim, device=x.device)
+        c = torch.zeros(batch_size, self.cell.hidden_dim, device=x.device)
+        for t in range(seq_len):
+            h, c = self.cell(x[:, t, :], (h, c))
+        return self.fc_out(h)
+
+
+# =====================================================================
+# 2. DENOISING WAVELET
+# =====================================================================
+
+def wavelet_denoise_1d(signal, wavelet="db2", level=2, mode="soft"):
+    """Aplica denoising wavelet a una señal 1D."""
+    if not HAS_PYWT:
+        return signal
+    coeffs = pywt.wavedec(signal, wavelet, level=level)
+    sigma = np.median(np.abs(coeffs[-1])) / 0.6745
+    if sigma < 1e-10:
+        sigma = np.std(signal) * 0.1
+    threshold = sigma * np.sqrt(2 * np.log(len(signal)))
+    coeffs_thresh = list(coeffs)
+    for i in range(1, len(coeffs_thresh)):
+        coeffs_thresh[i] = pywt.threshold(coeffs_thresh[i], threshold, mode=mode)
+    return pywt.waverec(coeffs_thresh, wavelet)[:len(signal)]
+
+
+def denoise_market_matrix(market_matrix):
+    """Aplica denoising wavelet a cada columna (feature) de la matriz."""
+    if not HAS_PYWT:
+        print("   ⚠️  pywt no instalado. Denoising desactivado.")
+        return market_matrix
+    print("   🌀 Denoising Wavelet (db2, level=2, soft thresholding)...")
+    denoised = np.zeros_like(market_matrix)
+    for col in range(market_matrix.shape[1]):
+        denoised[:, col] = wavelet_denoise_1d(market_matrix[:, col])
+    n_changed = np.sum(np.abs(denoised - market_matrix) > 1e-8)
+    print(f"      {n_changed} valores modificados ({100*n_changed/market_matrix.size:.1f}%)")
+    return denoised
+
+
+# =====================================================================
+# 3. CARGA Y PROCESAMIENTO DE DATOS
+# =====================================================================
+
+def load_and_process_crypto_data(cryptos, start_date, end_date, fwd_days=1):
+    """Carga cada cripto por separado con features extendidos y label a 1 día."""
+    print(f"\n   Cargando {len(cryptos)} criptos desde {start_date} hasta {end_date}...")
+    print(f"   Label: retorno a {fwd_days} día  |  Features: close, pct, ratio, vol, ma20, rango")
+
+    # Necesitamos buffer de datos para features rolling (ventana 20d)
+    start_ts = pd.Timestamp(start_date)
+    end_ts = pd.Timestamp(end_date)
+    data_start = start_ts - pd.DateOffset(days=90)
+
+    close_dict = {}
+    for c in cryptos:
+        df_c = D.features([c], ["$close"], start_time=data_start, end_time=end_ts)
+        if df_c is None or df_c.empty:
+            print(f"     {c}: SIN DATOS")
+            continue
+        df_c = df_c.reset_index()
+        series = df_c.pivot(index="datetime", columns="instrument", values="$close")[c]
+        close_dict[c] = series
+        n_vals = series.notna().sum()
+        first = series.first_valid_index()
+        last = series.last_valid_index()
+        fstr = first.strftime('%Y-%m-%d') if first is not None else '---'
+        lstr = last.strftime('%Y-%m-%d') if last is not None else '---'
+        print(f"     {c:>5s}: {n_vals:>5d} valores [{fstr} -> {lstr}]")
+
+    if not close_dict:
+        raise ValueError("No se pudo cargar ninguna cripto")
+
+    df_close = pd.DataFrame(close_dict).sort_index()
+    # Recortar a la fecha de inicio real
+    df_close = df_close[df_close.index >= start_ts]
+
+    print(f"\n{'='*62}")
+    print("DIAGNOSTICO DE DATOS (combinados)")
+    print("=" * 62)
+    print(f"   Rango total:          {df_close.index[0].strftime('%Y-%m-%d')} -> {df_close.index[-1].strftime('%Y-%m-%d')}")
+    print(f"   Filas totales:        {len(df_close)}")
+    anos = (df_close.index[-1] - df_close.index[0]).days / 365.25
+    print(f"   Anos cubiertos:       {anos:.1f}")
+    for c in cryptos:
+        n_vals = df_close[c].notna().sum()
+        n_nan = df_close[c].isna().sum()
+        first = df_close[c].first_valid_index()
+        last = df_close[c].last_valid_index()
+        fstr = first.strftime('%Y-%m-%d') if first is not None else '---'
+        lstr = last.strftime('%Y-%m-%d') if last is not None else '---'
+        na_pct = 100 * n_nan / len(df_close)
+        print(f"     {c:>5s}: {n_vals:>5d} valores, {n_nan:>5d} NaN ({na_pct:5.1f}%)  [{fstr} -> {lstr}]")
+
+    if len(df_close) < 100:
+        raise ValueError(f"Solo {len(df_close)} filas tras combinar.")
+
+    # Features base
+    df_pct = df_close.pct_change().fillna(0)
+    df_mean_5 = df_close.rolling(window=5).mean().fillna(df_close)
+    df_close_safe = df_close.replace(0, np.nan).ffill().bfill()
+    df_ratio = (df_mean_5 / df_close_safe).replace([np.inf, -np.inf], np.nan).ffill().bfill().fillna(1.0)
+
+    # Features adicionales
+    df_vol = df_pct.rolling(window=20).std().fillna(0)
+    df_ma20 = df_close.rolling(window=20).mean().fillna(df_close)
+    df_ma20_ratio = (df_ma20 / df_close_safe).replace([np.inf, -np.inf], np.nan).ffill().bfill().fillna(1.0)
+    df_range = df_pct.abs()
+
+    market_matrix = np.hstack([
+        df_close.values,
+        df_pct.values,
+        df_ratio.values,
+        df_vol.values,
+        df_ma20_ratio.values,
+        df_range.values,
+    ])
+
+    # Denoising wavelet ANTES de la label
+    market_matrix = denoise_market_matrix(market_matrix)
+
+    # Label: retorno a fwd_days (1 por defecto en v8)
+    labels_matrix = (df_close.shift(-fwd_days) / df_close - 1).fillna(0).values
+
+    n_bad = np.isnan(market_matrix).sum() + np.isinf(market_matrix).sum()
+    if n_bad > 0:
+        print(f"   Corrigiendo {n_bad} valores Inf/NaN residuales")
+        market_matrix = np.nan_to_num(market_matrix, nan=0.0, posinf=1.0, neginf=-1.0)
+
+    n_features = market_matrix.shape[1]
+    n_c = len(cryptos)
+    print(f"\n   Matrix final: {market_matrix.shape[0]} filas x {n_features} columnas")
+    print(f"   Features por moneda: close, pct, ratio_5d, vol_20d, ma20_ratio, rango = 6")
+    print(f"   Total features: {n_c} x 6 = {n_features}")
+    print(f"   Label: retorno a {fwd_days}d")
+    print(f"{'='*62}")
+    return market_matrix, labels_matrix, df_close.index
+
+
+# =====================================================================
+# 4. VENTANAS DESLIZANTES
+# =====================================================================
+
+def make_sliding_windows(market_matrix, labels_matrix, lookback=30):
+    X, y = [], []
+    for i in range(len(market_matrix) - lookback - 1):
+        X.append(market_matrix[i: i + lookback, :])
+        y.append(labels_matrix[i + lookback, :])
+    return torch.tensor(np.array(X), dtype=torch.float32), torch.tensor(np.array(y), dtype=torch.float32)
+
+
+# =====================================================================
+# 5. WALK-FORWARD WINDOWS
+# =====================================================================
+
+def walk_forward_windows(n_total, start_offset=0, n_windows=3, val_pct=0.15):
+    """
+    Genera ventanas de walk-forward secuenciales.
+    Cada ventana desplaza el punto de inicio hacia adelante,
+    de modo que el test de la ventana anterior pasa a ser
+    parte del train de la siguiente.
+    """
+    available = n_total - start_offset
+    if available < 100:
+        raise ValueError(f"Too few samples ({n_total}) for walk-forward")
+    window_size = (available - int(n_total * val_pct)) // n_windows
+    windows = []
+    for w in range(n_windows):
+        train_start = start_offset + w * window_size
+        train_end = start_offset + (w + 1) * window_size
+        val_start = train_end
+        val_end = val_start + int(n_total * val_pct)
+        test_start = val_end
+        test_end = test_start + int(n_total * val_pct)
+        if test_end > n_total:
+            test_end = n_total
+        windows.append((train_start, train_end, val_start, val_end, test_start, test_end))
+    return windows
+
+
+# =====================================================================
+# 6. ENTRENAMIENTO
+# =====================================================================
+
+def train_trial(model, train_loader, val_loader, epochs, lr, weight_decay,
+                device, trial=None, patience=8):
+    """Entrena un trial de Optuna con early stopping."""
+    criterion = nn.MSELoss()
+    optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+    best_val_loss = float("inf")
+    patience_counter = 0
+    for epoch in range(epochs):
+        model.train()
+        train_loss = 0.0
+        for bx, by in train_loader:
+            bx, by = bx.to(device), by.to(device)
+            optimizer.zero_grad()
+            loss = criterion(model(bx), by)
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            optimizer.step()
+            train_loss += loss.item()
+        train_loss /= len(train_loader)
+        model.eval()
+        val_loss = 0.0
+        with torch.no_grad():
+            for bx, by in val_loader:
+                bx, by = bx.to(device), by.to(device)
+                loss = criterion(model(bx), by)
+                val_loss += loss.item()
+        val_loss /= len(val_loader)
+        if math.isnan(val_loss) or math.isinf(val_loss):
+            if trial is not None:
+                raise optuna.TrialPruned()
+            break
+        if trial is not None:
+            trial.report(val_loss, epoch)
+            if trial.should_prune():
+                raise optuna.TrialPruned()
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            patience_counter = 0
+        else:
+            patience_counter += 1
+        if patience_counter >= patience:
+            break
+    return best_val_loss, {"train": [], "val": []}
+
+
+def train_final(model, combined_loader, test_loader, epochs, lr, weight_decay,
+                device, patience=15, model_path="best.pth"):
+    """Reentrenamiento final sobre train+val combinado."""
+    criterion = nn.MSELoss()
+    optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+    best_loss = float("inf")
+    patience_counter = 0
+    for epoch in range(epochs):
+        model.train()
+        total_loss = 0.0
+        for bx, by in combined_loader:
+            bx, by = bx.to(device), by.to(device)
+            optimizer.zero_grad()
+            loss = criterion(model(bx), by)
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            optimizer.step()
+            total_loss += loss.item()
+        total_loss /= len(combined_loader)
+        if math.isnan(total_loss) or math.isinf(total_loss):
+            break
+        if total_loss < best_loss:
+            best_loss = total_loss
+            patience_counter = 0
+            torch.save(model.state_dict(), model_path)
+        else:
+            patience_counter += 1
+        if patience_counter >= patience:
+            break
+    model.load_state_dict(torch.load(model_path, weights_only=True))
+    return model
+
+
+# =====================================================================
+# 6. EVALUACIÓN
+# =====================================================================
+
+def evaluate_trial(model, X_test, y_test, device, one_way_costs=None, periods_per_year=365):
+    """Evalúa un modelo en test y devuelve métricas completas."""
+    model.eval()
+    with torch.no_grad():
+        preds = model(X_test.to(device)).cpu().numpy()
+    real = y_test.numpy()
+    test_loss = float(np.mean((preds - real) ** 2))
+    cost_scenarios = evaluate_cost_scenarios(preds, real, periods_per_year=periods_per_year)
+    strategy_returns, positions = top1_long_returns(
+        preds, real, transaction_cost=0.001, half_spread=0.0002, slippage=0.0003,
+    )
+    benchmark_returns = np.mean(real, axis=1)
+    metrics = performance_metrics(strategy_returns, periods_per_year=periods_per_year)
+    equity_sfm = metrics["equity_final"]
+    equity_bm = float(np.cumprod(1 + benchmark_returns)[-1])
+    sharpe = metrics["sharpe"]
+    direction_acc = float(np.mean((preds > 0) == (real > 0)))
+    turnover = float(np.mean(positions[1:] != positions[:-1])) if len(positions) > 1 else 0.0
+    calibrated_cost_metrics = None
+    if one_way_costs is not None:
+        calibrated_returns, _ = top1_long_returns(
+            preds, real, one_way_costs=np.asarray(one_way_costs, dtype=float)
+        )
+        calibrated_cost_metrics = performance_metrics(calibrated_returns, periods_per_year=periods_per_year)
+    return {
+        "test_loss": test_loss, "equity_final": equity_sfm, "benchmark_final": equity_bm,
+        "sharpe": sharpe, "direction_acc": direction_acc, "max_drawdown": metrics["max_drawdown"],
+        "turnover": turnover, "sortino": metrics["sortino"], "calmar": metrics["calmar"],
+        "var_95": metrics["var_95"], "cvar_95": metrics["cvar_95"],
+        "cost_scenarios": cost_scenarios, "calibrated_cost_metrics": calibrated_cost_metrics,
+        "outperformance": equity_sfm - equity_bm,
+        "strategy_returns": strategy_returns, "benchmark_returns": benchmark_returns,
+    }
+
+
+# =====================================================================
+# 7. OBJETIVO OPTUNA (con métrica anti-overfitting)
+# =====================================================================
+
+def _compute_sharpe_from_preds(preds, real, device, periods_per_year=365):
+    """Computa Sharpe a partir de predicciones y realizados."""
+    strategy_returns, _ = top1_long_returns(
+        preds, real, transaction_cost=0.001, half_spread=0.0002, slippage=0.0003,
+    )
+    return performance_metrics(strategy_returns, periods_per_year=periods_per_year)["sharpe"]
+
+
+def objective(trial, cryptos, market_train_scaled, labels_train,
+              market_val_scaled, labels_val, input_dim, output_dim, device, fwd_days):
+    hidden_dim = trial.suggest_int("hidden_dim", 32, 128, step=16)
+    freq_components = trial.suggest_int("freq_components", 4, 20, step=4)
+    lr = trial.suggest_float("lr", 3e-5, 1e-2, log=True)
+    dropout_rate = trial.suggest_float("dropout_rate", 0.1, 0.5, step=0.05)
+    batch_size = trial.suggest_categorical("batch_size", [16, 32])
+    weight_decay = trial.suggest_float("weight_decay", 1e-5, 1e-3, log=True)
+    lookback = trial.suggest_int("lookback", 20, 60, step=10)
+
+    X_tr, y_tr = make_sliding_windows(market_train_scaled, labels_train, lookback=lookback)
+    X_v, y_v = make_sliding_windows(market_val_scaled, labels_val, lookback=lookback)
+
+    if len(X_tr) < 100 or len(X_v) < 20:
+        raise optuna.TrialPruned()
+
+    torch.manual_seed(SEED + trial.number)
+    train_loader = DataLoader(TensorDataset(X_tr, y_tr), batch_size=batch_size, shuffle=False)
+    val_loader = DataLoader(TensorDataset(X_v, y_v), batch_size=batch_size, shuffle=False)
+
+    # Patience adaptativa: menos paciencia si el trial es poco prometedor
+    patience = max(5, min(15, int(os.getenv("CRYPTO_TRIAL_EPOCHS", "60")) // 10))
+
+    model = SFMModelRefined(input_dim, hidden_dim, freq_components, output_dim,
+                            dropout_rate=dropout_rate).to(device)
+    _, _ = train_trial(model, train_loader, val_loader,
+                       epochs=int(os.getenv("CRYPTO_TRIAL_EPOCHS", "60")), lr=lr,
+                       weight_decay=weight_decay, device=device, trial=trial, patience=patience)
+
+    model.eval()
+    with torch.no_grad():
+        preds_train = model(X_tr.to(device)).cpu().numpy()
+        preds_val = model(X_v.to(device)).cpu().numpy()
+
+    real_train = y_tr.numpy()
+    real_val = y_v.numpy()
+
+    sharpe_train = _compute_sharpe_from_preds(preds_train, real_train, device)
+    sharpe_val = _compute_sharpe_from_preds(preds_val, real_val, device)
+
+    # Métrica anti-overfitting: penaliza cuando val es mucho mejor que train
+    # (eso indica que el modelo memorizó patrones de train que no generalizan)
+    penalty = 0.2 * abs(sharpe_val - sharpe_train)
+    objective_value = -(sharpe_val - penalty)
+
+    if sharpe_val < -3.0:
+        raise optuna.TrialPruned()
+
+    return objective_value
+
+
+# =====================================================================
+# 8. TOP-K EVALUATION
+# =====================================================================
+
+def evaluate_top_k(study, k, cryptos, market_train_scaled, labels_train,
+                   market_val_scaled, labels_val, market_test_scaled, labels_test,
+                   input_dim, output_dim, device, output_dir, fwd_days):
+    completed = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
+    completed.sort(key=lambda t: t.value)
+    top_k = completed[:k]
+    print(f"\n   Evaluando Top-{k} trials (de {len(completed)} completados)...")
+    all_results = []
+    for i, trial in enumerate(top_k):
+        params = trial.params
+        lookback = params["lookback"]
+        batch_size = params["batch_size"]
+        objective_val = trial.value
+        torch.manual_seed(SEED + 999 + i)
+        X_tr, y_tr = make_sliding_windows(market_train_scaled, labels_train, lookback=lookback)
+        X_v, y_v = make_sliding_windows(market_val_scaled, labels_val, lookback=lookback)
+        X_combined = torch.cat([X_tr, X_v], dim=0)
+        y_combined = torch.cat([y_tr, y_v], dim=0)
+        X_te, y_te = make_sliding_windows(market_test_scaled, labels_test, lookback=lookback)
+        combined_loader = DataLoader(TensorDataset(X_combined, y_combined),
+                                     batch_size=batch_size, shuffle=False)
+        model = SFMModelRefined(input_dim, params["hidden_dim"], params["freq_components"],
+                                output_dim, dropout_rate=params["dropout_rate"]).to(device)
+        model_path = os.path.join(output_dir, f"sfm_top{i+1}.pth")
+        model = train_final(model, combined_loader, None,
+                            epochs=int(os.getenv("CRYPTO_FINAL_EPOCHS", "100")), lr=params["lr"],
+                            weight_decay=params["weight_decay"],
+                            device=device, patience=15, model_path=model_path)
+        result = evaluate_trial(model, X_te, y_te, device, periods_per_year=365)
+        result["rank"] = i + 1
+        result["objective_val"] = objective_val
+        result["params"] = params
+        all_results.append(result)
+        print(f"     #{i+1}: Obj={objective_val:.2f}  Sharpe_test={result['sharpe']:.2f}  "
+              f"DirAcc={result['direction_acc']:.1%}  Equity={result['equity_final']:.4f}x")
+    sharpe_values = [r["sharpe"] for r in all_results]
+    equity_values = [r["equity_final"] for r in all_results]
+    dir_acc_values = [r["direction_acc"] for r in all_results]
+    stats = {"n_top": k, "fwd_days": fwd_days,
+        "sharpe": {"mean": float(np.mean(sharpe_values)), "std": float(np.std(sharpe_values)),
+                   "min": float(np.min(sharpe_values)), "max": float(np.max(sharpe_values)), "values": sharpe_values},
+        "equity_final": {"mean": float(np.mean(equity_values)), "std": float(np.std(equity_values)),
+                         "min": float(np.min(equity_values)), "max": float(np.max(equity_values)), "values": equity_values},
+        "direction_accuracy": {"mean": float(np.mean(dir_acc_values)), "values": dir_acc_values},
+        "trials": [{"rank": r["rank"], "sharpe": r["sharpe"], "equity_final": r["equity_final"],
+                    "direction_acc": r["direction_acc"],
+                    "params": {k: float(v) if isinstance(v, (np.floating,)) else v for k, v in r["params"].items()}} for r in all_results]}
+    print(f"\n   Top-{k}: Sharpe mu={stats['sharpe']['mean']:.2f}  DirAcc mu={stats['direction_accuracy']['mean']:.1%}")
+    return all_results, stats, top_k
+
+
+# =====================================================================
+# 9. WALK-FORWARD COMPLETO
+# =====================================================================
+
+def run_walk_forward(cryptos, market_data, labels_data, study, output_dir,
+                     input_dim, output_dim, device, fwd_days):
+    """
+    Evalúa los Top-3 trials en walk-forward real (3 ventanas).
+    Esto da una estimación robusta de cómo se comportaría el modelo en producción.
+    """
+    n_total = len(market_data)
+    windows = walk_forward_windows(n_total, n_windows=3)
+    completed = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
+    completed.sort(key=lambda t: t.value)
+    top_trials = completed[:3]
+
+    print(f"\n{'='*65}")
+    print("WALK-FORWARD EVALUATION (Top-3 trials x 3 ventanas)")
+    print("=" * 65)
+
+    wf_results = []
+    for trial_idx, trial in enumerate(top_trials):
+        params = trial.params
+        lookback = params["lookback"]
+        batch_size = params["batch_size"]
+        for w_idx, (ts, te, vs, ve, tes, tee) in enumerate(windows):
+            # Clip y scale causales para esta ventana
+            clip_bounds = fit_clip_bounds(market_data[ts:te])
+            m_train = apply_clip_bounds(market_data[ts:te], clip_bounds)
+            m_val = apply_clip_bounds(market_data[vs:ve], clip_bounds)
+            m_test = apply_clip_bounds(market_data[tes:tee], clip_bounds)
+
+            scaler = MinMaxScaler(feature_range=(-1, 1))
+            m_train_s = scaler.fit_transform(m_train)
+            m_val_s = scaler.transform(m_val)
+            m_test_s = scaler.transform(m_test)
+
+            l_train = labels_data[ts:te]
+            l_val = labels_data[vs:ve]
+            l_test = labels_data[tes:tee]
+
+            X_tr, y_tr = make_sliding_windows(m_train_s, l_train, lookback=lookback)
+            X_v, y_v = make_sliding_windows(m_val_s, l_val, lookback=lookback)
+            X_te, y_te = make_sliding_windows(m_test_s, l_test, lookback=lookback)
+
+            if len(X_te) < 10:
+                continue
+
+            X_combined = torch.cat([X_tr, X_v], dim=0)
+            y_combined = torch.cat([y_tr, y_v], dim=0)
+            combined_loader = DataLoader(TensorDataset(X_combined, y_combined),
+                                         batch_size=batch_size, shuffle=False)
+
+            model = SFMModelRefined(input_dim, params["hidden_dim"], params["freq_components"],
+                                    output_dim, dropout_rate=params["dropout_rate"]).to(device)
+            model_path = os.path.join(output_dir, f"wf_t{trial_idx+1}_w{w_idx+1}.pth")
+            model = train_final(model, combined_loader, None,
+                                epochs=80, lr=params["lr"],
+                                weight_decay=params["weight_decay"],
+                                device=device, patience=12, model_path=model_path)
+
+            result = evaluate_trial(model, X_te, y_te, device, periods_per_year=365)
+            wf_results.append({
+                "trial": trial_idx + 1, "window": w_idx + 1,
+                "sharpe": result["sharpe"], "equity_final": result["equity_final"],
+                "benchmark_final": result["benchmark_final"],
+                "direction_acc": result["direction_acc"],
+                "test_samples": len(X_te),
+                "params": params,
+                "sfm_equity_curve": np.cumprod(1 + result["strategy_returns"]).tolist(),
+                "bm_equity_curve": np.cumprod(1 + result["benchmark_returns"]).tolist(),
+            })
+            print(f"   Trial#{trial_idx+1} W{w_idx+1}: "
+                  f"Sharpe={result['sharpe']:.2f}  Equity={result['equity_final']:.4f}x  "
+                  f"DirAcc={result['direction_acc']:.1%}  ({len(X_te)} muestras)")
+
+    # Estadísticas walk-forward
+    if wf_results:
+        wf_sharpes = [r["sharpe"] for r in wf_results]
+        wf_equities = [r["equity_final"] for r in wf_results]
+        n_positive_sharpe = sum(1 for s in wf_sharpes if s > 0)
+        print(f"\n   Walk-Forward summary ({len(wf_results)} ventanas):")
+        print(f"      Sharpe: mu={np.mean(wf_sharpes):.2f}  sigma={np.std(wf_sharpes):.2f}")
+        print(f"      Equity: mu={np.mean(wf_equities):.4f}x  sigma={np.std(wf_equities):.4f}x")
+        print(f"      Ventanas con Sharpe>0: {n_positive_sharpe}/{len(wf_results)} ({100*n_positive_sharpe/len(wf_results):.0f}%)")
+    return wf_results
+
+
+# =====================================================================
+# 10. GRÁFICAS
+# =====================================================================
+
+def _plot_distribution(study, output_dir):
+    best = study.best_trial
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    obj_vals = [t.value for t in study.trials if t.value is not None]
+    best_obj = best.value
+    axes[0].hist(obj_vals, bins=30, edgecolor="black", alpha=0.7, color="steelblue")
+    axes[0].axvline(best_obj, color="red", linestyle="--", label=f"Mejor: {best_obj:.2f}")
+    axes[0].set_xlabel("Objetivo (menor = mejor)")
+    axes[0].set_ylabel("Frecuencia")
+    axes[0].set_title("Distribucion del Objetivo (Sharpe - penalizacion)")
+    axes[0].legend()
+    n_complete = sum(1 for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE)
+    n_pruned = sum(1 for t in study.trials if t.state == optuna.trial.TrialState.PRUNED)
+    axes[1].bar(["Completados", "Pruned"], [n_complete, n_pruned], color=["green", "orange"], edgecolor="black")
+    axes[1].set_ylabel("No. de trials")
+    axes[1].set_title(f"Trials: {n_complete + n_pruned} totales")
+    plt.suptitle(f"Optuna v8 - Mejor Objetivo: {best_obj:.2f}", fontsize=14)
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, "optuna_distribution.png"), dpi=150)
+    plt.close()
+
+
+def plot_top_k_results(top_results, stats, output_dir):
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+    sharpe_vals = [r["sharpe"] for r in top_results]
+    labels = [f"#{r['rank']}" for r in top_results]
+    colors = ["green" if s > 0 else "red" for s in sharpe_vals]
+    axes[0].bar(labels, sharpe_vals, color=colors, edgecolor="black", alpha=0.8)
+    axes[0].axhline(stats["sharpe"]["mean"], color="blue", linestyle="--", label=f'Media: {stats["sharpe"]["mean"]:.2f}')
+    axes[0].set_ylabel("Sharpe Ratio")
+    axes[0].set_title(f"Sharpe por Trial (Top-{len(top_results)})")
+    axes[0].legend()
+    axes[0].grid(True, axis="y", linestyle=":", alpha=0.6)
+    equity_vals = [r["equity_final"] for r in top_results]
+    colors2 = ["green" if e > 1.0 else "red" for e in equity_vals]
+    axes[1].bar(labels, equity_vals, color=colors2, edgecolor="black", alpha=0.8)
+    axes[1].axhline(stats["equity_final"]["mean"], color="blue", linestyle="--", label=f'Media: {stats["equity_final"]["mean"]:.4f}x')
+    axes[1].axhline(1.0, color="gray", linestyle=":", alpha=0.7, label="Punto muerto")
+    axes[1].set_ylabel("Equity Final (x)")
+    axes[1].set_title("Equity Final por Trial")
+    axes[1].legend()
+    axes[1].grid(True, axis="y", linestyle=":", alpha=0.6)
+    dir_acc_vals = [r["direction_acc"] for r in top_results]
+    colors3 = ["green" if d > 0.5 else "red" for d in dir_acc_vals]
+    axes[2].bar(labels, dir_acc_vals, color=colors3, edgecolor="black", alpha=0.8)
+    axes[2].axhline(stats["direction_accuracy"]["mean"], color="blue", linestyle="--", label=f'Media: {stats["direction_accuracy"]["mean"]:.1%}')
+    axes[2].axhline(0.5, color="gray", linestyle=":", alpha=0.7, label="Aleatorio")
+    axes[2].set_ylabel("Direction Accuracy")
+    axes[2].set_title("Direction Accuracy por Trial")
+    axes[2].legend()
+    axes[2].grid(True, axis="y", linestyle=":", alpha=0.6)
+    plt.suptitle(f"Top-{len(top_results)} - Sharpe mu={stats['sharpe']['mean']:.2f}", fontsize=14)
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, "top_k_results.png"), dpi=150)
+    plt.close()
+
+
+def plot_walk_forward(wf_results, output_dir):
+    if not wf_results:
+        return
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+    windows_labels = [f"T{r['trial']}W{r['window']}" for r in wf_results]
+    sharpe_wf = [r["sharpe"] for r in wf_results]
+    equity_wf = [r["equity_final"] for r in wf_results]
+    benchmark_wf = [r["benchmark_final"] for r in wf_results]
+    colors_s = ["green" if s > 0 else "red" for s in sharpe_wf]
+    axes[0].bar(windows_labels, sharpe_wf, color=colors_s, edgecolor="black", alpha=0.8)
+    axes[0].axhline(0, color="gray", linestyle="--")
+    axes[0].set_ylabel("Sharpe Ratio")
+    axes[0].set_title("Walk-Forward: Sharpe por Ventana")
+    axes[0].grid(True, axis="y", linestyle=":", alpha=0.6)
+    x = np.arange(len(windows_labels))
+    width = 0.35
+    axes[1].bar(x - width/2, equity_wf, width, label="SFM", color="#1f77b4", alpha=0.8)
+    axes[1].bar(x + width/2, benchmark_wf, width, label="Benchmark", color="#7f7f7f", alpha=0.6)
+    axes[1].set_xticks(x)
+    axes[1].set_xticklabels(windows_labels)
+    axes[1].axhline(1.0, color="gray", linestyle=":", alpha=0.7)
+    axes[1].set_ylabel("Equity Final (x)")
+    axes[1].set_title("Walk-Forward: SFM vs Benchmark")
+    axes[1].legend()
+    axes[1].grid(True, axis="y", linestyle=":", alpha=0.6)
+    dir_acc_wf = [r["direction_acc"] for r in wf_results]
+    colors_da = ["green" if d > 0.5 else "red" for d in dir_acc_wf]
+    axes[2].bar(windows_labels, dir_acc_wf, color=colors_da, edgecolor="black", alpha=0.8)
+    axes[2].axhline(0.5, color="gray", linestyle=":", alpha=0.7, label="Aleatorio")
+    axes[2].set_ylabel("Direction Accuracy")
+    axes[2].set_title("Walk-Forward: Direction Accuracy")
+    axes[2].legend()
+    axes[2].grid(True, axis="y", linestyle=":", alpha=0.6)
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, "walk_forward.png"), dpi=150)
+    plt.close()
+
+    # Curvas de equity
+    n_wf = len(wf_results)
+    fig2, axes2 = plt.subplots(1, n_wf, figsize=(6 * n_wf, 4.5), sharey=False)
+    if n_wf == 1:
+        axes2 = [axes2]
+    colors_line = ['#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#F44336']
+    for i, r in enumerate(wf_results):
+        ax = axes2[i]
+        sfm_curve = r["sfm_equity_curve"]
+        bm_curve = r["bm_equity_curve"]
+        x_days = np.arange(len(sfm_curve))
+        ax.plot(x_days, sfm_curve, color=colors_line[i % len(colors_line)], linewidth=2.0, label='SFM')
+        ax.plot(x_days, bm_curve, color='#888888', linestyle='--', linewidth=1.5, alpha=0.7, label='Baseline')
+        ax.set_title(f'Trial#{r["trial"]} W{r["window"]}  ({r["test_samples"]} muestras)', fontsize=12)
+        ax.set_xlabel('Dia de test')
+        ax.set_ylabel('Equidad acumulada')
+        ax.axhline(y=1.0, color='#cccccc', linewidth=0.8, linestyle=':')
+        ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=9)
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, "walk_forward_equity.png"), dpi=150)
+    plt.close()
+
+
+# =====================================================================
+# PIPELINE PRINCIPAL
+# =====================================================================
+if __name__ == "__main__":
+    CRYPTOS = [
+        item.strip().lower()
+        for item in os.getenv("CRYPTO_INSTRUMENTS", "BTC,ETH,SOL,XLM,ADA,XRP,DOGE,LINK,LTC").split(",")
+        if item.strip()
+    ]
+    N_TRIALS = int(os.getenv("CRYPTO_OPTUNA_TRIALS", "100"))
+    N_EPOCHS_FINAL = int(os.getenv("CRYPTO_FINAL_EPOCHS", "100"))
+    TOP_K = int(os.getenv("CRYPTO_TOP_K", "5"))
+    FWD_DAYS = int(os.getenv("CRYPTO_FWD_DAYS", "1"))  # v8: label a 1 día
+    DO_WALK_FORWARD = os.getenv("CRYPTO_DO_WALK_FORWARD", "1") == "1"
+    OUTPUT_DIR = os.getenv("CRYPTO_MODEL_OUTPUT_DIR",
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "output/sfm_v8"))
+    PROVIDER_URI = os.getenv("CRYPTO_QLIB_OUTPUT_DIR", "data/qlib")
+    START_DATE = os.getenv("CRYPTO_START_DATE", "2015-01-01")
+    END_DATE = os.getenv("CRYPTO_END_DATE", pd.Timestamp.utcnow().strftime("%Y-%m-%d"))
+
+    print("=" * 65)
+    print("SFM v8 - Label 1d + Denoising + Walk-Forward + Metrica Anti-Overfitting")
+    print("=" * 65)
+    print(f"   Cryptos: {CRYPTOS}")
+    print(f"   Label: retorno a {FWD_DAYS}d")
+    print(f"   Features: close, pct, ratio_5d, vol_20d, ma20_ratio, rango")
+    print(f"   Denoising: Wavelet (db2, level=2, soft)")
+    print(f"   Walk-Forward: {DO_WALK_FORWARD}")
+    print(f"   Split: Walk-Forward 3 ventanas")
+    print(f"   Lookback: 20-60 (step 10)")
+    print(f"   Trials: {N_TRIALS}  |  Top-K: {TOP_K}")
+    print(f"   Seed: {SEED}")
+    print(f"   Provider: {PROVIDER_URI}")
+    print(f"   Rango: {START_DATE} -> {END_DATE}")
+    if not HAS_OPTUNA:
+        print("ERROR: pip install optuna")
+        exit(1)
+    if not HAS_PYWT:
+        print("⚠️  pywt no instalado. El denoising wavelet no estara disponible.")
+    print("=" * 65)
+
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+    qlib.init(provider_uri=PROVIDER_URI, region=REG_US, kernels=int(os.getenv("QLIB_KERNELS", "1")))
+
+    print("\nCargando datos desde Qlib...")
+    market_data, labels_data, dates_idx = load_and_process_crypto_data(
+        CRYPTOS, START_DATE, END_DATE, fwd_days=FWD_DAYS)
+
+    input_dim = market_data.shape[1]
+    output_dim = len(CRYPTOS)
+    n_total = len(market_data)
+
+    # Split walk-forward 60/20/20 para la primera ventana
+    train_end = int(n_total * 0.60)
+    val_end = int(n_total * 0.80)
+
+    market_train = market_data[:train_end]
+    market_val = market_data[train_end:val_end]
+    market_test = market_data[val_end:]
+
+    labels_train = labels_data[:train_end]
+    labels_val = labels_data[train_end:val_end]
+    labels_test = labels_data[val_end:]
+
+    print("\nSPLIT TEMPORAL 60/20/20 (ventana principal)")
+    print("=" * 62)
+    for name, ds, de, dlen in [("TRAIN", 0, train_end, len(market_train)),
+                                ("VAL", train_end, val_end, len(market_val)),
+                                ("TEST", val_end, n_total, len(market_test))]:
+        d_start = dates_idx[min(ds, len(dates_idx)-1)]
+        d_end = dates_idx[min(max(0, de-1), len(dates_idx)-1)]
+        pct = 100 * dlen / n_total
+        print(f"   {name:<14} {dlen:<10} {d_start.strftime('%Y-%m-%d')} -> {d_end.strftime('%Y-%m-%d')}   {pct:.1f}%")
+
+    # Clipping causal + MinMaxScaler
+    clip_bounds = fit_clip_bounds(market_train)
+    market_train = apply_clip_bounds(market_train, clip_bounds)
+    market_val = apply_clip_bounds(market_val, clip_bounds)
+    market_test = apply_clip_bounds(market_test, clip_bounds)
+
+    scaler = MinMaxScaler(feature_range=(-1, 1))
+    market_train_scaled = scaler.fit_transform(market_train)
+    market_val_scaled = scaler.transform(market_val)
+    market_test_scaled = scaler.transform(market_test)
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"   Device: {device}")
+
+    # =================================================================
+    # FASE 1: OPTUNA
+    # =================================================================
+    print("\n" + "=" * 65)
+    print("FASE 1: OPTUNA (100 trials, metrica anti-overfitting)")
+    print("=" * 65)
+    print(f"   Trials: {N_TRIALS}  |  Sampler: TPESampler  |  Pruner: MedianPruner")
+    print(f"   Objetivo: minimizar -(Sharpe_val - 0.2*|Sharpe_val - Sharpe_train|)")
+
+    study = optuna.create_study(direction="minimize", sampler=TPESampler(seed=SEED),
+                                pruner=MedianPruner(n_startup_trials=10, n_warmup_steps=5, interval_steps=1),
+                                study_name="sfm_optuna_v8", storage=None)
+
+    start_time = time.time()
+    try:
+        study.optimize(lambda trial: objective(trial, CRYPTOS, market_train_scaled, labels_train,
+                                                market_val_scaled, labels_val, input_dim, output_dim, device, FWD_DAYS),
+                       n_trials=N_TRIALS, show_progress_bar=False)
+    except KeyboardInterrupt:
+        print("\nInterrumpido")
+
+    elapsed = time.time() - start_time
+    print(f"\nTiempo: {elapsed/60:.1f} min")
+
+    best_trial = study.best_trial
+    best_objective = best_trial.value
+    print(f"\nMEJOR TRIAL: Objetivo={best_objective:.2f}")
+    for key, val in best_trial.params.items():
+        print(f"   {key}: {val}")
+
+    n_complete = sum(1 for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE)
+    n_pruned = sum(1 for t in study.trials if t.state == optuna.trial.TrialState.PRUNED)
+    study_results = {
+        "best_objective": best_objective, "fwd_days": FWD_DAYS,
+        "best_params": best_trial.params, "n_trials": len(study.trials),
+        "n_complete": n_complete, "n_pruned": n_pruned, "elapsed_min": elapsed / 60, "seed": SEED,
+        "split": "60/20/20 + walk-forward", "lookback_range": "20-60 (step 10)",
+        "features": "close,pct,ratio_5d,vol_20d,ma20_ratio,rango",
+        "denoising": "wavelet_db2_level2_soft",
+        "start_date": START_DATE, "end_date": END_DATE,
+    }
+    with open(os.path.join(OUTPUT_DIR, "study_results.json"), "w") as f:
+        json.dump(study_results, f, indent=2)
+    print(f"\nstudy_results.json guardado")
+
+    try:
+        _plot_distribution(study, OUTPUT_DIR)
+    except Exception as e:
+        print(f"   Plot: {e}")
+
+    # =================================================================
+    # FASE 2: TOP-K
+    # =================================================================
+    print("\n" + "=" * 65)
+    print("FASE 2: TOP-K EVALUATION")
+    print("=" * 65)
+
+    top_results, stats, top_trials = evaluate_top_k(
+        study, TOP_K, CRYPTOS, market_train_scaled, labels_train,
+        market_val_scaled, labels_val, market_test_scaled, labels_test,
+        input_dim, output_dim, device, OUTPUT_DIR, FWD_DAYS)
+
+    with open(os.path.join(OUTPUT_DIR, "top_k_results.json"), "w") as f:
+        json.dump(stats, f, indent=2, default=str)
+    print(f"top_k_results.json guardado")
+
+    try:
+        plot_top_k_results(top_results, stats, OUTPUT_DIR)
+    except Exception as e:
+        print(f"   Top-K plot: {e}")
+
+    # =================================================================
+    # FASE 3: WALK-FORWARD (opcional)
+    # =================================================================
+    wf_results = []
+    if DO_WALK_FORWARD:
+        print("\n" + "=" * 65)
+        print("FASE 3: WALK-FORWARD EVALUATION")
+        print("=" * 65)
+        wf_results = run_walk_forward(
+            CRYPTOS, market_data, labels_data, study, OUTPUT_DIR,
+            input_dim, output_dim, device, FWD_DAYS)
+        with open(os.path.join(OUTPUT_DIR, "walk_forward_results.json"), "w") as f:
+            json.dump(wf_results, f, indent=2, default=str)
+        print(f"walk_forward_results.json guardado")
+        try:
+            plot_walk_forward(wf_results, OUTPUT_DIR)
+        except Exception as e:
+            print(f"   Walk-Forward plot: {e}")
+
+    # =================================================================
+    # RESUMEN FINAL
+    # =================================================================
+    print("\n" + "=" * 65)
+    print(f"RESUMEN SFM v8 (label {FWD_DAYS}d)")
+    print("=" * 65)
+    print(f"\n   Optuna: {len(study.trials)} trials ({n_complete} OK, {n_pruned} pruned)")
+    print(f"   Mejor objetivo (menor=mejor): {best_objective:.2f}")
+    print(f"   Tiempo: {elapsed/60:.1f} min")
+    print(f"\n   Top-{TOP_K} en test:")
+    print(f"      Sharpe:  mu={stats['sharpe']['mean']:.2f}  sigma={stats['sharpe']['std']:.2f}")
+    print(f"      Equity:  mu={stats['equity_final']['mean']:.4f}x  sigma={stats['equity_final']['std']:.4f}x")
+    print(f"      DirAcc:  mu={stats['direction_accuracy']['mean']:.1%}")
+    if wf_results:
+        wf_sharpes = [r["sharpe"] for r in wf_results]
+        wf_equities = [r["equity_final"] for r in wf_results]
+        wf_dir_acc = [r["direction_acc"] for r in wf_results]
+        n_pos = sum(1 for s in wf_sharpes if s > 0)
+        print(f"\n   Walk-Forward ({len(wf_results)} ventanas):")
+        print(f"      Sharpe:  mu={np.mean(wf_sharpes):.2f}")
+        print(f"      Equity:  mu={np.mean(wf_equities):.4f}x")
+        print(f"      DirAcc:  mu={np.mean(wf_dir_acc):.1%}")
+        print(f"      Ventanas con Sharpe>0: {n_pos}/{len(wf_results)}")
+    print(f"\n   {OUTPUT_DIR}/")
+    print(f"   ├── study_results.json")
+    print(f"   ├── top_k_results.json")
+    print(f"   ├── walk_forward_results.json (si aplica)")
+    print(f"   ├── top_k_results.png")
+    print(f"   ├── optuna_distribution.png")
+    print(f"   ├── walk_forward.png")
+    print(f"   ├── walk_forward_equity.png")
+    print(f"   └── sfm_top*.pth (modelos)")
+    print("\nPipeline v8 completado.")

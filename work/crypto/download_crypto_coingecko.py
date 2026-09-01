@@ -305,8 +305,8 @@ def download_all(config: CoinGeckoConfig) -> dict[str, pd.DataFrame]:
         path = output_path(config, instrument)
         manifest["instruments"][instrument] = {
             "rows": len(frame),
-            "first_date": frame[config.date_column].min(),
-            "last_date": frame[config.date_column].max(),
+            "first_date": str(frame[config.date_column].min()),
+            "last_date": str(frame[config.date_column].max()),
             "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
             "file": path.name,
         }
