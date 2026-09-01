@@ -177,3 +177,48 @@ buy=0.025  sell=0.010  hold=0  pos=2
 Fijar la **config 1** como hipótesis y validarla en un **mini-holdout** sobre un periodo
 futuro no usado (o el siguiente tramo de 2026) para descartar sobreajuste, antes de
 cualquier cambio en producción.
+
+---
+
+## 🔬 Resultado del Mini-Holdout (validación)
+
+**Script:** `work/crypto/mini_holdout_v8.py` → `output/sfm_v8/mini_holdout_result.json`
+
+### Diseño (honesto, time-split)
+- **Selección 2025** (2025-01-01 → 2025-12-31): se re-ejecuta la sensibilidad y se elige la mejor config.
+- **Validación 2026** (2026-01-01 → 2026-08-30): holdout real, **nunca usado** para elegir.
+
+### Fase 1 — Mejor config en 2025
+| Config | Ret USD | Sharpe |
+|---|---|---|
+| **Histeresis+Umbral+Hold** (0.04/sell 0.00/hold3/pos3) | **+18,01%** | **0,603** |
+| Max posiciones 3 | +8,65% | 0,407 |
+| Umbral 0.04 | +7,65% | 0,385 |
+| BASE (actual) | -4,84% | 0,078 |
+
+→ La config "optimizada" (Histeresis+Umbral+Hold) domina en 2025. Elegida como desafiante.
+
+### Fase 2 — Validación en 2026 (holdout real)
+| Config | Ret USD | Sharpe | Trades |
+|---|---|---|---|
+| **BASE (actual)**: 0.025/0.015, 2 pos | **+9,60%** | **0,683** | 176 |
+| **Mejor 2025**: 0.04/sell 0.00/hold3/pos3 | +9,01% | 0,619 | 135 |
+
+### 🎯 Veredicto: **NO VALIDADO** — la config optimizada NO generaliza
+En el holdout 2026, la config optimizada (que ganaba en 2025) **no supera a la BASE**:
+- Retorno: +9,0% vs +9,6% (levemente peor)
+- Sharpe: 0,619 vs 0,683 (peor)
+
+**Conclusiones de la validación:**
+1. El impresionante **+28,6% de la sensibilidad** (sobre todo el periodo) era en gran
+   parte **sobreajuste a 2025**, donde la config optimizada destacaba.
+2. En **datos realmente no vistos (2026)**, la **BASE actual** (0.025/0.015, 2 posiciones)
+   es la **más robusta** — rinde mejor que la config "optimizada".
+3. **Recomendación final:** **NO cambiar la configuración de producción.** La config
+   actual del paper (comprar score>0.025, vender score<0.015, 2 posiciones) es la más
+   robusta entre las probadas, y adoptar la "optimizada" sería sobreajustarse a 2025.
+
+> 🟢 **Nota honesta:** esto no convierte a la BASE en una "estrategia ganadora absoluta".
+> En el backtest completo 2025→ago-2026 dio +4,3% USD / -6,9% EUR; en 2026 aislado
+> +9,6% USD. Simplemente es la **más estable** de las opciones evaluadas, y la validación
+> evitó adoptar una mejora que era sobreajuste.

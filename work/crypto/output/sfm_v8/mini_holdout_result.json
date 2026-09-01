@@ -1,0 +1,41 @@
+{
+  "periodo_seleccion": "2025-01-01 -> 2025-12-31",
+  "periodo_validacion": "2026-01-01 -> 2026-08-30",
+  "mejor_2025": {
+    "name": "Histeresis+Umbral+Hold",
+    "return_usd_pct": 18.01,
+    "return_eur_pct": 5.3,
+    "sharpe": 0.603,
+    "max_drawdown_pct": -32.26,
+    "n_trades": 308,
+    "days": 365
+  },
+  "config_ganadora": {
+    "buy": "Histeresis+Umbral+Hold",
+    "sell": 0.04,
+    "hold": 0.0,
+    "pos": 3
+  },
+  "validacion_2026": {
+    "base": {
+      "name": "BASE (actual)",
+      "return_usd_pct": 9.6,
+      "return_eur_pct": -2.2,
+      "sharpe": 0.683,
+      "max_drawdown_pct": -13.44,
+      "n_trades": 176,
+      "days": 242
+    },
+    "desafiante": {
+      "name": "MEJOR 2025: Histeresis+Umbral+Hold",
+      "return_usd_pct": 9.01,
+      "return_eur_pct": -2.73,
+      "sharpe": 0.619,
+      "max_drawdown_pct": -15.61,
+      "n_trades": 135,
+      "days": 242
+    }
+  },
+  "veredicto": "NO VALIDADO: en el holdout 2026 la config optimizada no supera a la base (posible sobreajuste a 2025).",
+  "validado": false
+}
