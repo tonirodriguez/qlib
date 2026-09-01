@@ -50,9 +50,19 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 INSTRUMENTS = ("BTC", "ETH", "SOL", "XLM", "ADA", "XRP", "DOGE", "LINK", "LTC")
 
+# Moneda de cotizacion: dolares.
+# - CryptoCompare -> USD literal (fee tsym=USD).
+# - Binance -> pares *USDT. USDT (Tether) es una stablecoin anclada 1:1 al USD,
+#   asi que los precios son en dolares (estable) con precision de stablecoin.
+#   Si alguna vez se quisiera el par en USD literal en Binance no existe como
+#   `*USD`; las alternativas son *USDC (tambien estable 1:1 USD) o *FDUSD.
+#   Mantenemos USDT por ser el par mas liquido. QUOTE queda documentado aqui:
+QUOTE_CURRENCY = "USDT"  # stablecoin 1:1 USD en Binance
+
+
 # CryptoCompare (genesis) usa simbolo plano; Binance usa par BASEUSDT
 def binance_pair(symbol: str) -> str:
-    return f"{symbol}USDT"
+    return f"{symbol}{QUOTE_CURRENCY}"
 
 
 @dataclass(frozen=True)
@@ -179,6 +189,11 @@ def update_coin(config: UpdateConfig, symbol: str) -> tuple[str, int, int, int]:
         prev = pd.DataFrame()
         n_prev = 0
 
+    # GUARDA de moneda: verifica que el ultimo precio conocido es coherente con USD.
+    # Un precio deposito en otra moneda (o 0) cortaría la actualizacion con error,
+    # evitando escribir basura en el CSV historico.
+    _assert_usd_plausible(symbol, prev)
+
     all_new: list[pd.DataFrame] = []
     cursor = start_ms
     while True:
@@ -207,6 +222,7 @@ def update_coin(config: UpdateConfig, symbol: str) -> tuple[str, int, int, int]:
     combined = combined.sort_values(config.date_column).drop_duplicates(
         subset=[config.date_column], keep="last")
     combined = combined[combined[config.date_column] < now]
+    _assert_usd_plausible(symbol, combined)
     combined = enrich_ohlcv(combined)
 
     config.output_dir.mkdir(parents=True, exist_ok=True)
@@ -216,6 +232,36 @@ def update_coin(config: UpdateConfig, symbol: str) -> tuple[str, int, int, int]:
 
     n_new = len(combined) - n_prev
     return (symbol, len(combined), n_new, n_prev)
+
+
+# Umbrales minimos de precio de cierre (USD) por moneda para detectar una cotizacion
+# equivocada (en otra moneda, stablecoin despegada, o satoshis). Si el ultimo precio
+# cae por debajo -> el dato NO es USD y abortamos la actualizacion.
+USD_FLOOR_BY_SYMBOL: dict[str, float] = {
+    "BTC": 1000.0, "ETH": 100.0, "SOL": 1.0, "XLM": 0.005, "ADA": 0.01,
+    "XRP": 0.01, "DOGE": 0.0005, "LINK": 0.5, "LTC": 1.0,
+}
+
+
+def _assert_usd_plausible(symbol: str, df: pd.DataFrame) -> None:
+    """Aborta si el ultimo precio de cierre no es coherente con una cotizacion en USD."""
+    if df is None or df.empty:
+        return
+    floor = USD_FLOOR_BY_SYMBOL.get(symbol.upper())
+    if floor is None:
+        return
+    last_close = float(df[df["close"].notna()]["close"].iloc[-1])
+    first_close = float(df[df["close"].notna()]["close"].iloc[0]) if len(df) > 1 else last_close
+    if last_close < floor:
+        raise RuntimeError(
+            f"{symbol}: ultimo close={last_close:.6f} < floor USD {floor} "
+            f"-> los datos NO parecen estar en dolares. Abortada actualizacion."
+        )
+    if first_close > 0 and last_close > first_close * 1000:
+        raise RuntimeError(
+            f"{symbol}: rango de precios anormal (inicio {first_close}, fin {last_close}) "
+            f"-> posible error de moneda. Abortada actualizacion."
+        )
 
 
 def write_manifest(config: UpdateConfig, downloaded: dict[str, pd.DataFrame]) -> None:

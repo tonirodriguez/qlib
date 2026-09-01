@@ -61,6 +61,9 @@ SYMBOL_TO_CC: dict[str, str] = {s: s for s in INSTRUMENTS}
 # Genesis de referencia (BTC es la mas antigua, 2010-07-17 en CryptoCompare)
 MIN_START_TS = 1279238400  # 2010-07-16 00:00:00 UTC (margen de seguridad)
 
+# Moneda de cotizacion: GARANTIZADA en dolares (USD literal, no establecoin)
+QUOTE_CURRENCY = "USD"  # usado como tsym en CryptoCompare
+
 
 @dataclass(frozen=True)
 class CCConfig:
@@ -120,7 +123,7 @@ def _fetch(config: CCConfig, fsym: str, to_ts: int) -> dict[str, Any]:
 
     url = (
         f"https://min-api.cryptocompare.com/data/v2/histoday"
-        f"?fsym={fsym}&tsym=USD&limit={config.request_limit}&api_key={config.api_key}"
+        f"?fsym={fsym}&tsym={QUOTE_CURRENCY}&limit={config.request_limit}&api_key={config.api_key}"
     )
     if to_ts:
         url += f"&toTs={to_ts}"
@@ -190,12 +193,7 @@ def download_full_history(config: CCConfig, fsym: str) -> pd.DataFrame:
 
 
 def build_ohlcv_frame(config: CCConfig, cc_df: pd.DataFrame) -> pd.DataFrame:
-    """Convierte el frame de CryptoCompare al formato OHLCV del repo (Qlib).
-
-    Recorta el padding de ceros que CryptoCompare antepone a las fechas
-    previas al listing real de cada moneda, para que cada coin arranque en
-    su primera fecha con precio real (no con ceros).
-    """
+    """Convierte el frame de CryptoCompare al formato OHLCV del repo (Qlib)."""
     df = pd.DataFrame({
         "date": pd.to_datetime(cc_df["time"], unit="s", utc=True).dt.normalize(),
         "open": cc_df["open"].astype(float),
@@ -227,6 +225,30 @@ def build_ohlcv_frame(config: CCConfig, cc_df: pd.DataFrame) -> pd.DataFrame:
     return df[cols]
 
 
+# Umbrales minimos de precio de cierre (USD) por moneda para detectar una cotizacion
+# equivocada (otra moneda, stablecoin despegada, satoshis). Si el precio cae por
+# debajo de su umbral -> el dato NO es USD y abortamos la descarga/escritura.
+USD_FLOOR_BY_SYMBOL: dict[str, float] = {
+    "BTC": 1000.0, "ETH": 100.0, "SOL": 1.0, "XLM": 0.005, "ADA": 0.01,
+    "XRP": 0.01, "DOGE": 0.0005, "LINK": 0.5, "LTC": 1.0,
+}
+
+
+def _assert_usd_plausible(symbol: str, df: pd.DataFrame) -> None:
+    """Aborta si el ultimo precio de cierre no es coherente con una cotizacion en USD."""
+    if df is None or df.empty:
+        return
+    floor = USD_FLOOR_BY_SYMBOL.get(symbol.upper())
+    if floor is None:
+        return
+    last_close = float(df[df["close"].notna()]["close"].iloc[-1])
+    if last_close < floor:
+        raise RuntimeError(
+            f"{symbol}: ultimo close={last_close:.6f} < floor USD {floor} "
+            f"-> los datos NO parecen estar en dolares. Abortada carga inicial."
+        )
+
+
 def download_all(config: CCConfig) -> dict[str, pd.DataFrame]:
     config.output_dir.mkdir(parents=True, exist_ok=True)
     downloaded: dict[str, pd.DataFrame] = {}
@@ -242,6 +264,8 @@ def download_all(config: CCConfig) -> dict[str, pd.DataFrame]:
 
         dest = config.output_dir / f"{instr.lower()}.csv"
         tmp = dest.with_suffix(dest.suffix + ".tmp")
+        # Guarda de moneda: aborta si el ultimo precio no es coherente con USD
+        _assert_usd_plausible(instr, frame)
         frame.to_csv(tmp, index=False)
         tmp.replace(dest)
         downloaded[instr] = frame
