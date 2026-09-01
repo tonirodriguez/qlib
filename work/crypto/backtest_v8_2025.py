@@ -54,6 +54,9 @@ HALF_SPREAD = 0.0002
 SLIPPAGE = 0.0003
 COST = TRANSACTION_COST + HALF_SPREAD + SLIPPAGE  # coste total por operacion (one-way)
 
+# Yield del cash ocioso en USDT (stake/stablecoin). Típico 4-5% APY.
+CASH_YIELD_APY = 0.045  # 4.5% anual sobre el cash no invertido
+
 
 class SFMCellRefined(nn.Module):
     def __init__(self, input_dim, hidden_dim, freq_components, dropout_rate=0.2):
@@ -129,16 +132,28 @@ def build_features_matrix(df_close: pd.DataFrame) -> np.ndarray:
     return np.nan_to_num(matrix, nan=0.0, posinf=1.0, neginf=-1.0)
 
 
-def simulate_portfolio(pred_days, pred_list, df_close):
-    """Simula la cartera igual que el paper. Retorna (curve, operaciones)."""
+def simulate_portfolio(pred_days, pred_list, df_close, cash_yield_apy=CASH_YIELD_APY):
+    """Simula la cartera igual que el paper. Retorna (curve, operaciones).
+
+    Si cash_yield_apy > 0, el cash ocioso (en USDT) genera interés diario
+    (compuesto) sobre el capital no invertido, como un stablecoin stake.
+    """
     cash = INITIAL_CAPITAL_USD
     positions = {}  # symbol(lower) -> shares
     curve, opers = [], []
+    daily_rate = (1.0 + cash_yield_apy) ** (1.0 / 365.0) - 1.0 if cash_yield_apy > 0 else 0.0
+    total_interest = 0.0
 
     for r, day in enumerate(pred_days):
         scores = pred_list[r]
         close_row = df_close.loc[day] if day in df_close.index else None
         idx_map = {c.upper(): i for i, c in enumerate(CRYPTOS)}
+
+        # 0. Aplicar yield al cash ocioso (antes de operar ese dia)
+        if daily_rate > 0 and cash > 0:
+            interest = cash * daily_rate
+            cash += interest
+            total_interest += interest
 
         # 1. Vender posiciones que ya no tienen COMPRA (score <= BUY_THRESHOLD)
         for s_lower in list(positions.keys()):
@@ -190,7 +205,7 @@ def simulate_portfolio(pred_days, pred_list, df_close):
                     val += positions[c_shar] * float(close_row[c_shar.upper()])
         curve.append((day, val))
 
-    return curve, opers
+    return curve, opers, total_interest
 
 
 def load_closes():
@@ -243,7 +258,7 @@ def main():
     if not pred_days:
         return None
 
-    curve, opers = simulate_portfolio(pred_days, pred_list, df_close)
+    curve, opers, total_interest = simulate_portfolio(pred_days, pred_list, df_close)
     dates = [str(d.date()) for d, _ in curve]
     vals = np.array([v for _, v in curve])
 
@@ -267,6 +282,8 @@ def main():
         "max_drawdown_pct": round(metrics["max_drawdown"] * 100, 2),
         "n_trades": len(opers), "costs": {"transaction_cost": TRANSACTION_COST,
                                           "half_spread": HALF_SPREAD, "slippage": SLIPPAGE},
+        "cash_yield_apy": CASH_YIELD_APY,
+        "total_interest_usd": round(total_interest, 2),
         "curve_dates": dates, "equity_usd": [round(float(v), 2) for v in vals],
         "operations": opers,
     }

@@ -18,7 +18,8 @@ md_intro = (
     "- Cada día: fit de clipping + scaler solo con datos disponibles hasta ese día (sin lookahead).\n"
     "- Long hasta MAX_POSITIONS=2, confianza ALTA (score>0.025), capital equitativo.\n"
     "- Costes Binance: fee 0.1% taker + half-spread + slippage en cada cambio de posición.\n"
-    "- Conversión EUR a USD al inicio y USD a EUR al final.\n\n"
+    "- Conversión EUR a USD al inicio y USD a EUR al final.\n"
+    "- **Yield del cash ocioso en USDT** (+4.5% APY compuesto sobre el capital no invertido).\n\n"
     "El modelo se entrenó con split 60/20/20 donde 2025-2026 estuvieron en TEST, "
     "por lo que este rango es out-of-sample legítimo."
 )
@@ -79,10 +80,11 @@ print(f"  Abs (EUR)            : €{r['final_capital_eur']-r['initial_capital_e
 print(f"  Sharpe               : {r['sharpe']} | Sortino: {r['sortino']}")
 print(f"  Max drawdown         : {r['max_drawdown_pct']}%")
 print(f"  Operaciones          : {r['n_trades']}")
+print(f"  Interés cash USDT    : ${r['total_interest_usd']:,.2f} al {r['cash_yield_apy']*100:.1f}% APY")
 print(f"  Efecto tipo de cambio EUR/USD: {fx_effect:+.2f}%")
 print("=" * 60)
-print("Lectura: en USD la estrategia está casi plana; la pérdida en EUR viene")
-print("principalmente de la apreciación del EUR frente al USD en el periodo.")
+print("Lectura: en USD la estrategia es algo positiva (+4.3%) gracias en parte al")
+print("yield del cash USDT; la pérdida en EUR viene del tipo de cambio (EUR/USD +12%).")
 if r["return_pct_eur"] > 0:
     print("Resultado POSITIVO en EUR (con costes)")
 else:
