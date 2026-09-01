@@ -1,7 +1,7 @@
 """
 ic_short_term_sp500.py — IC de corto plazo (1d) sobre sp500_liquid en Qlib.
 
-EJECUTAR EN MAC LOCAL (conda env 'finance', datos ~/.qlib/qlib_data/us_data).
+EJECUTAR EN LA MAQUINA CON GPU (o en el Mac local). Aqui se correra en la maquina GPU.
 
 Objetivo: diagnosticar si hay senal de corto plazo (retorno 1 dia) en acciones,
 similar a la premisa de la estrategia SFM v8 (label 1d). Si el IC medio es debil
@@ -18,13 +18,19 @@ Factores:
 Referencia: el proyecto mide IC OOS +0.066 con momentum 120d en acciones (mas fuerte).
 Aqui se busca si el horizonte CORTO tiene base.
 
-Uso (Mac local, desde el repo):
-  source activate finance
+Config por env vars (opcional):
+  QLIB_URI         -> ruta dataset de acciones Qlib (default ~/.qlib/qlib_data/us_data)
+  UNIVERSE_FILE    -> ruta universo sp500_liquid (default work/estrategias/sp500_liquid.txt)
+
+Uso (en la maquina que tenga el venv qlib con los datos de acciones):
+  QLIB_URI=/ruta/al/dataset QLIB_UNIVERSE... python work/crypto/ic_short_term_sp500.py
+  # o con los valores por defecto si la estructura coincide:
   python work/crypto/ic_short_term_sp500.py
 """
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -36,10 +42,19 @@ from qlib.config import REG_US
 from qlib.data import D
 
 # ---------------------------------------------------------------------------
-# CONFIG (ajusta a tu entorno Mac)
+# CONFIG (ajustable por variables de entorno; por defecto apunta al Mac local)
 # ---------------------------------------------------------------------------
-QLIB_URI = "~/.qlib/qlib_data/us_data"   # dataset de acciones en el Mac
-UNIVERSE_FILE = "work/estrategias/sp500_liquid.txt"  # universo (relativo al repo)
+# Dataset de acciones Qlib (ruta del provider_uri)
+QLIB_URI = "~/.qlib/qlib_data/us_data"
+# Universo sp500_liquid (relativo al repo o ruta absoluta)
+UNIVERSE_FILE = "work/estrategias/sp500_liquid.txt"
+
+# Overrides por env vars (util en la maquina GPU o con otra estructura):
+#   QLIB_URI         -> ruta del dataset de acciones
+#   UNIVERSE_FILE    -> ruta del universo
+import os as _os
+QLIB_URI = _os.environ.get("QLIB_URI", QLIB_URI)
+UNIVERSE_FILE = _os.environ.get("UNIVERSE_FILE", UNIVERSE_FILE)
 
 START = "2019-01-01"
 END = "2026-08-30"
@@ -60,10 +75,12 @@ def ic_series(factor: pd.Series, fwd: pd.Series):
 
 
 def main():
-    qlib.init(provider_uri=QLIB_URI, region=REG_US, kernels=1)
+    qlib_uri = os.path.expanduser(QLIB_URI)
+    qlib.init(provider_uri=qlib_uri, region=REG_US, kernels=1)
+    print(f"Dataset Qlib: {qlib_uri}")
 
     # Cargar tickers del universo sp500_liquid desde el archivo
-    up = Path(UNIVERSE_FILE)
+    up = Path(os.path.expanduser(UNIVERSE_FILE))
     if not up.exists():
         print(f"NO encuentro {up}. Ajusta UNIVERSE_FILE.")
         return
