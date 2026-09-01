@@ -227,6 +227,7 @@ Si E3 (PEAD+gate) estabiliza el drawdown y bate a E1 y E2 en riesgo-ajustado net
 1. **Actualizar la documentación general:** `README` del workspace, `quinn_regimenes.md`, plan con los aprendizajes reales (no los previstos).
 2. **Pregunta de escalado (AÚN sin capital real):** si todo es estable, abrir la pregunta de cómo sería pasar a real (límites, tamaño) — pero como **siguiente fase**, con más historial.
 3. **Diversificar a una tercera señal ortogonal** (value/quality) si E3 es estable pero se quiere más alpha — NO más momentum.
+   - **Ya se adelantó la investigación:** las 2 señales ortogonales candidatas (reversal 5d, Amihud illiquidity) están validadas en laboratorio → ver **`plan_siguiente_fase_senales_ortogonales.md`** (plan de la siguiente fase a atacar tras la S8).
 
 **Criterios de parada / no-escalar:**
 - Sin métricas honestas tras 8 semanas → NO escalar.

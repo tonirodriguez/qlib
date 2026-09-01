@@ -53,3 +53,4 @@ tags
 .aider*
 /examples/rl/checkpoints
 scripts/logs/*
+work/crypto/output/sfm_v8/logs/
