@@ -395,7 +395,11 @@ def append_history(state, total_value, trades):
     df = pd.DataFrame([record])
     if HISTORY_FILE.exists():
         df_history = pd.read_csv(HISTORY_FILE)
+        # Deduplicar por fecha: conservar solo un registro por dia (el actualizado)
         df = pd.concat([df_history, df], ignore_index=True)
+        if "date" in df.columns:
+            df = df.drop_duplicates(subset=["date"], keep="last")
+    df = df.sort_values("date") if "date" in df.columns else df
     df.to_csv(HISTORY_FILE, index=False)
     print(f"   💾 Historial guardado: {HISTORY_FILE} ({len(df)} registros)")
 
@@ -465,6 +469,13 @@ def main():
     if issues:
         print("   ⛔ OPERACIÓN BLOQUEADA por controles de riesgo:")
         rc.emit_alerts(issues)
+        # Notificar alertas de riesgo por Telegram (Paso 7)
+        try:
+            from notifications import send_message
+            body = "\n".join(f"🚨 {m}" for m in issues)
+            send_message(body, subject="⚠️ RIESGO v8 — operación bloqueada")
+        except Exception:
+            pass
         # Persistir el estado (pico) pero sin operar
         total_block, _ = value_portfolio(state, active_prices)
         if total_block > state["peak_capital"]:
@@ -494,6 +505,20 @@ def main():
     append_history(state, total_value, trades)
     # Guardar metricas (Paso 6)
     _save_metrics_from_history()
+    # Notificacion diaria por Telegram (Paso 7) — no bloquea la operacion
+    try:
+        from notifications import send_message
+        total_gain_pct = ((total_value - START_CAPITAL) / START_CAPITAL) * 100
+        summary = (
+            f"📊 PAPER TRADING v8 — {date.today().isoformat()}\n"
+            f"   Capital: ${START_CAPITAL:,.0f} → ${total_value:,.2f} ({total_gain_pct:+.2f}%)\n"
+            f"   Posiciones: {len(state['positions'])} | Trades: {state['total_trades']}"
+        )
+        if trades:
+            summary += f"\n   Operaciones hoy: {len(trades)}"
+        send_message(summary, subject="🔔 Resumen diario v8")
+    except Exception as _nexc:
+        print(f"   ⚠️  No se pudo notificar: {_nexc}")
 
     # Mostrar reporte
     print_portfolio_report(total_value, state["cash_usd"], position_details, trades, state)

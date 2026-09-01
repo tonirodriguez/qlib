@@ -86,9 +86,16 @@ Implementados en `work/crypto/risk_controls.py` + integrados en `sfm_paper_tradi
 
 **Entregable:** infraestructura de métricas/monitor integrada. ✅
 
-### Paso 7 — Credenciales y notificación (solo si se va a capital real)
-- [ ] Credenciales least-privilege con retiros desactivados (exige README). Nunca hardcodear.
-- [ ] Alertas diarias: pipeline detenido, falta de datos, señal anómala, drawdown > umbral.
+### Paso 7 — Credenciales y notificación ◐ (notificación ✅, credenciales pendientes de capital real)
+- [x] **Notificación diaria por Telegram** (¡sin necesidad de credenciales extra!):
+  - Usa `hermes send` (reutiliza las credenciales del gateway de Hermes) → **no requiere bot token nuevo ni credenciales de exchange**.
+  - **Resumen diario** del paper trading (capital, P&L, posiciones) → `sfm_paper_trading.py`.
+  - **Alertas de riesgo** (drawdown, stale, kill-switch, exposición) → `sfm_paper_trading.py` + `risk_controls.py`.
+  - **Monitor de métricas** (Sharpe, Sortino, Calmar, VaR, drawdown) → paso 6/6 en `run_daily_pipeline.sh`.
+  - Target por defecto: Telegram DM (chat_id `899024572`), configurable vía `NOTIFY_TARGET`.
+- [x] **Módulo**: `work/crypto/notifications.py`.
+- [ ] **Credenciales de exchange (Binance)** — SOLO si se va a capital real: API key + secret **least-privilege, retiros desactivados**, en `.env` (gitignored). No necesarias para el paper.
+- [ ] Alertas de "pipeline detenido / falta de datos" — se activan al deployar el cron diario de forma estable (deuda pendiente).
 
 ---
 

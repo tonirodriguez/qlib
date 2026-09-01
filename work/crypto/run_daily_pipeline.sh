@@ -108,6 +108,30 @@ END_TIME=$(date +%s)
 echo "   ⏱️  $(($(($END_TIME - $START_TIME)))) seg" | tee -a "$LOG_FILE"
 echo "" | tee -a "$LOG_FILE"
 
+# ── Paso 6: Notificacion por Telegram (Paso 7 de produccion) ──
+echo "[6/6] 🔔 Enviando notificacion diaria a Telegram..." | tee -a "$LOG_FILE"
+START_TIME=$(date +%s)
+
+# El paper trading ya notifica su resumen diario; aqui se notifican las METRICAS
+# calculadas (si ya hay historial), a modo de monitor.
+if [ -f "${PROJECT_DIR}/work/crypto/output/sfm_v8/metrics_paper_latest.json" ]; then
+  METRICS_TEXT=$($PYTHON -c "
+import json, pathlib
+p = pathlib.Path('${PROJECT_DIR}/work/crypto/output/sfm_v8/metrics_paper_latest.json')
+m = json.loads(p.read_text())
+lines = ['📈 MÉTRICAS v8', '   (paper recién iniciado: sin serie histórica aún)' if m.get('n_days', 0)==0 else f\"   Días: {m['n_days']}\"]
+if m.get('n_days',0) > 0:
+    for k in ['total_return_pct','sharpe','sortino','calmar','max_drawdown_pct','win_rate_pct']:
+        if k in m: lines.append(f'   {k}: {m[k]}')
+print('\\n'.join(lines))
+")
+  $PYTHON work/crypto/notifications.py --subject "📈 Monitor v8" "$METRICS_TEXT" >> "$LOG_FILE" 2>&1 || true
+fi
+
+END_TIME=$(date +%s)
+echo "   ⏱️  $(($(($END_TIME - $START_TIME)))) seg" | tee -a "$LOG_FILE"
+echo "" | tee -a "$LOG_FILE"
+
 # ── Resumen ──
 echo "==========================================" | tee -a "$LOG_FILE"
 echo "✅ Pipeline completado" | tee -a "$LOG_FILE"
