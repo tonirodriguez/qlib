@@ -1,0 +1,24 @@
+{
+  "diagnostico": "top-1 CON costes (igual estrategia que training, pero costes Binance)",
+  "top1": {
+    "sharpe": -0.23,
+    "equity_final_usd": 5269.49,
+    "return_pct_usd": -49.28,
+    "max_drawdown_pct": -65.33,
+    "n_trades": 330
+  },
+  "multi_moneda_con_costes": {
+    "sharpe": 0.174,
+    "equity_final_usd": 10384.01,
+    "return_pct_usd": -0.05,
+    "max_drawdown_pct": -34.26,
+    "n_trades": 500
+  },
+  "referencia_training": {
+    "sharpe": 2.74,
+    "estrategia": "top-1 SIN costes",
+    "equity_final": "20x"
+  },
+  "coste_one_way_pct": 0.15,
+  "periodo": "2025-01-01 -> 2026-08-30"
+}

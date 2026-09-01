@@ -1,0 +1,85 @@
+{
+  "config": {
+    "impact_coefficient": 1.0,
+    "max_participation": 0.1,
+    "taker_fraction": 1.0,
+    "thirty_day_volume_usd": 0.0
+  },
+  "decision_sample_end": "2024-03-30T00:00:00+00:00",
+  "instruments": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "XLM",
+    "ADA",
+    "XRP",
+    "DOGE",
+    "LINK",
+    "LTC"
+  ],
+  "methodology": {
+    "execution_timing": "t+1",
+    "fee": "configurable maker/taker tier schedule, blended by taker_fraction",
+    "half_spread": "real top-of-book when provided, else labelled OHLCV range proxy",
+    "holdout_fraction": 0.15,
+    "holdout_used": false,
+    "market_impact": "sqrt model k*sigma*sqrt(Q/L); L = order-book depth or ADV proxy",
+    "participation_cap": 0.1
+  },
+  "order_notionals": [
+    1000.0,
+    10000.0,
+    100000.0
+  ],
+  "per_notional": {
+    "1000": {
+      "mean_one_way_cost": 0.008661419464907642,
+      "one_way_cost_by_asset": {
+        "ADA": 0.0033615964620347795,
+        "BTC": 0.002293606707820095,
+        "DOGE": 0.052720886374351725,
+        "ETH": 0.002373310690537331,
+        "LINK": 0.0033970757183940663,
+        "LTC": 0.0027723109948270303,
+        "SOL": 0.003107068894259357,
+        "XLM": 0.004981159597835115,
+        "XRP": 0.0029457597441092777
+      },
+      "rejected_assets": []
+    },
+    "10000": {
+      "mean_one_way_cost": 0.00986234200826142,
+      "one_way_cost_by_asset": {
+        "ADA": 0.004800047861339043,
+        "BTC": 0.002763830232443845,
+        "DOGE": 0.052720886374351725,
+        "ETH": 0.002574134375726903,
+        "LINK": 0.004464620650208194,
+        "LTC": 0.003924029969735814,
+        "SOL": 0.0034870426586348564,
+        "XLM": 0.010027245334096248,
+        "XRP": 0.003999240617816149
+      },
+      "rejected_assets": [
+        "DOGE"
+      ]
+    },
+    "100000": {
+      "mean_one_way_cost": 0.013659992538701662,
+      "one_way_cost_by_asset": {
+        "ADA": 0.00934883058659686,
+        "BTC": 0.004250807579647166,
+        "DOGE": 0.052720886374351725,
+        "ETH": 0.003209194629034575,
+        "LINK": 0.007840494139309985,
+        "LTC": 0.007566085154881888,
+        "SOL": 0.004688625205169582,
+        "XLM": 0.025984369529169136,
+        "XRP": 0.0073306396501540555
+      },
+      "rejected_assets": [
+        "DOGE"
+      ]
+    }
+  }
+}

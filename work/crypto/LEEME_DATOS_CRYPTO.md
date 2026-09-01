@@ -1,9 +1,9 @@
-# 📥 Datos Crypto — Carga inicial (CryptoCompare) + Operativa diaria (Binance)
+# 📥 Datos Crypto — Carga inicial (CryptoCompare) + Operativa diaria
 
 > **Proyecto:** frente crypto de Qlib.
 > **Objetivo:** histórico completo desde el **génesis** (CryptoCompare) en una carga
-> inicial, y a partir de ahí **actualización diaria incremental** (Binance) sin
-> re-descargar el histórico.
+> inicial, y a partir de ahí **actualización diaria incremental** (Coinbase, USD real)
+> sin re-descargar el histórico.
 
 ---
 
@@ -11,17 +11,33 @@
 
 ```
 [UNA VEZ] Carga inicial              ──►  [DIARIO] Actualización incremental
-CryptoCompare (histórico génesis)         Binance (solo días nuevos)
+CryptoCompare (histórico génesis)         Coinbase (solo días nuevos, USD real)
         │                                        │
         ▼                                        ▼
    CSVs por coin (OHLCV, USD)          CSVs por coin (se agregan días nuevos)
         │                                        │
-        └──────────────►  convert_crypto_qlib.py  ──►  dataset Qlib (data/qlib_cryptocompare)
+        └──────────────►  convert_crypto_qlib.py  ──►  dataset Qlib (data/qlib)
 ```
 
 - **Carga inicial:** `download_crypto_cryptocompare.py` (histórico completo, una vez o al regenerar).
-- **Operativa diaria:** `update_crypto_daily_binance.py` (incremental, solo lo nuevo).
+- **Operativa diaria:** `update_crypto_daily_coinbase.py` (incremental, USD real, sin topes).
 - **Convertir a Qlib:** `convert_crypto_qlib.py` (genera el dataset que usa el pipeline SFM).
+- **Orquestación:** `run_daily_pipeline.sh` (encadena los 4 pasos del daily).
+
+---
+
+## 🗂️ Dónde quedan los datos
+
+| Qué | Ruta | Contenido | ¿Se commitea? |
+|---|---|---|---|
+| **CSV por coin (fuente de verdad OHLCV)** | `scripts/crypto/csv_data/crypto_cryptocompare/ohlcv/{coin}.csv` | OHLCV diario desde génesis en USD | ❌ No (`*.csv` ign.) |
+| Manifest de los CSV | `scripts/crypto/csv_data/crypto_cryptocompare/ohlcv/manifest.json` | filas, fechas, SHA-256 | ✅ Sí |
+| **Base de datos Qlib (usa el pipeline SFM)** | `data/qlib/` | datos binarios Qlib (features / instruments / calendars) | ✅ Sí |
+| API key CryptoCompare | `/opt/data/qlib/.env` | `CRYPTOCOMPARE_API_KEY=...` | ❌ No (gitignore) |
+
+> **Regla clave:** la **fuente de verdad** son los **CSV por coin** (`crypto_cryptocompare/ohlcv/`).
+> La **base Qlib** (`data/qlib`) es un **derivado** que se regenera a partir
+> de los CSV. Nunca edites a mano la base Qlib; si hay que corregir, edita el CSV y regenera.
 
 ---
 
@@ -77,38 +93,58 @@ cat .env    # debe incluir: CRYPTOCOMPARE_API_KEY=xxx
 
 ---
 
-## 📅 Operativa diaria
+## 📅 Operativa diaria — pipeline orquestado
 
-### Actualización incremental — opción recomendada (Coinbase, USD real sin topes)
+El script **`run_daily_pipeline.sh`** encadena los 4 pasos de la operativa diaria y
+escribe un log con fecha en `work/crypto/output/sfm_v8_cryptocompare/logs/`.
 
 ```bash
 cd /opt/data/qlib
+/opt/data/qlib-venv/bin/python work/crypto/update_crypto_daily_coinbase.py   # [1] datos
+/opt/data/qlib-venv/bin/python work/crypto/convert_crypto_qlib.py            # [2] Qlib
+/opt/data/qlib-venv/bin/python work/crypto/sfm_daily_signal.py               # [3] señal
+/opt/data/qlib-venv/bin/python work/crypto/sfm_paper_trading.py              # [4] paper
+```
+
+o directamente el orquestador (hace los 4 pasos + log):
+
+```bash
+cd /opt/data/qlib
+bash work/crypto/run_daily_pipeline.sh
+```
+
+> El orquestador exporta `CRYPTO_QLIB_OUTPUT_DIR=data/qlib` y
+> `CRYPTO_OHLCV_DIR=scripts/crypto/csv_data/crypto_cryptocompare/ohlcv` antes de correr,
+> así todos los scripts apuntan al dataset nuevo sin tocar nada más.
+
+### Paso 1 — Actualización incremental (Coinbase, USD real sin topes)
+
+```bash
 /opt/data/qlib-venv/bin/python work/crypto/update_crypto_daily_coinbase.py
 ```
 
-**Por qué:** Coinbase da pares `*-USD` reales, gratis, sin límite (a diferencia de
-CryptoCompare's 100/mes). Llama una vez por coin/día. Si algún día el CSV quedara
-atrasado, rellena solo los días pendientes (verificado: 11 días recuperados en el test).
+**Por qué:** Coinbase da pares `*-USD` **reales** (BTC-USD, ETH-USD...), gratis, sin
+la limitación de CryptoCompare ([100 llamadas/mes]); verificado que rellena días
+pendientes de forma no destructiva.
 
-### Alternativas
+### Alternativas al paso 1 (misma salida CSV)
 
 **CryptoCompare (USD literal, vigilando el tope del mes):**
 
 ```bash
-cd /opt/data/qlib
 /opt/data/qlib-venv/bin/python work/crypto/update_crypto_daily_cryptocompare.py
 ```
 
 **Binance (USDT ≈ USD, sin límite):**
 
 ```bash
-cd /opt/data/qlib
 /opt/data/qlib-venv/bin/python work/crypto/update_crypto_daily_binance.py
 ```
 
 Los tres:
-- Descarga **solo los días nuevos** (desde la última fecha de cada CSV hasta ayer).
-- Reescriben los CSVs + `manifest.json` (con SHA-256, trazabilidad).
+- Descarga **solo los días nuevos** (desde la última fecha de cada CSV hasta ayer) y
+  reescribe el ISO en `scripts/crypto/csv_data/crypto_cryptocompare/ohlcv/{coin}.csv`.
+- Actualizan el `manifest.json` (con SHA-256, trazabilidad).
 - No tocan el histórico pasado; solo añaden al final.
 - Escriben el **mismo formato CSV**, así que pueden alternarse libremente.
 
@@ -133,11 +169,11 @@ cd /opt/data/qlib
 # 3) Convierte los CSVs a formato Qlib (dataset que usa el pipeline SFM v8)
 CRYPTO_OHLCV_DIR="scripts/crypto/csv_data/crypto_cryptocompare/ohlcv" \
 CRYPTO_OHLCV_FILE_PATTERN="{instrument_lower}.csv" \
-CRYPTO_QLIB_OUTPUT_DIR="data/qlib_cryptocompare" \
+CRYPTO_QLIB_OUTPUT_DIR="data/qlib" \
 /opt/data/qlib-venv/bin/python work/crypto/convert_crypto_qlib.py
 ```
 
-**Salida:** dataset completo en `data/qlib_cryptocompare/` con cada coin desde su génesis real:
+**Salida:** dataset completo en `data/qlib/` con cada coin desde su génesis real:
 
 | Coin | Génesis (primer precio real) |
 |---|---:|
@@ -167,7 +203,7 @@ cd /opt/data/qlib && /opt/data/qlib-venv/bin/python -c "
 import qlib
 from qlib.config import REG_US
 from qlib.data import D
-qlib.init(provider_uri='data/qlib_cryptocompare', region=REG_US, kernels=1)
+qlib.init(provider_uri='data/qlib', region=REG_US, kernels=1)
 for c in ['btc','eth','sol','ada']:
     df = D.features([c], ['\$close'], start_time='2009-01-01', end_time='2026-12-31')
     s = df['\$close']; nz = s[s!=0]
@@ -187,5 +223,5 @@ for c in ['btc','eth','sol','ada']:
 | `work/crypto/update_crypto_daily_cryptocompare.py` | Actualización diaria incremental (CryptoCompare, USD literal, tope 100/mes) |
 | `work/crypto/convert_crypto_qlib.py` | Convierte CSVs → dataset Qlib |
 | `scripts/crypto/csv_data/crypto_cryptocompare/ohlcv/*.csv` | CSVs por coin (OHLCV, USD) — **no se commitean** (`*.csv` ignorado) |
-| `data/qlib_cryptocompare/` | Dataset Qlib generado (sí se commitea) |
+| `data/qlib/` | Dataset Qlib generado (sí se commitea) |
 | `.env` | API key CryptoCompare — **no se commitea** |

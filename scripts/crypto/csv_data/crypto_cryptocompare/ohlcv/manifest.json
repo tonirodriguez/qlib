@@ -1,13 +1,69 @@
 {
-  "endpoint": "/api/v3/klines",
+  "endpoint": "/products/{SYM}-USD/candles",
   "instruments": {
+    "ADA": {
+      "file": "ada.csv",
+      "first_date": "2017-10-01 00:00:00+00:00",
+      "last_date": "2026-08-31 00:00:00+00:00",
+      "rows": 3257,
+      "sha256": "ce7f0ad561ebc26267c3c39bbb2d69ffb92732c5e05d47255c6ef8f202f098c2"
+    },
     "BTC": {
       "file": "btc.csv",
       "first_date": "2010-07-17 00:00:00+00:00",
       "last_date": "2026-08-31 00:00:00+00:00",
       "rows": 5890,
       "sha256": "f56d514983843488bee81d5726e3d51485397fee8ba91ec780dd3cd6517ed672"
+    },
+    "DOGE": {
+      "file": "doge.csv",
+      "first_date": "2014-02-01 00:00:00+00:00",
+      "last_date": "2026-08-31 00:00:00+00:00",
+      "rows": 4595,
+      "sha256": "47dd5ac935ecebc9ce2956cc9d66bef32df7a1dd33163a8398b36fe4db7a5c66"
+    },
+    "ETH": {
+      "file": "eth.csv",
+      "first_date": "2015-08-07 00:00:00+00:00",
+      "last_date": "2026-08-31 00:00:00+00:00",
+      "rows": 4043,
+      "sha256": "d30e150db3761c0f540ddda3cd4d02ab032f4aeb42ab68a3cecb125672ae6825"
+    },
+    "LINK": {
+      "file": "link.csv",
+      "first_date": "2017-09-21 00:00:00+00:00",
+      "last_date": "2026-08-31 00:00:00+00:00",
+      "rows": 3267,
+      "sha256": "3e640e42a9f374b8cc5849efc8ec2060004e05efa9c47d097f7eec7992448240"
+    },
+    "LTC": {
+      "file": "ltc.csv",
+      "first_date": "2013-09-29 00:00:00+00:00",
+      "last_date": "2026-08-31 00:00:00+00:00",
+      "rows": 4720,
+      "sha256": "af0bf4fb483c30c6f01035699d2b1c19e2b3478485c32f7d0acb1f3c4e745b26"
+    },
+    "SOL": {
+      "file": "sol.csv",
+      "first_date": "2020-04-10 00:00:00+00:00",
+      "last_date": "2026-08-31 00:00:00+00:00",
+      "rows": 2335,
+      "sha256": "1084766718a87910b004dcfb4aedaf3c641f540821076d32c836e413fc654087"
+    },
+    "XLM": {
+      "file": "xlm.csv",
+      "first_date": "2014-09-04 00:00:00+00:00",
+      "last_date": "2026-08-31 00:00:00+00:00",
+      "rows": 4380,
+      "sha256": "895fab97457e1c911ba64a09337ccd917d273180f983f50441f0cec8e6575a45"
+    },
+    "XRP": {
+      "file": "xrp.csv",
+      "first_date": "2015-01-29 00:00:00+00:00",
+      "last_date": "2026-08-31 00:00:00+00:00",
+      "rows": 4233,
+      "sha256": "83567025ab1f20a7d339e964c69de4d122df638deb01552f81f8cecbd6bd09c5"
     }
   },
-  "source": "binance-daily-incremental"
+  "source": "coinbase-daily-incremental"
 }
