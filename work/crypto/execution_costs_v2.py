@@ -259,7 +259,7 @@ def market_data_from_ohlcv(
     volume = pd.to_numeric(frame["volume"], errors="raise")
     quote_volume = (close * volume).replace(0, np.nan)
     daily_range = ((high - low) / close).clip(lower=0)
-    returns = close.pct_change().dropna()
+    returns = close.pct_change().replace([np.inf, -np.inf], np.nan).dropna()
 
     bid = ask = depth_notional = None
     if quotes is not None and len(quotes):
@@ -383,7 +383,7 @@ def main() -> None:
     market_by_instrument: dict[str, AssetMarketData] = {}
     decision_end_dates: list[pd.Timestamp] = []
     for instrument in instruments:
-        frame = pd.read_csv(source_dir / f"{instrument}.csv")
+        frame = pd.read_csv(source_dir / f"{instrument.lower()}.csv")
         frame["date"] = pd.to_datetime(frame["date"], utc=True)
         frame = frame.sort_values("date").drop_duplicates("date", keep="last")
         decision_end = int(len(frame) * (1.0 - holdout_fraction))

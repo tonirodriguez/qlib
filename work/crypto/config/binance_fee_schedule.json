@@ -1,0 +1,7 @@
+[
+  {"min_thirty_day_volume_usd": 0.0,         "maker": 0.0010, "taker": 0.0010},
+  {"min_thirty_day_volume_usd": 1000000.0,   "maker": 0.0009, "taker": 0.0010},
+  {"min_thirty_day_volume_usd": 5000000.0,   "maker": 0.0008, "taker": 0.0010},
+  {"min_thirty_day_volume_usd": 20000000.0,  "maker": 0.0007, "taker": 0.0009},
+  {"min_thirty_day_volume_usd": 100000000.0, "maker": 0.0006, "taker": 0.0008}
+]

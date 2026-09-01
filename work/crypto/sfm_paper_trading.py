@@ -29,6 +29,8 @@ from datetime import datetime, date, timedelta
 import numpy as np
 import pandas as pd
 
+import risk_controls as rc
+
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -41,10 +43,43 @@ PROJECT_ROOT = Path(__file__).resolve().parent  # work/crypto/
 OUTPUT_DIR = PROJECT_ROOT / "output" / "sfm_v8"
 STATE_FILE = OUTPUT_DIR / "state_paper_trading.json"
 HISTORY_FILE = OUTPUT_DIR / "history_paper_trading.csv"
-TRANSACTION_COST = 0.001  # 0.1% por operación (como en backtest)
+
+# --- Fee de Binance real (punto 3) ---
+# Por defecto la cuenta base de Binance spot: 0.1% taker. Si se provee el
+# JSON del fee schedule real de Binance vía CRYPTO_FEE_SCHEDULE_JSON (con
+# tiers por volumen), se carga y se usa el tier base (volumen 0).
+def _load_binance_fee() -> float:
+    """Devuelve la fee taker de la cuenta base de Binance (0.1%) o la del JSON si se da."""
+    import importlib.util
+    sched_path = os.getenv("CRYPTO_FEE_SCHEDULE_JSON")
+    if sched_path and Path(sched_path).exists():
+        try:
+            import execution_costs_v2 as ec
+            sched = ec.load_fee_schedule(sched_path)
+            tier0 = ec.select_fee_tier(sched, 0.0)
+            fee = ec.blended_fee(tier0, float(os.getenv("CRYPTO_TAKER_FRACTION", "1.0")))
+            return fee
+        except Exception as exc:  # noqa
+            print(f"   ⚠️  No se pudo usar fee schedule ({exc}); se usa fee base 0.1%")
+            return 0.0010
+    return float(os.getenv("PAPER_TRANSACTION_COST", "0.0010"))
+
+
+TRANSACTION_COST = _load_binance_fee()  # Binance base taker 0.1% (o la del schedule)
 START_CAPITAL = float(os.getenv("PAPER_START_CAPITAL", "10000"))
 MAX_POSITIONS = int(os.getenv("PAPER_MAX_POSITIONS", "2"))
 MIN_CONFIDENCE = os.getenv("PAPER_MIN_CONFIDENCE", "ALTA")
+
+# --- Risk controls (punto 1) ---
+RISK_CONFIG = {
+    "max_signal_age_days": int(os.getenv("RISK_MAX_SIGNAL_AGE_DAYS", "1")),
+    "max_drawdown_pct": float(os.getenv("RISK_MAX_DRAWDOWN_PCT", "0.15")),
+    "max_per_asset_exposure_pct": float(os.getenv("RISK_MAX_ASSET_EXPOSURE_PCT", "0.40")),
+    "max_total_exposure_pct": float(os.getenv("RISK_MAX_TOTAL_EXPOSURE_PCT", "0.90")),
+    "kill_switch_enabled": os.getenv("RISK_KILL_SWITCH", "1") == "1",
+}
+# Si este archivo existe, la operación queda bloqueada (kill-switch manual)
+KILL_SWITCH_FILE = OUTPUT_DIR / "KILL_SWITCH"
 
 SYMBOLS_ORDER = ["BTC", "ETH", "SOL", "XLM", "ADA", "XRP", "DOGE", "LINK", "LTC"]
 
@@ -394,6 +429,33 @@ def main():
     print(f"   Precios obtenidos: {len(active_prices)}/{len(cryptos)} criptos")
 
     if do_report_only:
+        print_report_only(state, active_prices)
+        return
+
+    # =================================================================
+    # RISK CONTROLS (punto 1) — bloquean antes de operar
+    # =================================================================
+    # 0) Kill-switch manual: si existe el archivo KILL_SWITCH, parar.
+    if KILL_SWITCH_FILE.exists():
+        print("   🛑 KILL-SWITCH: archivo KILL_SWITCH presente. Operación bloqueada.")
+        print_report_only(state, active_prices)
+        return
+
+    issues = rc.run_all_checks(
+        state,
+        active_prices,
+        signal_date,
+        config=RISK_CONFIG,
+    )
+    if issues:
+        print("   ⛔ OPERACIÓN BLOQUEADA por controles de riesgo:")
+        rc.emit_alerts(issues)
+        # Persistir el estado (pico) pero sin operar
+        total_block, _ = value_portfolio(state, active_prices)
+        if total_block > state["peak_capital"]:
+            state["peak_capital"] = total_block
+        state["last_updated"] = datetime.utcnow().isoformat()
+        save_state(state)
         print_report_only(state, active_prices)
         return
 

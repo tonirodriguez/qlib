@@ -28,28 +28,32 @@
 
 > Marca cada checkbox conforme se complete.
 
-### Paso 1 — Cerrar los risk controls del sistema de trading
-El paper actual NO tiene estos controles que el README exige antes de producción:
-- [ ] **Reconciliation**: validar la cartera simulada vs el dato real de mercado cada día (cash, posiciones, valor).
-- [ ] **Exposure limits**: límite de exposición por moneda y total (hoy solo `MAX_POSITIONS=2`, falta cap por % de cartera).
-- [ ] **Drawdown limit**: máximo drawdown que detiene el sistema.
-- [ ] **Stale-data protection**: no operar si la señal es de ayer o el precio no está fresco.
-- [ ] **Kill-switch** testeado: interruptor manual/automático para detener toda operación.
-- [ ] **Alertas**: notificaciones ante anomalías (drawdown, stale, error de API).
+### Paso 1 — Cerrar los risk controls del sistema de trading ✅ (2026-09-01)
+Implementados en `work/crypto/risk_controls.py` + integrados en `sfm_paper_trading.py`:
+- [x] **Reconciliation**: `rc.reconcile()` valida cash/posiciones/precios vs valor real.
+- [x] **Exposure limits**: `rc.check_exposure()` limita % por moneda y total.
+- [x] **Drawdown limit**: `rc.check_drawdown()` detiene si drawdown > límite.
+- [x] **Stale-data protection**: `rc.check_stale_data()` no opera si la señal es de ayer.
+- [x] **Kill-switch** testeado: manual (archivo `KILL_SWITCH`) + config.
+- [x] **Alertas**: `rc.emit_alerts()` notifica; `rc.run_all_checks()` orquesta y bloquea.
 
-**Entregable:** `sfm_paper_trading.py` con reconciliación + drawdown + stale + kill-switch + alertas.
+**Entregable:** `sfm_paper_trading.py` con reconciliación + drawdown + stale + kill-switch + alertas. ✅
 
-### Paso 2 — Re-entrenar / reconectar el modelo al dataset de génesis
+### Paso 2 — Re-entrenar / reconectar el modelo al dataset de génesis ⏸️ (aplazado)
+> Aplazado hasta disponer de máquina con **GPU** (se decidirá al tenerla).
 - [ ] Decidir si re-entrenar v8 sobre el dataset de génesis (`data/qlib`, 2010+) y re-evaluar en walk-forward, o mantener el modelo actual.
 - [ ] Documentar qué versión de dataset/modelo se usa (trazabilidad).
 
 **Entregable:** modelo decidido y documentado.
 
-### Paso 3 — Modelo de ejecución y costes reales
-- [ ] Añadir slippage, liquidez, funding/borrow, latencia y calendario 24/7 cripto (`execution_costs_v2.py`, pendiente de datos reales).
-- [ ] Backtest con costes calibrados realistas antes de producción.
+### Paso 3 — Modelo de ejecución y costes reales ✅ (2026-09-01, parcial)
+- [x] **Fee schedule real de Binance** en `work/crypto/config/binance_fee_schedule.json` (cuenta base 0.1% maker/taker, tiers VIP por volumen).
+- [x] `execution_costs_v2.py` corregido (bugs: case CSV y vol nan) y calibrado con datos reales + fee Binance.
+- [x] `sfm_paper_trading.py` usa la fee de Binance real vía `CRYPTO_FEE_SCHEDULE_JSON`.
+- [ ] Pendiente: slippage real (order book), profundidad, funding/borrow, latencia y calendario 24/7 (los `*_source:"proxy"` requieren order book real).
+- [ ] Backtest final con costes calibrados realistas antes de producción.
 
-**Entregable:** modelo de ejecución con costes realistas.
+**Entregable:** modelo de ejecución con costes realistas (fee Binance integrado; microstructure pendiente).
 
 ### Paso 4 — Testing y reproducibilidad
 - [ ] Suite de tests: ingesta, conversión, labels, splits temporales, invariantes anti-leakage, costes, serialización, compatibilidad modelo/escaler/schema.
