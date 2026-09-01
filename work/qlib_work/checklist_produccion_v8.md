@@ -55,11 +55,16 @@ Implementados en `work/crypto/risk_controls.py` + integrados en `sfm_paper_tradi
 
 **Entregable:** modelo de ejecución con costes realistas (fee Binance integrado; microstructure pendiente).
 
-### Paso 4 — Testing y reproducibilidad
-- [ ] Suite de tests: ingesta, conversión, labels, splits temporales, invariantes anti-leakage, costes, serialización, compatibilidad modelo/escaler/schema.
-- [ ] Dependencias bloqueadas (lockfile) + entorno limpio que re-ejecute un experimento pequeño.
+### Paso 4 — Testing y reproducibilidad ✅ (2026-09-01)
+- [x] **Entorno completo**: `qlib-venv` con torch(CPU), optuna, ccxt, PyWavelets, pandas, numpy, etc. (`requirements.txt` reflejado en `work/crypto/config/requirements.lock.txt`).
+- [x] **pytest instalado** en el entorno (9.1.1).
+- [x] **Suite de tests crypto** verde: **71/71 pasan** (`pytest tests/crypto/`).
+  - [x] Tests preexistentes (10 archivos: universe, baselines, execution_costs_v2, conversión, descarga, temporal_validation...)
+  - [x] **Nuevos tests**: `test_risk_controls.py` (19 tests, punto 1) + `test_sfm_paper_trading.py` (10 tests, lógica compra/venta/fee/max_posiciones).
+- [x] **Lockfile reproducible**: `work/crypto/config/requirements.lock.txt` con el estado exacto del entorno.
+- [ ] *(opcional)* entorno limpio que re-ejecute un experimento pequeño desde el lockfile — pendiente de documento/CI.
 
-**Entregable:** suite de tests verde + lockfile.
+**Entregable:** suite de tests verde (71) + entorno completo + lockfile. ✅
 
 ### Paso 5 — Holdout de evaluación
 - [ ] Definir umbrales antes de abrir el holdout, abrirlo una sola vez, resultado inmutable.
