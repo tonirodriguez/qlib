@@ -36,8 +36,58 @@ def get_target() -> str:
     return os.getenv("NOTIFY_TARGET", os.getenv("TELEGRAM_TARGET", DEFAULT_TARGET))
 
 
+def _load_project_env():
+    """Carga NOTIFY_* del .env del proyecto (sin sobreescribir lo ya exportado)."""
+    env_file = PROJECT_ROOT / ".env"
+    if env_file.exists():
+        try:
+            from dotenv import load_dotenv
+            load_dotenv(env_file, override=False)
+        except Exception:
+            for line in env_file.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    if k.strip() not in os.environ:
+                        os.environ[k.strip()] = v.strip()
+
+
+def send_direct_telegram(text: str, subject: str | None = None, bot_token: str | None = None,
+                         chat_id: str | None = None) -> bool:
+    """Envia directamente por la API de Telegram usando NOTIFY_BOT_TOKEN/NOTIFY_CHAT_ID.
+
+    Usa importlib.request (sin dependencias extra). Devuelve True si OK.
+    """
+    import json as _json
+    import urllib.request
+
+    token = bot_token or os.getenv("NOTIFY_BOT_TOKEN", "").strip()
+    cid = chat_id or os.getenv("NOTIFY_CHAT_ID", "").strip()
+    if not token or not cid:
+        return False
+
+    full = f"{subject}\n{text}" if subject else text
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    data = _json.dumps({"chat_id": cid, "text": full, "disable_web_page_preview": True}).encode()
+    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            payload = _json.loads(resp.read().decode())
+            return bool(payload.get("ok"))
+    except Exception as exc:  # noqa
+        sys.stderr.write(f"Error send_direct_telegram: {exc}\n")
+        return False
+
+
 def send_message(text: str, subject: str | None = None, target: str | None = None) -> bool:
-    """Envia un mensaje por Telegram via hermes send. Devuelve True si OK."""
+    """Envia mensaje por Telegram. Prefiere NOTIFY_BOT_TOKEN+NOTIFY_CHAT_ID (bot dedicado),
+    si estan definidos en el .env del proyecto; si no, usa hermes send (canal Hermes)."""
+    _load_project_env()
+    direct_ok = send_direct_telegram(text, subject)
+    if direct_ok:
+        return True
+
+    # Fallback: hermes send (canal Hermes configurado)
     tgt = target or get_target()
     cmd = [HERMES_BIN, "send", "-t", tgt]
     if subject:
