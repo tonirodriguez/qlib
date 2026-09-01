@@ -11,7 +11,7 @@
 
 Sistema de **investigación cuantitativa sobre criptomonedas** con Qlib + SFM (State Fusion Model) + Optuna. Universo: **BTC, ETH, SOL, XLM, ADA, XRP, DOGE, LINK, LTC**.
 
-**Fase:** exclusivamente **investigación** (sin paper-trading ni capital real). Todo el pipeline es **causal y trazable** (sin fuga temporal): provider atómico, datos cerrados con manifests/hashes, nested walk-forward, escenarios de costes.
+**Fase actual:** la **estrategia v8 ya está en paper trading** (estrategia ganadora, operativa desde 2026-09-01). La comparación de universos del piloto es investigación pasada/paralela. Todo el pipeline es **causal y trazable** (sin fuga temporal).
 
 > 🧭 **Contexto de actores:** una parte del proyecto se centra en las **estrategias de acciones** (E1/E2/E3 en paper). Este documento es el **frente crypto, separado**. El frente crypto mantiene prioridad baja frente a la medición de estrategias de acciones.
 
@@ -53,22 +53,33 @@ Hoy se hizo una mejora importante en la **cadena de datos** del frente crypto (e
 
 ---
 
-## 🚦 Estado de los gates
+## 🚦 Estado actual
 
-| Gate | Estado | Evidencia |
+| Frente | Estado | Nota |
 |---|---|---|
-| Contención de prototipos antiguos (con fuga) | ✅ Superado | salidas separadas, `research-only` |
-| Causalidad del preprocessing | ✅ Superado | tests anti-leakage; clipping/scaler por train |
-| Datos cerrados y trazables | ✅ Superado | manifests SHA-256 |
-| Nested walk-forward | ✅ Técnicamente | smoke 2 folds; holdout no evaluado |
-| Modelo de costes v2 | ✅ En módulo | `execution_costs_v2.py`; falta alimentar datos reales |
-| **Comparación de universos** | ⚠️ **Piloto completo → gates RECHAZAN** | 6/6 combos; `holdout_may_be_opened: false` |
-| **Holdout final** | 🔒 Bloqueado | 2026-03-02 → 2026-08-13, 165 fechas; `evaluated: false` |
-| **Paper trading** | 🔒 Bloqueado | depende de todos los gates anteriores |
+| **Estrategia v8 (SFM)** | ✅ **En paper trading** (desde 2026-09-01) | Modelo `sfm_top3.pth`; señal diaria COMPRA en BTC / VENTA en otras. $10k, 1 trade inicial (BTC a 77.689). **Estrategia ganadora operativa.** |
+| Comparación de universos (piloto) | ⚠️ Rechazado | Investigación pasada; ninguno superó gates predeclarados. No es la vía actual. |
+| Holdout final del piloto | 🔒 Cerrado | Solo aplicable al experimento formal de universos (no bloquea a v8). |
+| **Datos** | ✅ Génesis + incremental | Consolidados en `data/qlib` (CryptoCompare génesis + Coinbase diario, USD garantizado, ver sección siguiente). |
+| Pipeline diario | ✅ Orquestado | `run_daily_pipeline.sh` (Coinbase→convert→señal→paper) sobre `data/qlib`. |
 
 ---
 
-## 📊 Resultado del piloto (dato clave)
+## 📈 Estado del paper trading v8 (2026-09-01)
+
+- **Modelo:** `sfm_top3.pth` (del ensemble Top-K de v8).
+- **Señal de hoy:** 🟢 **COMPRA BTC** (confianza ALTA, retorno esp. +2.94%); las 7 monedas con score negativo → **VENTA**; ETH → ESPERAR.
+- **Cartera paper:** capital $10k, cash $6.663,33, posición BTC (0.0429 BTC @ 77.689), 1 trade, fees $3.33. Recién iniciada (día 1).
+
+> El paper trading de v8 es la **estrategia activa** del frente crypto. El `run_daily_pipeline.sh` la alimenta cada día.
+
+---
+
+## 🆕 Avances de infraestructura de datos (2026-09-01)
+
+## 📊 Resultado del piloto (contexto histórico)
+
+El que sigue fue el resultado del **experimento de comparación de universos** (piloto), que es **investigación pasada / paralela**. No refleja el estado actual: la **v8 ya es la estrategia ganadora en paper trading** y este piloto no la bloquea.
 
 Sharpe neto medio por universo (6 folds, costes calibrados train-only, nocional $10k):
 
@@ -78,18 +89,18 @@ Sharpe neto medio por universo (6 folds, costes calibrados train-only, nocional 
 | Completo 9 | −1.229 | −0.969 | 1.33 | 1/6 | −54% |
 | Reducido 8 (sin XLM) | −0.904 | −0.567 | 1.40 | 2/6 | −59% |
 
-**Lectura honesta:** el piloto **confirma inestabilidad, no rentabilidad**. Dispersión enorme y el **fold 3 (2025-08 → 2026-03) es el peor en las 6 combinaciones**. Ninguno supera los gates predeclarados → **el holdout sigue correctamente cerrado**.
+**Lectura:** este piloto no dio rentabilidad estable y el holdout quedó cerrado, por lo que la vía de "comparación de universos" no prosperó. La estrategia que sí avanzó es la **v8**, ahora en paper trading.
 
 ---
 
 ## 🔴 Próximos pasos (en orden)
 
-1. **B2 — Alimentar el modelo de costes v2 con datos reales.** Implementado ✅; faltan: fee schedule, bid/ask, profundidad (mientras no existan → degrada a proxy).
-2. **B3 — Conectar baselines + DSR al experimento formal.** `baselines.py` implementado ✅; falta conectarlo con `n_trials` = universos × seeds.
-3. **D1 — Experimento formal (Fase 4).** 3 universos × 3 seeds (42,43,44), 30 trials/fold, 60 épocas. Empieza con **dry-run**. **Largo:** el piloto tardó ~3h/combo.
-   - Si ninguna variante supera gates estables → decisión correcta: no seleccionar ni abrir el holdout.
-4. **D2 — Holdout final** (solo si D1 pasa gates).
-5. **D3 — Paper trading** (solo si holdout aprueba).
+> El foco actual está en **operar/monitorizar la estrategia v8 en paper trading** y en mantener su cadena de datos. La investigación de universos (B2/B3/D1) queda como línea paralela de menor prioridad.
+
+1. **Monitorizar el paper trading v8 (diario).** Asegurar que el pipeline diario (`run_daily_pipeline.sh`) corre sin errores: Coinbase incremental → convertir a `data/qlib` → señal diaria → actualizar papel. Vigilar drawdown, stale-data y kill-switch.
+2. **Validar la cadena de datos diaria.** Confirmar que `data/qlib` se mantiene actualizado y que los 3 scripts de descarga (Coinbase/Binance/CryptoCompare) siguen el formato USD.
+3. **Re-entrenar v8 sobre el histórico de génesis (oportunidad).** Ahora que `data/qlib` tiene datos de génesis (2010+ vs 2017 antes), se puede **re-entrenar** el modelo v8 con más historia y comparar si mejora el rendimiento del modelo en producción (sfm_top1..4).
+4. **Deuda técnica de investigación (paralelo):** B2 (costes con datos reales), B3 (baselines + DSR), D1 (experimento formal de universos) quedan a menor prioridad, solo si se quiere revisitar la comparación de universos.
 
 **Deuda no bloqueante:** lockfile multiplataforma + CI, mover `v5` (S&P) fuera de `work/crypto`, alertas freshness/gaps, universo point-in-time.
 
@@ -97,10 +108,11 @@ Sharpe neto medio por universo (6 folds, costes calibrados train-only, nocional 
 
 ## 💡 Valoración (lectura de hoy)
 
-- La **infraestructura de datos está ahora sólida** (génesis + incremental, USD garantizado, UNA base Qlib, pipeline orquestado). Es un avance de **fundación** que quita trabas de datos para cuando se retome la investigación.
-- **La investigación sigue honestamente parada**: el piloto no dio rentabilidad estable, y el sistema correctamente **no avanza** hacia holdout/paper hasta que un experimento formal justifique abrirlo.
-- El histórico de génesis es **valioso para un futuro re-entrenamiento** (más datos de train), pero **no cambia por sí solo el veredicto** de investigación del frente crypto.
+- **La estrategia v8 es la ganadora y está en paper trading** (arrancó 2026-09-01): señal COMPRA en BTC, cartera $10k, 1 trade inicial. Es el activo principal del frente crypto, no una investigación en pausa.
+- La **infraestructura de datos quedó sólida** hoy (génesis + incremental Coinbase, USD garantizado, UNA base Qlib, pipeline orquestado). Es la base que **sostiene la operativa diaria de v8**.
+- El **histórico de génesis** abre la puerta a **re-entrenar v8 con más datos**, una mejora concreta a evaluar.
+- La investigación de universos (piloto) fue una línea que **no prosperó**; el frente no está parado, está operando v8.
 
 ---
 
-*Documento de referencia del frente crypto. Complementa `work/formacion/Estado Crypto.md` y `work/crypto/`. Actualizado 2026-09-01 con los avances de infraestructura de datos.*
+*Documento de referencia del frente crypto. Complementa `work/formacion/Estado Crypto.md` y `work/crypto/`. Actualizado 2026-09-01: **v8 en paper trading como estrategia ganadora** + avances de infraestructura de datos.*
