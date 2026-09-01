@@ -18,9 +18,9 @@
 |---|---|
 | Modelo | `sfm_top3.pth` (ensemble Top-K v8), label 1d, walk-forward |
 | Señal diaria | `signal_YYYY-MM-DD.json` (COMPRA mejor score si confianza ALTA) |
-| Paper trading | `state_paper_trading.json`, $10k, coste 0.1%, máx. 2 posiciones |
-| Pipeline diario | `run_daily_pipeline.sh` → Coinbase → `data/qlib` → señal → paper |
-| Risk controls | ❌ No hay kill-switch / drawdown / stale-protection |
+| Paper trading | `state_paper_trading.json`, $10k, coste 0.1% (fee Binance), máx. 2 posiciones |
+| Pipeline diario | `run_daily_pipeline.sh` → Coinbase → `data/qlib` → señal → paper (con risk controls + fee Binance) |
+| Risk controls | ✅ Activos: reconciliation, exposure, drawdown, stale, kill-switch, alertas |
 
 ---
 
