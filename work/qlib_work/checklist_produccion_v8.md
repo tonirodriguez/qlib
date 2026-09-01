@@ -95,7 +95,46 @@ Implementados en `work/crypto/risk_controls.py` + integrados en `sfm_paper_tradi
   - Target por defecto: Telegram DM (chat_id `899024572`), configurable vía `NOTIFY_TARGET`.
 - [x] **Módulo**: `work/crypto/notifications.py`.
 - [ ] **Credenciales de exchange (Binance)** — SOLO si se va a capital real: API key + secret **least-privilege, retiros desactivados**, en `.env` (gitignored). No necesarias para el paper.
-- [ ] Alertas de "pipeline detenido / falta de datos" — se activan al deployar el cron diario de forma estable (deuda pendiente).
+- [x] **Alerta de "pipeline detenido / falta de datos"** (watchdog): 
+  - `work/crypto/watchdog_v8.py` comprueba (1) que el pipeline haya corrido en las últimas 27h, (2) que los datos de `data/qlib` estén al día (≤2 días), (3) estado del paper. 
+  - Notifica a @oscarbot_toni_bot si hay problema; **silencioso si todo OK** (modo vigilancia); `--report` notifica siempre.
+  - Cronjob Hermes **"Healthcheck paper v8 (watchdog 9:30)"** (9:30, 30 min. después del pipeline principal) → detecta fallos silenciosos del cron de las 9:00.
+
+---
+
+## 🔍 Conclusiones del Backtest y Validación (2026-09-01) — ⚠️ Impacto en producción
+
+Análisis realizado esta sesión (`backtest_v8_2025.py`, `sensibilidad_v8.py`,
+`mini_holdout_v8.py`) → **recomendación: NO mover la v8 a capital real todavía.**
+
+### Resultados (multi-moneda, costes Binance + yield cash USDT)
+| Métrica | Valor |
+|---|---|
+| Backtest completo (2025-01-01 → 2026-08-30) | **+4,3% USD / -6,9% EUR** |
+| Mejor config aislada en 2026 (holdout real) | **+9,6% USD** (BASE actual) |
+| Drawdown máximo | -34% |
+| Rotación | ~500 operaciones en 607 días |
+
+### Hallazgos clave
+1. **El "Sharpe 2.74" del training era un espejismo**: usar `top1_long_returns`
+   **sin costes**. Con costes reales de Binance, el top-1 colapsa a **-49% USD**.
+2. **La estrategia multi-moneda (BASE) es "plana pero estable" en USD**: no destruye
+   valor con costes (a diferencia del top-1), pero **en EUR es negativa** (por FX).
+3. **La optimización no sobrevivió a la validación**: la config "ganadora" (+28,6%)
+   era **sobreajuste a 2025**. En el mini-holdout real (2026) **no superó a la BASE**
+   (+9,0% vs +9,6%). → Confirmado con `mini_holdout_result.json`.
+4. **El yield del cash USDT (~4,5% APY) es valor real y accesible** (stake): empuja
+   el resultado de plano a +4,3%. Es lo único escalable sin riesgo de sobreajuste.
+5. **La config BASE actual (0.025/0.015, 2 pos) es la más robusta** de las probadas.
+
+### Recomendación para producción
+- 🟢 **Seguir en paper trading con la BASE** + yield del cash USDT. No cambiar config.
+- 🔴 **NO producir con capital real** hasta que la v8 pase el **holdout final inmutable**
+  (Paso 5), que exige **re-entrenar en génesis (Paso 2, GPU)**.
+- ⚠️ Si se va a capital real, asumir: **EUR negativo por FX** y drawdown hasta ~30%.
+  El edge del modelo, neto de costes, es **débil (~plano)**; el yield del cash es
+  el componente más fiable.
+- Registrar únicamente el **yield del cash USDT** como mejora legítima a incorporar.
 
 ---
 
