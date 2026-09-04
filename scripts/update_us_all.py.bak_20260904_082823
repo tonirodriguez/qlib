@@ -350,11 +350,8 @@ def _patch_sp500_changes_parser():
 
     def _get_changes(self) -> pd.DataFrame:
         us_index_collector.logger.info("get sp500 history changes......")
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-            "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
-        }
-        response = us_index_collector.requests.get(self.WIKISP500_CHANGES_URL, headers=headers, timeout=60)
+        headers = {"User-Agent": self._ua.random}
+        response = us_index_collector.requests.get(self.WIKISP500_CHANGES_URL, headers=headers, timeout=None)
         response.raise_for_status()
 
         selected_df = None
@@ -373,13 +370,7 @@ def _patch_sp500_changes_parser():
             break
 
         if selected_df is None:
-            us_index_collector.logger.warning(
-                "SP500: tabla de cambios no encontrada en Wikipedia; "
-                "se genera solo la composicion actual (sin historico de altas/bajas)."
-            )
-            return us_index_collector.pd.DataFrame(
-                columns=[self.DATE_FIELD_NAME, self.CHANGE_TYPE_FIELD, self.SYMBOL_FIELD_NAME]
-            )
+            raise ValueError("Could not find the SP500 changes table in the current Wikipedia page structure")
 
         selected_df[self.DATE_FIELD_NAME] = us_index_collector.pd.to_datetime(
             selected_df[self.DATE_FIELD_NAME], errors="coerce"
@@ -412,7 +403,7 @@ _install_fake_useragent_fallback()
 _patch_yahoo_normalize()
 _patch_mixed_date_parsing()
 _patch_yahoo_normalize_extend()
-# _patch_sp500_changes_parser()  # Opcion B: se usa SP500Index.get_changes (dataset historico) de collector.py
+_patch_sp500_changes_parser()
 
 
 class USAllCollector(YahooCollectorUS1d):

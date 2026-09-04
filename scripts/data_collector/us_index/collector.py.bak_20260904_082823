@@ -225,77 +225,35 @@ class SP500Index(WIKIIndex):
     def bench_start_date(self) -> pd.Timestamp:
         return pd.Timestamp("1999-01-01")
 
-    # --- Opcion B: historico real de constituyentes (dataset mantenido) ---
-    SP500_HISTORY_REPO = "fja05680/sp500"
-    SP500_HISTORY_URL = (
-        "https://raw.githubusercontent.com/fja05680/sp500/master/"
-        "S%26P%20500%20Historical%20Components%20%26%20Changes(MM-DD-YYYY).csv"
-    )
-    _DESKTOP_UA = (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
-    )
-
-    def _resolve_history_url(self) -> str:
-        # Resuelve el nombre real del CSV via API de GitHub (robusto a renombrados);
-        # si falla, usa la URL por defecto.
-        try:
-            api = f"https://api.github.com/repos/{self.SP500_HISTORY_REPO}/contents/"
-            resp = requests.get(api, headers={"User-Agent": self._DESKTOP_UA}, timeout=30)
-            resp.raise_for_status()
-            for item in resp.json():
-                name = str(item.get("name", ""))
-                if name.lower().endswith(".csv") and "historical components" in name.lower():
-                    return item["download_url"]
-        except Exception as exc:  # noqa
-            logger.warning(f"SP500: no pude resolver URL via API GitHub ({exc!r}); uso URL por defecto.")
-        return self.SP500_HISTORY_URL
-
-    def get_history_companies(self) -> pd.DataFrame:
-        url = self._resolve_history_url()
-        logger.info(f"SP500: descargando historico de constituyentes desde {url}")
-        resp = requests.get(url, headers={"User-Agent": self._DESKTOP_UA}, timeout=60)
-        resp.raise_for_status()
-        raw = pd.read_csv(StringIO(resp.text))
-        lower = {c.lower().strip(): c for c in raw.columns}
-        date_col = lower.get("date")
-        tick_col = lower.get("tickers") or lower.get("ticker")
-        if date_col is None or tick_col is None:
-            raise ValueError(f"formato inesperado del CSV historico SP500: {list(raw.columns)}")
-        records = []
-        for _, row in raw.iterrows():
-            _date = pd.to_datetime(row[date_col], errors="coerce")
-            if pd.isna(_date):
-                continue
-            for _sym in str(row[tick_col]).split(","):
-                _sym = _sym.strip().upper()
-                if _sym:
-                    records.append((_sym, _date))
-        hist = pd.DataFrame(records, columns=[self.SYMBOL_FIELD_NAME, self.DATE_FIELD_NAME])
-        cal = self.calendar_list
-        if cal:
-            hist = hist[hist[self.DATE_FIELD_NAME] >= cal[0]].reset_index(drop=True)
-        return hist
-
     def get_changes(self) -> pd.DataFrame:
-        columns = [self.DATE_FIELD_NAME, self.CHANGE_TYPE_FIELD, self.SYMBOL_FIELD_NAME]
-        logger.info("get sp500 history changes (dataset fja05680/sp500)......")
-        try:
-            hist = self.get_history_companies()
-            if hist is None or hist.empty:
-                raise ValueError("historico vacio")
-            changes = self.get_changes_with_history_companies(hist)
-            if changes is None or changes.empty:
-                logger.warning("SP500: el historico no produjo cambios; solo composicion actual.")
-                return pd.DataFrame(columns=columns)
-            logger.info(f"end of get sp500 history changes: {len(changes)} eventos.")
-            return changes.loc[:, columns]
-        except Exception as exc:  # noqa
-            logger.warning(
-                f"SP500 historico no disponible ({exc!r}); "
-                "se genera solo la composicion actual (sin add/remove)."
-            )
-            return pd.DataFrame(columns=columns)
+        logger.info(f"get sp500 history changes......")
+        # NOTE: may update the index of the table
+        # Add headers to avoid 403 Forbidden error from Wikipedia
+        headers = {"User-Agent": self._ua.random}
+        response = requests.get(self.WIKISP500_CHANGES_URL, headers=headers, timeout=None)
+        response.raise_for_status()
+        changes_df = pd.read_html(StringIO(response.text))[-1]
+        changes_df = changes_df.iloc[:, [0, 1, 3]]
+        changes_df.columns = [self.DATE_FIELD_NAME, self.ADD, self.REMOVE]
+        changes_df[self.DATE_FIELD_NAME] = pd.to_datetime(changes_df[self.DATE_FIELD_NAME])
+        _result = []
+        for _type in [self.ADD, self.REMOVE]:
+            _df = changes_df.copy()
+            _df[self.CHANGE_TYPE_FIELD] = _type
+            _df[self.SYMBOL_FIELD_NAME] = _df[_type]
+            _df.dropna(subset=[self.SYMBOL_FIELD_NAME], inplace=True)
+            if _type == self.ADD:
+                _df[self.DATE_FIELD_NAME] = _df[self.DATE_FIELD_NAME].apply(
+                    lambda x: get_trading_date_by_shift(self.calendar_list, x, 0)
+                )
+            else:
+                _df[self.DATE_FIELD_NAME] = _df[self.DATE_FIELD_NAME].apply(
+                    lambda x: get_trading_date_by_shift(self.calendar_list, x, -1)
+                )
+            _result.append(_df[[self.DATE_FIELD_NAME, self.CHANGE_TYPE_FIELD, self.SYMBOL_FIELD_NAME]])
+        logger.info(f"end of get sp500 history changes.")
+        return pd.concat(_result, sort=False)
+
     def filter_df(self, df: pd.DataFrame) -> pd.DataFrame:
         if "Symbol" in df.columns:
             return df.loc[:, ["Symbol"]].copy()

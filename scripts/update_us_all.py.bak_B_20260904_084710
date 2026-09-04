@@ -412,7 +412,7 @@ _install_fake_useragent_fallback()
 _patch_yahoo_normalize()
 _patch_mixed_date_parsing()
 _patch_yahoo_normalize_extend()
-# _patch_sp500_changes_parser()  # Opcion B: se usa SP500Index.get_changes (dataset historico) de collector.py
+_patch_sp500_changes_parser()
 
 
 class USAllCollector(YahooCollectorUS1d):
