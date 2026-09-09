@@ -125,6 +125,61 @@ universo, 14.956 tenían datos reales; el resto son delistados sin histórico en
 nunca bajó de ~3,7 GB. Esta máquina tiene 15,8 GB de RAM y 2 GB de swap, no los 3,8 GB /
 0 swap que asumía el diagnóstico del Fallo 2 — conviene revisar esa nota.
 
+### Sesgo de supervivencia residual (NO resuelto por este fix)
+
+El Fallo 4 era una poda accidental del universo, no el sesgo de supervivencia clásico.
+Corregirlo **no** deja el dataset libre de dicho sesgo. Medido sobre el dataset del
+2026-09-08:
+
+Bajas registradas en `all.txt` por año de `end_date`:
+
+```
+2012:   2    2016:  15    2018: 124    2020: 195    2022: 146    2024: 191
+2013:   5    2017:  31    2019:  91    2021: 104    2023: 230    2025: 177
+                                                                 2026: 13.645 (vivos)
+```
+
+Solo **1.311 de 14.956** símbolos son bajas, y casi ninguna anterior a 2018, en un
+dataset que arranca en 1999-12-31: no hay prácticamente nada de la burbuja puntocom ni
+de la crisis de 2008.
+
+Prueba directa sobre el S&P 500 histórico: de sus **1.132 miembros point-in-time, 380
+(33,6%) no tienen datos**. Los ausentes son justamente los nombres que definen el sesgo:
+`AAMRQ` (American Airlines, quiebra), `ABKFQ` (Ambac, quiebra), `AABA` (Altaba/Yahoo),
+`ALTR` (Altera→Intel), `AGN` (Allergan→AbbVie), `ABMD` (Abiomed→J&J), `AKS` (AK Steel).
+Un backtest sobre este dataset seguiría comprando solo empresas que sabemos que
+sobrevivieron.
+
+**Causa**: es la fuente, no el código. `nasdaqtraded.txt` / `otherlisted.txt` y Eastmoney
+listan valores **vivos hoy**, sin delistados históricos. Y Yahoo no sirve historial de
+tickers ya delistados: de los 19.579 símbolos del universo, 4.623 devolvieron
+`The stock may be delisted, please check`.
+
+**Lo que sí aporta el fix**: el universo deja de auto-podarse, recupera los vivos que
+faltaban (+8.496) y, **de aquí en adelante**, conserva las bajas — cuando un símbolo
+desaparece de la fuente externa pero está en el histórico local, sigue en el universo con
+su `end_date`. Es una solución *forward-looking*: detiene la acumulación del sesgo hacia
+el futuro, pero no reconstruye el agujero de 1999-2017.
+
+**Matiz importante**: esa preservación opera sobre el *universo de descarga*, no sobre
+`all.txt`. En un clean rebuild, `all.txt` se regenera a partir de los CSV que Yahoo
+devolvió; si un delistado deja de dar datos, desaparece de `all.txt` y en el rebuild
+siguiente ya no está ni en el histórico local. La protección es real pero no hermética.
+
+**Opciones para cerrarlo de verdad** (requieren fuente con delistados):
+
+| Fuente | Coste aprox. | Cobertura |
+|--------|--------------|-----------|
+| Sharadar SEP (Nasdaq Data Link) | ~$50/mes | US equities con delistados desde 1998 |
+| Norgate Data | ~$70/mes | US con delistados desde 1990 |
+| Polygon.io | ~$30-200/mes | Delistados vía API de tickers |
+| CRSP | académico/institucional | El estándar, desde 1925 |
+
+Alternativa barata y parcial: hacer que `all.txt` nunca pierda un símbolo ya registrado
+(unión también en la **escritura**, no solo en el universo de descarga), fijando los
+delistados que Yahoo aún sirve con su `end_date` antes de que dejen de estar disponibles.
+No recupera 1999-2017, pero detiene la sangría. **Pendiente de implementar.**
+
 ### Observaciones abiertas
 
 - **`_get_nyse()` está roto**: devuelve `'NoneType' object has no attribute 'replace'` al
@@ -140,4 +195,9 @@ nunca bajó de ~3,7 GB. Esta máquina tiene 15,8 GB de RAM y 2 GB de swap, no lo
 - El backup `us_data_backup_20260814_112445.zip`, evidencia original de los 12.707
   símbolos, ya no está en `~/.qlib/backups/` (directorio vaciado el 2026-09-08).
 - El cron del rebuild diario (`1 1 * * 2-6`) ya no figura en el crontab desde el
-  2026-09-08; el rebuild del 2026-09-09 no se ejecutó.
+  2026-09-08; el rebuild del 2026-09-09 no se ejecutó. Con el universo ya sano, el modo
+  incremental (`update_us_qlib_daily.sh` sin `--clean-rebuild`) tiene más sentido como
+  tarea diaria: un rebuild completo son ahora ~19 h y se solaparía consigo mismo.
+- **Sesgo de supervivencia**: sigue abierto pese al Fallo 4 — ver la sección dedicada más
+  arriba. El dataset no es apto para backtests que dependan de delistados anteriores a
+  2018.
