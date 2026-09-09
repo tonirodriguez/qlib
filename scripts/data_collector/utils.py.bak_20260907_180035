@@ -293,12 +293,12 @@ def get_us_stock_symbols(qlib_data_path: [str, Path] = None) -> list:
     -------
         stock symbols
     """
+    import akshare as ak  # pylint: disable=C0415
+
     global _US_SYMBOLS  # pylint: disable=W0603
 
     @deco_retry
     def _get_eastmoney():
-        import akshare as ak  # pylint: disable=C0415
-
         df = ak.get_us_stock_name()
         _symbols = df["symbol"].to_list()
 
@@ -345,21 +345,8 @@ def get_us_stock_symbols(qlib_data_path: [str, Path] = None) -> list:
             _symbols = []
         return _symbols
 
-    def _collect(_source_name, _func):
-        # Una fuente caida no debe tumbar todo el universo: NASDAQ/NYSE/Eastmoney
-        # se solapan y con cualquiera de ellas el universo sigue siendo utilizable.
-        try:
-            return _func() or []
-        except Exception as e:  # pylint: disable=W0703
-            logger.warning(f"get_us_stock_symbols: source {_source_name} failed, skipping it: {e}")
-            return []
-
     if _US_SYMBOLS is None:
-        _all_symbols = (
-            _collect("eastmoney", _get_eastmoney) + _collect("nasdaq", _get_nasdaq) + _collect("nyse", _get_nyse)
-        )
-        if not _all_symbols:
-            raise ValueError("get_us_stock_symbols: every symbol source failed, no symbols available")
+        _all_symbols = _get_eastmoney() + _get_nasdaq() + _get_nyse()
         if qlib_data_path is not None:
             for _index in ["nasdaq100", "sp500"]:
                 ins_df = pd.read_csv(

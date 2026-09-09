@@ -416,42 +416,27 @@ _patch_yahoo_normalize_extend()
 
 
 class USAllCollector(YahooCollectorUS1d):
-    """Universo US = fuente externa fresca (NASDAQ Trader/NYSE) union historico local.
-
-    La implementacion anterior leia unicamente instruments/all.txt y lo filtraba por
-    fecha, de modo que el universo solo podia encogerse: nunca incorporaba altas nuevas
-    ni recuperaba simbolos podados por error. Ahora se parte del universo real que
-    devuelve YahooCollectorUS.get_instrument_list() y se le suma el historico local para
-    conservar las fechas point-in-time de las bajas ya registradas.
-    """
-
     def get_instrument_list(self):
-        print("Obteniendo lista de simbolos US_ALL (fuente externa + historico local)...")
+        print("Obteniendo lista de simbolos US_ALL exclusivamente...")
         data_dir = os.environ.get("US_ALL_INSTRUMENTS_SOURCE_DIR") or os.environ.get("US_ALL_INSTRUMENTS_DATA_DIR") or os.environ.get(
             "DATA_DIR", os.path.expanduser("~/.qlib/qlib_data/us_data")
         )
+        effective_date = pd.Timestamp(os.environ.get("US_ALL_EFFECTIVE_DATE", pd.Timestamp.today().strftime("%Y-%m-%d")))
+        use_all_symbols = os.environ.get("US_ALL_USE_ALL_SYMBOLS", "0") == "1"
         ins_path = Path(data_dir) / "instruments" / "all.txt"
 
-        fresh_symbols = set(super().get_instrument_list())
-
-        historical_symbols = set()
-        if ins_path.exists():
-            df = pd.read_csv(ins_path, sep="\t", names=["symbol", "start_date", "end_date"])
-            historical_symbols = set(df["symbol"].dropna().unique().tolist())
-        else:
-            print(f"Aviso: no existe {ins_path}; se usa solo el universo de la fuente externa.")
-
-        combined = fresh_symbols | historical_symbols
-        print(
-            f"Universo: {len(fresh_symbols)} de fuente actual + {len(historical_symbols)} historicos "
-            f"= {len(combined)} total"
-        )
-        if not combined:
-            raise RuntimeError(
-                "El universo US quedo vacio: la fuente externa no devolvio simbolos y no hay "
-                f"historico en {ins_path}."
+        if not ins_path.exists():
+            raise FileNotFoundError(
+                f"No se encontro el archivo de instrumentos {ins_path}. Necesitas tener el dataset inicial US."
             )
-        return sorted(combined)
+
+        df = pd.read_csv(ins_path, sep="\t", names=["symbol", "start_date", "end_date"])
+        df["start_date"] = pd.to_datetime(df["start_date"], errors="coerce")
+        df["end_date"] = pd.to_datetime(df["end_date"], errors="coerce")
+        if use_all_symbols:
+            return df.loc[:, "symbol"].dropna().unique().tolist()
+        active_mask = df["start_date"].le(effective_date) & df["end_date"].ge(effective_date)
+        return df.loc[active_mask, "symbol"].dropna().unique().tolist()
 
 
 collector.USAllCollector = USAllCollector
@@ -598,7 +583,8 @@ class USAllRun(Run):
             requested_effective_date = pd.Timestamp(end_date) - pd.Timedelta(days=1)
             effective_date = _resolve_incremental_effective_date(Path(qlib_data_1d_dir), requested_effective_date)
         effective_date_str = effective_date.strftime("%Y-%m-%d")
-        collector.logger.info(f"Incremental effective date={effective_date_str}")
+        os.environ["US_ALL_EFFECTIVE_DATE"] = effective_date_str
+        collector.logger.info(f"Using US_ALL_EFFECTIVE_DATE={effective_date_str}")
 
         self.download_data(delay=delay, start=trading_date, end=end_date, check_data_length=check_data_length)
         normalize_workers = self._resolve_normalize_workers()
@@ -666,6 +652,7 @@ class USAllRun(Run):
         qlib_data_1d_dir.mkdir(parents=True, exist_ok=True)
         os.environ["US_ALL_INSTRUMENTS_DATA_DIR"] = str(qlib_data_1d_dir)
         os.environ["US_ALL_INSTRUMENTS_SOURCE_DIR"] = str(universe_dir)
+        os.environ["US_ALL_USE_ALL_SYMBOLS"] = "1"
 
         if self.source_dir.exists():
             shutil.rmtree(self.source_dir)
@@ -679,6 +666,9 @@ class USAllRun(Run):
             end_date = pd.Timestamp.today().strftime("%Y-%m-%d")
         else:
             end_date = pd.Timestamp(end_date).strftime("%Y-%m-%d")
+
+        effective_date = (pd.Timestamp(end_date) - pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+        os.environ["US_ALL_EFFECTIVE_DATE"] = effective_date
 
         self.download_data(delay=delay, start=start_date, end=end_date)
         source_files = list(self.source_dir.glob("*.csv"))
