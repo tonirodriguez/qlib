@@ -6,11 +6,7 @@ DEFAULT_QLIB_REPO="$(cd "$SCRIPT_DIR/.." && pwd)"
 DEFAULT_PYTHON_BIN="/home/toni/miniconda3/envs/qlib/bin/python"
 
 # === CONFIG ===
-# Directorio de trabajo del collector (source/ y normalize/): ~9 GB por rebuild.
-# Debe vivir fuera de / y fuera del repo. Sin el export, _resolve_work_base_dir()
-# no lo ve y los temporales acaban dentro de scripts/data_collector/yahoo/.
-QLIB_US_WORK_DIR="${QLIB_US_WORK_DIR:-/opt/qlib_work}"
-export QLIB_US_WORK_DIR
+QLIB_US_WORK_DIR="${DATA_DIR:-$HOME/.qlib/yahoo_data}"
 QLIB_REPO="${QLIB_REPO:-$DEFAULT_QLIB_REPO}"         # repo detectado desde la ubicación del script
 DATA_DIR="${DATA_DIR:-$HOME/.qlib/qlib_data/us_data}"
 if [ -z "${PYTHON_BIN:-}" ]; then
