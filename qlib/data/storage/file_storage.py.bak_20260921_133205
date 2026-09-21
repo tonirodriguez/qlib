@@ -212,9 +212,6 @@ class FileInstrumentStorage(FileStorageMixin, InstrumentStorage):
             names=[self.SYMBOL_FIELD_NAME, self.INSTRUMENT_START_FIELD, self.INSTRUMENT_END_FIELD],
             dtype={self.SYMBOL_FIELD_NAME: str},
             parse_dates=[self.INSTRUMENT_START_FIELD, self.INSTRUMENT_END_FIELD],
-            # Sin esto, tickers reales como "NA" (Nano Labs) se leen como NaN y
-            # revientan mas adelante con: 'float' object has no attribute 'lower'
-            keep_default_na=False,
         )
         for row in df.itertuples(index=False):
             _instruments.setdefault(row[0], []).append((row[1], row[2]))

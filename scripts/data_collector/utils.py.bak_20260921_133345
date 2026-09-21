@@ -1,7 +1,6 @@
 #  Copyright (c) Microsoft Corporation.
 #  Licensed under the MIT License.
 
-import os
 import re
 import copy
 import importlib
@@ -547,11 +546,6 @@ def symbol_prefix_to_sufix(symbol: str, capital: bool = True) -> str:
     return res.upper() if capital else res.lower()
 
 
-# Intentos maximos cuando Yahoo responde vacio ("may be delisted"). Configurable por
-# entorno para poder volver al comportamiento anterior sin tocar codigo.
-DELISTED_MAX_RETRY = int(os.environ.get("QLIB_DELISTED_MAX_RETRY", "2"))
-
-
 def deco_retry(retry: int = 5, retry_sleep: int = 3):
     def deco_func(func):
         @functools.wraps(func)
@@ -565,10 +559,7 @@ def deco_retry(retry: int = 5, retry_sleep: int = 3):
 
                 except Exception as e:
                     logger.warning(f"{func.__name__}: {_i} :{e}")
-                    # "may be delisted" = Yahoo no tiene datos para ese simbolo; reintentar
-                    # 5 veces no lo arregla y son ~8 s por simbolo sobre miles de ellos.
-                    _max_retry = min(DELISTED_MAX_RETRY, _retry) if "may be delisted" in str(e) else _retry
-                    if _i >= _max_retry:
+                    if _i == _retry:
                         raise
 
                 time.sleep(retry_sleep)

@@ -425,40 +425,20 @@ class USAllCollector(YahooCollectorUS1d):
     conservar las fechas point-in-time de las bajas ya registradas.
     """
 
-    @staticmethod
-    def _read_historical_symbols(ins_path: Path) -> set:
-        """Simbolos ya presentes en instruments/all.txt (los que tienen datos)."""
-        if not ins_path.exists():
-            return set()
-        # keep_default_na=False: "NA" (Nano Labs) es un ticker real, no un nulo
-        df = pd.read_csv(
-            ins_path, sep="\t", names=["symbol", "start_date", "end_date"], keep_default_na=False
-        )
-        return {s for s in df["symbol"].unique().tolist() if s}
-
     def get_instrument_list(self):
+        print("Obteniendo lista de simbolos US_ALL (fuente externa + historico local)...")
         data_dir = os.environ.get("US_ALL_INSTRUMENTS_SOURCE_DIR") or os.environ.get("US_ALL_INSTRUMENTS_DATA_DIR") or os.environ.get(
             "DATA_DIR", os.path.expanduser("~/.qlib/qlib_data/us_data")
         )
         ins_path = Path(data_dir) / "instruments" / "all.txt"
 
-        # US_ALL_UNIVERSE_MODE=known: solo los simbolos que ya tienen datos. Evita
-        # reintentar cada dia los ~4.600 que la fuente lista pero Yahoo no sirve, y
-        # ahorra ademas la consulta a la fuente externa (~13 min). Las altas nuevas
-        # entran en el resync semanal, que corre en modo "full".
-        universe_mode = os.environ.get("US_ALL_UNIVERSE_MODE", "full").strip().lower()
-        if universe_mode == "known":
-            known = self._read_historical_symbols(ins_path)
-            if known:
-                print(f"Universo (modo known): {len(known)} simbolos con datos en {ins_path.name}")
-                return sorted(known)
-            print(f"Modo known sin historico utilizable en {ins_path}; se usa el universo completo.")
-
-        print("Obteniendo lista de simbolos US_ALL (fuente externa + historico local)...")
         fresh_symbols = set(super().get_instrument_list())
 
-        historical_symbols = self._read_historical_symbols(ins_path)
-        if not ins_path.exists():
+        historical_symbols = set()
+        if ins_path.exists():
+            df = pd.read_csv(ins_path, sep="\t", names=["symbol", "start_date", "end_date"])
+            historical_symbols = set(df["symbol"].dropna().unique().tolist())
+        else:
             print(f"Aviso: no existe {ins_path}; se usa solo el universo de la fuente externa.")
 
         combined = fresh_symbols | historical_symbols

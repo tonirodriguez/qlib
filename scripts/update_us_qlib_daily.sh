@@ -111,6 +111,14 @@ if [ "$MODE" = "rebuild" ]; then
     --region US
   echo "✅ Reconstrucción completada desde $REBUILD_START_DATE hasta $TODAY."
 else
+  # Sin START_DATE (incremental diario) basta con los simbolos que ya tienen datos.
+  # Con START_DATE (resync del sabado) se recorre el universo completo para captar altas.
+  if [ -z "$START_DATE" ]; then
+    export US_ALL_UNIVERSE_MODE="${US_ALL_UNIVERSE_MODE:-known}"
+  else
+    export US_ALL_UNIVERSE_MODE="${US_ALL_UNIVERSE_MODE:-full}"
+  fi
+  echo "ℹ️  Usando US_ALL_UNIVERSE_MODE=$US_ALL_UNIVERSE_MODE"
   echo "ℹ️  Usando QLIB_MAX_WORKERS=$QLIB_MAX_WORKERS"
   if [ -n "${QLIB_NORMALIZE_MAX_WORKERS:-}" ]; then
     echo "ℹ️  Usando QLIB_NORMALIZE_MAX_WORKERS=$QLIB_NORMALIZE_MAX_WORKERS"
