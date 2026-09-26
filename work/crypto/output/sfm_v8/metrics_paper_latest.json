@@ -1,4 +1,14 @@
 {
-  "n_days": 0,
-  "note": "No hay suficiente historial (paper recien iniciado). Poblar diariamente."
+  "annualized_return_pct": 0.0,
+  "calmar": 0.0,
+  "cvar_95_daily_pct": 0.0,
+  "equity_curve_final": 1.0,
+  "loss_rate_pct": 0.0,
+  "max_drawdown_pct": 0.0,
+  "n_days": 25,
+  "sharpe": 0.0,
+  "sortino": 0.0,
+  "total_return_pct": 0.0,
+  "var_95_daily_pct": 0.0,
+  "win_rate_pct": 0.0
 }
