@@ -1,0 +1,24 @@
+{
+  "nombre": "base2025fix",
+  "proxy": "btc",
+  "start_date": "2025-01-01",
+  "end_date": "2026-08-30",
+  "n_dias": 607,
+  "ret_v2_usd_pct": -35.42,
+  "ret_buyhold_pct": -17.7,
+  "ret_usdt_pct": 7.59,
+  "n_cambios": 19,
+  "dias_long": 542,
+  "dias_cash": 65,
+  "param_v2": {
+    "base": {
+      "ma": 50,
+      "dd_entrar": 0.15,
+      "minsd": 5
+    },
+    "vitalidad": {
+      "vital_dd": 0.3,
+      "pico_win": 90
+    }
+  }
+}

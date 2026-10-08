@@ -76,15 +76,46 @@ def vitalidad(price, pico_win=90, vital_dd=0.30):
     return dd_reci  # negativo = por debajo del pico reciente
 
 
-def regime_signal_v2(price, vital_dd=0.30, pico_win=90):
-    base = regime_signal_base(price)  # capa 1
-    dd_reci = vitalidad(price, pico_win, vital_dd)  # capa 2: drawdown desde pico reciente
-    # VITALIDAD = reversión: si el precio está rebotando fuerte del pico reciente
-    # (bull ruidoso/moderado), se MANTIENE LONG aunque la vol/MA digan salir.
-    # Solo se fuerza CASH si el drawdown de PICO RECIENTE es muy profundo (crash que no vuelve).
-    # Rebase: el precio > -VITAL_DD por debajo del pico reciente => sano/rebotando.
-    rebote = dd_reci > -vital_dd  # no hundido bajo el pico reciente
+def regime_signal_v2(price, vital_dd=0.30, pico_win=90, exit_dd=None, ma_win=75, under_ma_days=10):
+    """Régimen-switch v2 (mejorado para declive lento).
+
+    Capa 1 (base): MA50 + drawdown ATH → LONG si tendencia alcista y no caído.
+    Capa 2 (vitalidad): rebote del pico reciente → permite LONG en bull ruidoso.
+    Capa 3 (SALIDA por tendencia): salir a CASH si el precio lleva `under_ma_days`
+      DIAS CONSECUTIVOS por debajo de una MA de ventana `ma_win`. Esto detecta la
+      ruptura de tendencia SOSTENIDA (declive lento, p.ej. Base 2025) SIN esperar un
+      drawdown profundo desde el ATH lejano. La MA de ventana media (75d) sigue al
+      precio lo bastante rápido como para no quedar colgado en un declive gradual.
+      Si exit_dd también se fija, se aplica ADEMÁS la salida por ATH global (crash rápido).
+    Histéresis al final para no zigzaguear (MINSD días tras un cambio).
+    """
+    base = regime_signal_base(price)                      # capa 1
+    dd_reci = vitalidad(price, pico_win, vital_dd)        # capa 2
+    rebote = dd_reci > -vital_dd
     final = pd.Series(base | rebote, index=price.index).astype(bool)
+
+    # Capa 3-a: salida por tendencia rota (declive lento) — MA de ventana media
+    ma = price.rolling(ma_win, min_periods=ma_win).mean()
+    below_ma = (price < ma).astype(int)
+    # contar días CONSECUTIVOS por debajo de la MA
+    streak = np.zeros(len(price), dtype=int)
+    acc = 0
+    for i in range(len(price)):
+        if below_ma.iloc[i]:
+            acc += 1
+        else:
+            acc = 0
+        streak[i] = acc
+    tendencia_rota = streak >= under_ma_days
+    final = final & (~tendencia_rota)                     # tendencia rota sostenida -> CASH
+
+    # Capa 3-b: salida por ATH global (crash rápido) — opcional
+    if exit_dd is not None:
+        ath = price.cummax()
+        dd_ath = price / ath - 1.0
+        larga_caida = dd_ath < -exit_dd
+        final = final & (~larga_caida)
+
     # histéresis
     s = final.astype(int).values
     out = np.ones(len(s), dtype=int)
@@ -112,7 +143,10 @@ def simulate_switch(price, signal, initial_usd=INITIAL_USD):
         cash += cash * daily_rate
         if long_now and shares == 0 and px > 0:
             n_trades += 1
-            shares = (INITIAL_USD - INITIAL_USD * COST) / px
+            # FIX: al entrar en LONG, invertir TODO el cash disponible (menos el coste),
+            # dejando cash en 0 — reinvierte las ganancias acumuladas en BTC
+            fee = cash * COST
+            shares = (cash - fee) / px
             cash = 0.0
             ops.append({"date": str(day.date()), "a": "BUY", "px": round(px, 2)})
         elif not long_now and shares > 0:
@@ -132,6 +166,9 @@ def main():
     ap.add_argument("--name", required=True)
     ap.add_argument("--vital-dd", type=float, default=0.30)
     ap.add_argument("--pico-win", type=int, default=90)
+    ap.add_argument("--exit-dd", type=float, default=None)
+    ap.add_argument("--ma-win", type=int, default=75)
+    ap.add_argument("--under-ma-days", type=int, default=10)
     ap.add_argument("--initial-usd", type=float, default=INITIAL_USD)
     args = ap.parse_args()
 
@@ -140,7 +177,8 @@ def main():
     price = price[(price.index >= start) & (price.index <= end)]
     initial_usd = args.initial_usd
 
-    sig = regime_signal_v2(price, args.vital_dd, args.pico_win)
+    sig = regime_signal_v2(price, args.vital_dd, args.pico_win, exit_dd=args.exit_dd,
+                           ma_win=args.ma_win, under_ma_days=args.under_ma_days)
     val, n_trades, ops = simulate_switch(price, sig, initial_usd=initial_usd)
     ret = (val / initial_usd - 1) * 100
 
