@@ -4,65 +4,65 @@
     "ADA": {
       "file": "ada.csv",
       "first_date": "2017-10-01 00:00:00+00:00",
-      "last_date": "2026-09-25 00:00:00+00:00",
-      "rows": 3282,
-      "sha256": "c089418e016b49c775b954cf34f710464e68e3ee460b890a3d71eb9b9e4aa911"
+      "last_date": "2026-10-07 00:00:00+00:00",
+      "rows": 3294,
+      "sha256": "09ac8983bd8def89598d520cc6e546668e43a437c56b9f12abe95faf20be4a4f"
     },
     "BTC": {
       "file": "btc.csv",
       "first_date": "2010-07-17 00:00:00+00:00",
-      "last_date": "2026-09-25 00:00:00+00:00",
-      "rows": 5915,
-      "sha256": "e76e3773bfd593197781bec482ee078afd4306506bbcf72c9f2ab080c3d1b588"
+      "last_date": "2026-10-07 00:00:00+00:00",
+      "rows": 5927,
+      "sha256": "9e299051d59325d9bb675bae7723fd2daf5a594c97383c253b0d207757215f81"
     },
     "DOGE": {
       "file": "doge.csv",
       "first_date": "2014-02-01 00:00:00+00:00",
-      "last_date": "2026-09-25 00:00:00+00:00",
-      "rows": 4620,
-      "sha256": "3c6d0b680373f604782c6dac5b25d9b8c55eae9a88154be83b3e49b4d4f4c17b"
+      "last_date": "2026-10-07 00:00:00+00:00",
+      "rows": 4632,
+      "sha256": "fb8efd911d6ed3359c87f2358ae723be2b4a2003cf47c4657ec2a48f0e67448c"
     },
     "ETH": {
       "file": "eth.csv",
       "first_date": "2015-08-07 00:00:00+00:00",
-      "last_date": "2026-09-25 00:00:00+00:00",
-      "rows": 4068,
-      "sha256": "954fdf659dd64be4cbffa6f051ad04aad183b601ec948ebad7b065488380e0e3"
+      "last_date": "2026-10-07 00:00:00+00:00",
+      "rows": 4080,
+      "sha256": "3ef6713ac0bf2d0ba610b78a0aefaca03bd45286507f2ca650bf8aa410b8b195"
     },
     "LINK": {
       "file": "link.csv",
       "first_date": "2017-09-21 00:00:00+00:00",
-      "last_date": "2026-09-25 00:00:00+00:00",
-      "rows": 3292,
-      "sha256": "98b41eaf02f9531bd9b0e568cde7ce4ff28193a9e5b1e9bc2b36f0e30fad4730"
+      "last_date": "2026-10-07 00:00:00+00:00",
+      "rows": 3304,
+      "sha256": "3cb952e37f82240f908d043fe422f3b93212645d6eefcc03593ffefe00da5901"
     },
     "LTC": {
       "file": "ltc.csv",
       "first_date": "2013-09-29 00:00:00+00:00",
-      "last_date": "2026-09-25 00:00:00+00:00",
-      "rows": 4745,
-      "sha256": "cc72782644eb167b2c4fde432de0eb504b13c2171d34c68688fd2a458b6a5775"
+      "last_date": "2026-10-07 00:00:00+00:00",
+      "rows": 4757,
+      "sha256": "9d00c7e3d51d511e3e88ed6b4b5e434c259ea5df6e5f0a456c356b67c2477f52"
     },
     "SOL": {
       "file": "sol.csv",
       "first_date": "2020-04-10 00:00:00+00:00",
-      "last_date": "2026-09-25 00:00:00+00:00",
-      "rows": 2360,
-      "sha256": "7d542d903be5d7209ebad00eed1185007d597861203850cdfbcf0ef2dc38ce36"
+      "last_date": "2026-10-07 00:00:00+00:00",
+      "rows": 2372,
+      "sha256": "fc8152bbc5c63a3fe01e54d4d5a3a8ab15bbfd78aadf20bd48d1fdc3819acc87"
     },
     "XLM": {
       "file": "xlm.csv",
       "first_date": "2014-09-04 00:00:00+00:00",
-      "last_date": "2026-09-25 00:00:00+00:00",
-      "rows": 4405,
-      "sha256": "36b404cf2eb9cca1b0f3cd6860cece6fbe4a0c8392548497738cec537c1edbee"
+      "last_date": "2026-10-07 00:00:00+00:00",
+      "rows": 4417,
+      "sha256": "733440b4d0d00260cd630a45185572bc48c5db03ab4a70b7dd8ca1ce062165af"
     },
     "XRP": {
       "file": "xrp.csv",
       "first_date": "2015-01-29 00:00:00+00:00",
-      "last_date": "2026-09-25 00:00:00+00:00",
-      "rows": 4258,
-      "sha256": "0fd02fa81d1cb121867ac30074f8b7d516b47eb3c8b4ba7289de434e46fc854a"
+      "last_date": "2026-10-07 00:00:00+00:00",
+      "rows": 4270,
+      "sha256": "0b7cbfbbcb04a06118292e48b845cb5c421b400f9fb2fd73b9919cd2b8403654"
     }
   },
   "source": "coinbase-daily-incremental"

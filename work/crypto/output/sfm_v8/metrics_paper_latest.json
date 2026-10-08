@@ -5,7 +5,7 @@
   "equity_curve_final": 1.0,
   "loss_rate_pct": 0.0,
   "max_drawdown_pct": 0.0,
-  "n_days": 25,
+  "n_days": 37,
   "sharpe": 0.0,
   "sortino": 0.0,
   "total_return_pct": 0.0,
