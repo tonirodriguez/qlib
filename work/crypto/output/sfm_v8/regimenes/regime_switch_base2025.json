@@ -1,0 +1,61 @@
+{
+  "nombre": "base2025",
+  "proxy": "btc",
+  "start_date": "2025-01-01",
+  "end_date": "2026-08-30",
+  "n_dias": 607,
+  "ret_switch_usd_pct": -6.95,
+  "ret_buyhold_proxy_pct": -17.7,
+  "ret_puro_usdt_pct": 7.59,
+  "n_cambios": 8,
+  "ops": [
+    {
+      "date": "2025-05-01",
+      "action": "BUY_LONG",
+      "px": 96519.31
+    },
+    {
+      "date": "2025-05-04",
+      "action": "SELL_CASH",
+      "px": 94394.09
+    },
+    {
+      "date": "2025-05-14",
+      "action": "BUY_LONG",
+      "px": 103543.76
+    },
+    {
+      "date": "2025-08-25",
+      "action": "SELL_CASH",
+      "px": 110150.15
+    },
+    {
+      "date": "2025-09-14",
+      "action": "BUY_LONG",
+      "px": 115351.87
+    },
+    {
+      "date": "2025-09-25",
+      "action": "SELL_CASH",
+      "px": 109061.11
+    },
+    {
+      "date": "2025-10-05",
+      "action": "BUY_LONG",
+      "px": 123535.21
+    },
+    {
+      "date": "2025-10-11",
+      "action": "SELL_CASH",
+      "px": 110779.65
+    }
+  ],
+  "dias_en_long": 123,
+  "dias_en_cash": 484,
+  "parametros": {
+    "MA": 200,
+    "drawdown_salir": 0.2,
+    "drawdown_entrar": 0.1,
+    "min_state_days": 10
+  }
+}

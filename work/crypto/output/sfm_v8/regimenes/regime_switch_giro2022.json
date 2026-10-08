@@ -1,0 +1,41 @@
+{
+  "nombre": "giro2022",
+  "proxy": "btc",
+  "start_date": "2021-06-01",
+  "end_date": "2022-12-31",
+  "n_dias": 579,
+  "ret_switch_usd_pct": 2.44,
+  "ret_buyhold_proxy_pct": -54.94,
+  "ret_puro_usdt_pct": 7.23,
+  "n_cambios": 4,
+  "ops": [
+    {
+      "date": "2021-10-09",
+      "action": "BUY_LONG",
+      "px": 54968.04
+    },
+    {
+      "date": "2021-10-27",
+      "action": "SELL_CASH",
+      "px": 58464.42
+    },
+    {
+      "date": "2021-11-06",
+      "action": "BUY_LONG",
+      "px": 61529.76
+    },
+    {
+      "date": "2021-11-16",
+      "action": "SELL_CASH",
+      "px": 60108.9
+    }
+  ],
+  "dias_en_long": 28,
+  "dias_en_cash": 551,
+  "parametros": {
+    "MA": 200,
+    "drawdown_salir": 0.2,
+    "drawdown_entrar": 0.1,
+    "min_state_days": 10
+  }
+}
