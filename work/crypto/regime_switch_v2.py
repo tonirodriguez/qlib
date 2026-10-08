@@ -100,9 +100,9 @@ def regime_signal_v2(price, vital_dd=0.30, pico_win=90):
     return pd.Series(out.astype(bool), index=price.index)
 
 
-def simulate_switch(price, signal):
+def simulate_switch(price, signal, initial_usd=INITIAL_USD):
     daily_rate = (1.0 + CASH_YIELD_APY) ** (1.0 / 365.0) - 1.0
-    cash = INITIAL_USD
+    cash = initial_usd
     shares = 0.0
     n_trades = 0
     ops = []
@@ -132,15 +132,17 @@ def main():
     ap.add_argument("--name", required=True)
     ap.add_argument("--vital-dd", type=float, default=0.30)
     ap.add_argument("--pico-win", type=int, default=90)
+    ap.add_argument("--initial-usd", type=float, default=INITIAL_USD)
     args = ap.parse_args()
 
     start, end = pd.Timestamp(args.start, tz="UTC"), pd.Timestamp(args.end, tz="UTC")
     price = load_proxy(args.proxy)
     price = price[(price.index >= start) & (price.index <= end)]
+    initial_usd = args.initial_usd
 
     sig = regime_signal_v2(price, args.vital_dd, args.pico_win)
-    val, n_trades, ops = simulate_switch(price, sig)
-    ret = (val / INITIAL_USD - 1) * 100
+    val, n_trades, ops = simulate_switch(price, sig, initial_usd=initial_usd)
+    ret = (val / initial_usd - 1) * 100
 
     bh = (price.iloc[-1] / price.iloc[0] - 1) * 100
     usdt = ((1 + CASH_YIELD_APY) ** (len(price) / 365.0) - 1) * 100
