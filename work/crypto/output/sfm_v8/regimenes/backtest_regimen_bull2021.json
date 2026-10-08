@@ -1,0 +1,23 @@
+{
+  "EURUSD_asumido": 1.1,
+  "annualized_return_pct": 254.62,
+  "calmar": 8.089,
+  "cash_yield_apy": 0.045,
+  "costs": {
+    "slippage": 0.0003,
+    "spread": 0.0002,
+    "txn": 0.001
+  },
+  "end_date": "2021-11-30",
+  "final_usd": 43285.24,
+  "initial_usd": 11000.0,
+  "max_drawdown_pct": -31.48,
+  "n_dias": 395,
+  "n_trades": 500,
+  "nombre_regimen": "bull2021",
+  "return_pct_usd": 293.5,
+  "sharpe": 2.323,
+  "sortino": 3.084,
+  "start_date": "2020-11-01",
+  "total_interest_usd": 974.94
+}

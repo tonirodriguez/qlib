@@ -1,0 +1,23 @@
+{
+  "EURUSD_asumido": 1.1,
+  "annualized_return_pct": 35.41,
+  "calmar": 1.847,
+  "cash_yield_apy": 0.045,
+  "costs": {
+    "slippage": 0.0003,
+    "spread": 0.0002,
+    "txn": 0.001
+  },
+  "end_date": "2024-12-31",
+  "final_usd": 14907.91,
+  "initial_usd": 11000.0,
+  "max_drawdown_pct": -19.18,
+  "n_dias": 366,
+  "n_trades": 379,
+  "nombre_regimen": "rally2024",
+  "return_pct_usd": 35.53,
+  "sharpe": 1.134,
+  "sortino": 2.069,
+  "start_date": "2024-01-01",
+  "total_interest_usd": 384.63
+}
