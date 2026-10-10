@@ -1,0 +1,327 @@
+{
+  "sel_bull2021": {
+    "A1 th .7 sin suavizar": {
+      "ret_pct": 129.9,
+      "maxdd_pct": -66.3,
+      "vol_anual_pct": 70.6,
+      "sharpe": 1.45,
+      "trades": 133
+    },
+    "A2 th .9 sin suavizar": {
+      "ret_pct": 131.5,
+      "maxdd_pct": -61.1,
+      "vol_anual_pct": 73.4,
+      "sharpe": 1.43,
+      "trades": 101
+    },
+    "A3 EMA7 th .7": {
+      "ret_pct": 183.4,
+      "maxdd_pct": -69.8,
+      "vol_anual_pct": 74.0,
+      "sharpe": 1.68,
+      "trades": 31
+    },
+    "A4 EMA30 th .7": {
+      "ret_pct": 292.8,
+      "maxdd_pct": -56.7,
+      "vol_anual_pct": 79.8,
+      "sharpe": 1.99,
+      "trades": 11
+    },
+    "B1 expos=1-p_high": {
+      "ret_pct": 67.9,
+      "maxdd_pct": -49.6,
+      "vol_anual_pct": 49.5,
+      "sharpe": 1.22,
+      "trades": 373
+    },
+    "B2 expos=1-EMA7": {
+      "ret_pct": 130.1,
+      "maxdd_pct": -34.4,
+      "vol_anual_pct": 42.2,
+      "sharpe": 2.04,
+      "trades": 314
+    },
+    "C1 v2 AND MS(th.5)": {
+      "ret_pct": 75.6,
+      "maxdd_pct": -37.5,
+      "vol_anual_pct": 56.6,
+      "sharpe": 1.2,
+      "trades": 101
+    },
+    "C2 v2 AND MS(EMA30,.7)": {
+      "ret_pct": 238.3,
+      "maxdd_pct": -35.5,
+      "vol_anual_pct": 66.8,
+      "sharpe": 2.02,
+      "trades": 9
+    },
+    "REF regime_switch_v2": {
+      "ret_pct": 230.1,
+      "maxdd_pct": -35.5,
+      "vol_anual_pct": 66.8,
+      "sharpe": 1.99,
+      "trades": 7
+    }
+  },
+  "sel_giro2022": {
+    "A1 th .7 sin suavizar": {
+      "ret_pct": -62.9,
+      "maxdd_pct": -78.2,
+      "vol_anual_pct": 60.7,
+      "sharpe": -0.72,
+      "trades": 125
+    },
+    "A2 th .9 sin suavizar": {
+      "ret_pct": -55.7,
+      "maxdd_pct": -76.6,
+      "vol_anual_pct": 61.8,
+      "sharpe": -0.52,
+      "trades": 87
+    },
+    "A3 EMA7 th .7": {
+      "ret_pct": -71.6,
+      "maxdd_pct": -78.9,
+      "vol_anual_pct": 64.5,
+      "sharpe": -0.9,
+      "trades": 23
+    },
+    "A4 EMA30 th .7": {
+      "ret_pct": -58.4,
+      "maxdd_pct": -76.7,
+      "vol_anual_pct": 66.0,
+      "sharpe": -0.5,
+      "trades": 9
+    },
+    "B1 expos=1-p_high": {
+      "ret_pct": -55.4,
+      "maxdd_pct": -66.4,
+      "vol_anual_pct": 43.5,
+      "sharpe": -0.95,
+      "trades": 483
+    },
+    "B2 expos=1-EMA7": {
+      "ret_pct": -45.5,
+      "maxdd_pct": -62.3,
+      "vol_anual_pct": 41.8,
+      "sharpe": -0.71,
+      "trades": 415
+    },
+    "C1 v2 AND MS(th.5)": {
+      "ret_pct": -25.1,
+      "maxdd_pct": -44.3,
+      "vol_anual_pct": 33.5,
+      "sharpe": -0.37,
+      "trades": 62
+    },
+    "C2 v2 AND MS(EMA30,.7)": {
+      "ret_pct": 24.6,
+      "maxdd_pct": -30.2,
+      "vol_anual_pct": 40.4,
+      "sharpe": 0.55,
+      "trades": 10
+    },
+    "REF regime_switch_v2": {
+      "ret_pct": 34.7,
+      "maxdd_pct": -30.2,
+      "vol_anual_pct": 41.6,
+      "sharpe": 0.66,
+      "trades": 2
+    }
+  },
+  "oos_rally2024": {
+    "A1 th .7 sin suavizar": {
+      "ret_pct": 64.1,
+      "maxdd_pct": -36.9,
+      "vol_anual_pct": 48.7,
+      "sharpe": 1.26,
+      "trades": 69
+    },
+    "A2 th .9 sin suavizar": {
+      "ret_pct": 107.0,
+      "maxdd_pct": -34.1,
+      "vol_anual_pct": 50.9,
+      "sharpe": 1.68,
+      "trades": 43
+    },
+    "A3 EMA7 th .7": {
+      "ret_pct": 113.8,
+      "maxdd_pct": -25.0,
+      "vol_anual_pct": 52.9,
+      "sharpe": 1.7,
+      "trades": 9
+    },
+    "A4 EMA30 th .7": {
+      "ret_pct": 111.4,
+      "maxdd_pct": -26.2,
+      "vol_anual_pct": 53.3,
+      "sharpe": 1.67,
+      "trades": 1
+    },
+    "B1 expos=1-p_high": {
+      "ret_pct": 54.6,
+      "maxdd_pct": -25.8,
+      "vol_anual_pct": 36.9,
+      "sharpe": 1.37,
+      "trades": 303
+    },
+    "B2 expos=1-EMA7": {
+      "ret_pct": 60.6,
+      "maxdd_pct": -24.4,
+      "vol_anual_pct": 35.1,
+      "sharpe": 1.52,
+      "trades": 256
+    },
+    "C1 v2 AND MS(th.5)": {
+      "ret_pct": 7.9,
+      "maxdd_pct": -41.4,
+      "vol_anual_pct": 38.9,
+      "sharpe": 0.39,
+      "trades": 71
+    },
+    "C2 v2 AND MS(EMA30,.7)": {
+      "ret_pct": 63.2,
+      "maxdd_pct": -36.4,
+      "vol_anual_pct": 49.4,
+      "sharpe": 1.24,
+      "trades": 9
+    },
+    "REF regime_switch_v2": {
+      "ret_pct": 63.2,
+      "maxdd_pct": -36.4,
+      "vol_anual_pct": 49.4,
+      "sharpe": 1.24,
+      "trades": 9
+    }
+  },
+  "oos_base2025": {
+    "A1 th .7 sin suavizar": {
+      "ret_pct": -16.7,
+      "maxdd_pct": -48.5,
+      "vol_anual_pct": 38.8,
+      "sharpe": -0.09,
+      "trades": 45
+    },
+    "A2 th .9 sin suavizar": {
+      "ret_pct": -20.0,
+      "maxdd_pct": -53.8,
+      "vol_anual_pct": 41.2,
+      "sharpe": -0.12,
+      "trades": 35
+    },
+    "A3 EMA7 th .7": {
+      "ret_pct": -29.2,
+      "maxdd_pct": -58.2,
+      "vol_anual_pct": 42.8,
+      "sharpe": -0.27,
+      "trades": 7
+    },
+    "A4 EMA30 th .7": {
+      "ret_pct": -17.7,
+      "maxdd_pct": -53.1,
+      "vol_anual_pct": 43.9,
+      "sharpe": -0.05,
+      "trades": 1
+    },
+    "B1 expos=1-p_high": {
+      "ret_pct": -5.5,
+      "maxdd_pct": -42.3,
+      "vol_anual_pct": 32.0,
+      "sharpe": 0.05,
+      "trades": 385
+    },
+    "B2 expos=1-EMA7": {
+      "ret_pct": -10.2,
+      "maxdd_pct": -43.1,
+      "vol_anual_pct": 32.1,
+      "sharpe": -0.04,
+      "trades": 298
+    },
+    "C1 v2 AND MS(th.5)": {
+      "ret_pct": -8.7,
+      "maxdd_pct": -37.1,
+      "vol_anual_pct": 24.6,
+      "sharpe": -0.1,
+      "trades": 34
+    },
+    "C2 v2 AND MS(EMA30,.7)": {
+      "ret_pct": -19.2,
+      "maxdd_pct": -35.4,
+      "vol_anual_pct": 27.4,
+      "sharpe": -0.33,
+      "trades": 12
+    },
+    "REF regime_switch_v2": {
+      "ret_pct": -19.2,
+      "maxdd_pct": -35.4,
+      "vol_anual_pct": 27.4,
+      "sharpe": -0.33,
+      "trades": 12
+    }
+  },
+  "full_2020_2026": {
+    "A1 th .7 sin suavizar": {
+      "ret_pct": 89.5,
+      "maxdd_pct": -82.2,
+      "vol_anual_pct": 51.7,
+      "sharpe": 0.47,
+      "trades": 347
+    },
+    "A2 th .9 sin suavizar": {
+      "ret_pct": 214.0,
+      "maxdd_pct": -79.2,
+      "vol_anual_pct": 53.5,
+      "sharpe": 0.63,
+      "trades": 255
+    },
+    "A3 EMA7 th .7": {
+      "ret_pct": 204.8,
+      "maxdd_pct": -85.5,
+      "vol_anual_pct": 55.8,
+      "sharpe": 0.62,
+      "trades": 51
+    },
+    "A4 EMA30 th .7": {
+      "ret_pct": 435.7,
+      "maxdd_pct": -77.1,
+      "vol_anual_pct": 57.7,
+      "sharpe": 0.79,
+      "trades": 11
+    },
+    "B1 expos=1-p_high": {
+      "ret_pct": 89.6,
+      "maxdd_pct": -71.6,
+      "vol_anual_pct": 39.0,
+      "sharpe": 0.48,
+      "trades": 1600
+    },
+    "B2 expos=1-EMA7": {
+      "ret_pct": 202.2,
+      "maxdd_pct": -62.3,
+      "vol_anual_pct": 37.0,
+      "sharpe": 0.7,
+      "trades": 1327
+    },
+    "C1 v2 AND MS(th.5)": {
+      "ret_pct": 60.8,
+      "maxdd_pct": -53.1,
+      "vol_anual_pct": 30.9,
+      "sharpe": 0.42,
+      "trades": 186
+    },
+    "C2 v2 AND MS(EMA30,.7)": {
+      "ret_pct": 304.6,
+      "maxdd_pct": -40.9,
+      "vol_anual_pct": 37.0,
+      "sharpe": 0.83,
+      "trades": 30
+    },
+    "REF regime_switch_v2": {
+      "ret_pct": 294.8,
+      "maxdd_pct": -40.9,
+      "vol_anual_pct": 37.0,
+      "sharpe": 0.82,
+      "trades": 28
+    }
+  }
+}

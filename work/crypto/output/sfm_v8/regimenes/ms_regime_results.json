@@ -1,0 +1,300 @@
+{
+  "proxy": "btc",
+  "fit_start": "2017-01-01",
+  "refit_days": 21,
+  "gate": {
+    "th_enter": 0.5,
+    "th_exit": 0.3,
+    "min_state_days": 5
+  },
+  "n_refits": 148,
+  "params_ultimo_refit": {
+    "p[0->0]": 0.9110202420326532,
+    "p[1->0]": 0.15092380738475566,
+    "const[0]": 0.0013640936206867338,
+    "const[1]": 0.00104165479279807,
+    "sigma2[0]": 0.0003306101605287235,
+    "sigma2[1]": 0.002915381195381995
+  },
+  "fullsample_k2": {
+    "k": 2,
+    "high_vol_state": 1,
+    "sigma_anual_pct": {
+      "0": 34.72460222050635,
+      "1": 103.13578646924766
+    },
+    "media_anual_pct": {
+      "0": 49.919602731147556,
+      "1": 38.054421629850914
+    },
+    "persistencia_dias": {
+      "0": 11.248273796427501,
+      "1": 6.633215573318556
+    },
+    "loglik": 7340.825568608845,
+    "aic": -14669.65113721769,
+    "params": {
+      "p[0->0]": 0.9110974698786578,
+      "p[1->0]": 0.1507564451881226,
+      "const[0]": 0.001367660348798563,
+      "const[1]": 0.0010425868939685182,
+      "sigma2[0]": 0.0003303556162664095,
+      "sigma2[1]": 0.00291424395907678
+    }
+  },
+  "fullsample_k3": {
+    "k": 3,
+    "high_vol_state": 2,
+    "sigma_anual_pct": {
+      "0": 22.19074487665191,
+      "1": 65.68567834997836,
+      "2": 117.7364395817321
+    },
+    "media_anual_pct": {
+      "0": 19.42893178846675,
+      "1": 92.93791832952937,
+      "2": -4.61850951712427
+    },
+    "persistencia_dias": {
+      "0": 2.951255554432332,
+      "1": 3.001097022401211,
+      "2": 7721.984892641687
+    },
+    "loglik": 7439.786742857048,
+    "aic": -14855.573485714096,
+    "params": {
+      "p[0->0]": 0.6611611629165242,
+      "p[1->0]": 0.31240385165605944,
+      "p[2->0]": 0.00012950038285528947,
+      "p[0->1]": 0.33733172577198045,
+      "p[1->1]": 0.666788513488348,
+      "p[2->1]": 0.047025108856765876,
+      "const[0]": 0.0005322995010538836,
+      "const[1]": 0.002546244337795325,
+      "const[2]": -0.00012653450731847315,
+      "sigma2[0]": 0.00013491209813168575,
+      "sigma2[1]": 0.0011820844767936483,
+      "sigma2[2]": 0.0037977723850363973
+    }
+  },
+  "bds": {
+    "retornos crudos_m2": {
+      "stat": 0.014409499353882138,
+      "p": 0.0
+    },
+    "retornos crudos_m3": {
+      "stat": 0.031716404512810714,
+      "p": 0.0
+    },
+    "retornos estandarizados r/sigma_t_m2": {
+      "stat": 0.010538295698769184,
+      "p": 0.0
+    },
+    "retornos estandarizados r/sigma_t_m3": {
+      "stat": 0.02211707831619758,
+      "p": 0.0
+    }
+  },
+  "comparativa": {
+    "sel_bull2021": {
+      "rows": {
+        "MS-gate (paper §53.3)": {
+          "ret_pct": 77.4,
+          "maxdd_pct": -27.7,
+          "vol_anual_pct": 42.8,
+          "sharpe": 1.45,
+          "trades": 52,
+          "dias_long": 91
+        },
+        "regime_switch_v2": {
+          "ret_pct": 229.8,
+          "maxdd_pct": -35.5,
+          "vol_anual_pct": 66.8,
+          "sharpe": 1.99,
+          "trades": 7,
+          "dias_long": 290
+        },
+        "buy&hold BTC": {
+          "ret_pct": 314.0,
+          "maxdd_pct": -53.1,
+          "vol_anual_pct": 80.6,
+          "sharpe": 2.04,
+          "trades": 0,
+          "dias_long": 395
+        },
+        "USDT puro": {
+          "ret_pct": 4.9,
+          "maxdd_pct": 0.0,
+          "vol_anual_pct": 0.0,
+          "sharpe": 20998535443542.6,
+          "trades": 0,
+          "dias_long": 0
+        }
+      },
+      "acuerdo_ms_v2": 0.4354,
+      "dias_cash_ms": 304,
+      "dias_cash_v2": 105,
+      "dias_cash_ambos": 93
+    },
+    "sel_giro2022": {
+      "rows": {
+        "MS-gate (paper §53.3)": {
+          "ret_pct": -49.5,
+          "maxdd_pct": -52.0,
+          "vol_anual_pct": 41.4,
+          "sharpe": -0.83,
+          "trades": 73,
+          "dias_long": 266
+        },
+        "regime_switch_v2": {
+          "ret_pct": 34.6,
+          "maxdd_pct": -30.2,
+          "vol_anual_pct": 41.5,
+          "sharpe": 0.66,
+          "trades": 2,
+          "dias_long": 192
+        },
+        "buy&hold BTC": {
+          "ret_pct": -54.9,
+          "maxdd_pct": -76.7,
+          "vol_anual_pct": 66.7,
+          "sharpe": -0.42,
+          "trades": 0,
+          "dias_long": 579
+        },
+        "USDT puro": {
+          "ret_pct": 7.2,
+          "maxdd_pct": 0.0,
+          "vol_anual_pct": 0.0,
+          "sharpe": 20676088940559.73,
+          "trades": 0,
+          "dias_long": 0
+        }
+      },
+      "acuerdo_ms_v2": 0.3748,
+      "dias_cash_ms": 313,
+      "dias_cash_v2": 387,
+      "dias_cash_ambos": 169
+    },
+    "oos_rally2024": {
+      "rows": {
+        "MS-gate (paper §53.3)": {
+          "ret_pct": -0.6,
+          "maxdd_pct": -37.5,
+          "vol_anual_pct": 34.1,
+          "sharpe": 0.15,
+          "trades": 45,
+          "dias_long": 186
+        },
+        "regime_switch_v2": {
+          "ret_pct": 63.2,
+          "maxdd_pct": -36.3,
+          "vol_anual_pct": 49.3,
+          "sharpe": 1.24,
+          "trades": 9,
+          "dias_long": 306
+        },
+        "buy&hold BTC": {
+          "ret_pct": 111.3,
+          "maxdd_pct": -26.2,
+          "vol_anual_pct": 53.2,
+          "sharpe": 1.67,
+          "trades": 0,
+          "dias_long": 366
+        },
+        "USDT puro": {
+          "ret_pct": 4.5,
+          "maxdd_pct": 0.0,
+          "vol_anual_pct": 0.0,
+          "sharpe": 20668411471298.34,
+          "trades": 0,
+          "dias_long": 0
+        }
+      },
+      "acuerdo_ms_v2": 0.5027,
+      "dias_cash_ms": 180,
+      "dias_cash_v2": 60,
+      "dias_cash_ambos": 29
+    },
+    "oos_base2025": {
+      "rows": {
+        "MS-gate (paper §53.3)": {
+          "ret_pct": -0.3,
+          "maxdd_pct": -44.9,
+          "vol_anual_pct": 33.6,
+          "sharpe": 0.16,
+          "trades": 43,
+          "dias_long": 462
+        },
+        "regime_switch_v2": {
+          "ret_pct": -19.2,
+          "maxdd_pct": -35.3,
+          "vol_anual_pct": 27.4,
+          "sharpe": -0.33,
+          "trades": 12,
+          "dias_long": 269
+        },
+        "buy&hold BTC": {
+          "ret_pct": -17.7,
+          "maxdd_pct": -53.1,
+          "vol_anual_pct": 43.9,
+          "sharpe": -0.05,
+          "trades": 0,
+          "dias_long": 607
+        },
+        "USDT puro": {
+          "ret_pct": 7.6,
+          "maxdd_pct": 0.0,
+          "vol_anual_pct": 0.0,
+          "sharpe": 20503718886563.64,
+          "trades": 0,
+          "dias_long": 0
+        }
+      },
+      "acuerdo_ms_v2": 0.4843,
+      "dias_cash_ms": 145,
+      "dias_cash_v2": 338,
+      "dias_cash_ambos": 85
+    },
+    "full_2020_2026": {
+      "rows": {
+        "MS-gate (paper §53.3)": {
+          "ret_pct": 54.4,
+          "maxdd_pct": -57.1,
+          "vol_anual_pct": 37.7,
+          "sharpe": 0.38,
+          "trades": 225,
+          "dias_long": 1229
+        },
+        "regime_switch_v2": {
+          "ret_pct": 294.6,
+          "maxdd_pct": -40.9,
+          "vol_anual_pct": 37.0,
+          "sharpe": 0.82,
+          "trades": 28,
+          "dias_long": 791
+        },
+        "buy&hold BTC": {
+          "ret_pct": 464.5,
+          "maxdd_pct": -76.7,
+          "vol_anual_pct": 57.9,
+          "sharpe": 0.8,
+          "trades": 0,
+          "dias_long": 2129
+        },
+        "USDT puro": {
+          "ret_pct": 29.3,
+          "maxdd_pct": 0.0,
+          "vol_anual_pct": 0.0,
+          "sharpe": 22599539664207.75,
+          "trades": 0,
+          "dias_long": 0
+        }
+      },
+      "acuerdo_ms_v2": 0.4373,
+      "dias_cash_ms": 900,
+      "dias_cash_v2": 1338,
+      "dias_cash_ambos": 520
+    }
+  }
+}
