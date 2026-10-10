@@ -1,7 +1,7 @@
 # 🧪 Markov-Switching sobre cripto — ¿mejora al régimen-switch v2? (veredicto: NO)
 
 **Fecha:** 2026-10-10 · **Réplica de:** Vansteenberghe (2026), *Quantitative Methods in Finance*, arXiv 2601.12896v3, **§53 (Nonlinear time series models / Markov-switching)**.
-**Scripts nuevos:** `work/crypto/ms_regime.py` (modelo + comparativa), `work/crypto/ms_regime_variants.py` (variantes).
+**Scripts nuevos:** `work/crypto/ms_regime.py` (modelo + comparativa diaria), `work/crypto/ms_regime_variants.py` (variantes del gate), `work/crypto/ms_regime_freq.py` (semanal/mensual), `work/crypto/ms_regime_freq_sweep.py` (barrido de umbrales y ventana de ajuste).
 **Salidas:** `work/crypto/output/sfm_v8/regimenes/ms_regime_results.json`, `ms_regime_daily.csv`, `ms_regime_variants.json`.
 
 ---
@@ -142,7 +142,81 @@ retornos de BTC (sigue rechazando iid tras estandarizar) → mal especificación
 
 ---
 
-## 6. Reproducir
+## 6. Estudio por FRECUENCIA — semanal y mensual (2026-10-10)
+
+**Motivación:** el libro estima §53.3 sobre retornos **mensuales** de mercado, no diarios. ¿Se
+rescata el MS a frecuencia baja, donde el ruido es menor?
+
+**Scripts:** `work/crypto/ms_regime_freq.py`, `work/crypto/ms_regime_freq_sweep.py`.
+**Salidas:** `ms_regime_freq_results.json`, `ms_regime_freq_sweep.json`, `ms_regime_freq_sweep_fit2017.json`.
+Nota: la comparación usa un **v2 escalado** a la frecuencia (ventanas en días ÷ días-por-periodo);
+el `regime_switch_v2.py` diario no se toca. La decisión del periodo `t+1` usa información hasta el
+cierre de `t` (señal desplazada 1 periodo).
+
+### 6.1 Ajustando con TODA la historia de BTC (desde 2010)
+
+El estado "alta varianza" queda calibrado con la **era extrema 2010-2017**, así que en 2020-2026 la
+probabilidad casi nunca se activa → **el gate degenera a buy&hold y no protege nada.**
+
+- **Mensual** (196 periodos, 24 refits): p_high media **0.072**, máximo **0.704 (mayo-2017)** y
+  **máximo 0.124 en toda la ventana 2020-11→2026-08**. El MS da resultados **idénticos a buy&hold
+  en las 5 ventanas** (1 sola operación):
+
+| Ventana (mensual) | MS-gate | v2 escalado | buy&hold |
+|---|---|---|---|
+| giro 2022 | −52.8 % (DD −73.1) | **+5.2 %** (DD −24.0) | −52.8 % (DD −73.1) |
+| full 2020-26 | +219.1 % (DD −73.1) | +226.0 % (**DD −30.8**) | +219.1 % (DD −73.1) |
+
+- **Semanal** (848 periodos, 57 refits): p_high media 0.174, q90 0.658, frac>0.5 = 13.8 %. Tampoco
+  protege: el DD del MS se queda pegado al de buy&hold en todas las ventanas.
+
+| Ventana (semanal) | MS-gate | v2 escalado | buy&hold |
+|---|---|---|---|
+| bull 2021 | +364.5 % (DD −48.2) | +245.4 % (**DD −33.3**) | +316.6 % (DD −47.0) |
+| giro 2022 | **−52.8 %** (DD −75.0) | **+16.0 %** (DD −31.3) | −53.0 % (DD −75.2) |
+| rally 2024 | +112.9 % (DD −23.0) | +48.8 % (DD −38.4) | +112.9 % (DD −23.0) |
+| base 2025 | −21.0 % (DD −51.8) | −21.3 % (**DD −28.5**) | −21.0 % (DD −51.8) |
+| full 2020-26 | +527.6 % (DD −75.0) | +290.8 % (**DD −38.8**) | +464.5 % (DD −75.2) |
+
+### 6.2 Ajustando sólo desde 2017 (mismo periodo de información que el estudio diario)
+
+**El resultado se invierte por completo.** El modelo pasa a clasificar 2017-2020 como "alta
+varianza" y el estado queda activado de forma casi permanente:
+
+- **Semanal:** p_high media **0.655**, frac>0.5 = **66 %**, q75 = 0.971.
+- **Mensual:** p_high media **0.890**, frac>0.5 = **89 %**.
+- → El gate se queda **permanentemente en CASH**: full 2020-26 = **+29.3 % (semanal) / +27.9 %
+  (mensual) con DD 0.0 %** — exactamente el rendimiento del USDT. No participa de ninguna subida.
+
+### 6.3 Barrido de umbrales (¿es culpa del umbral 0.5? No)
+
+| Fit | Frecuencia | full 2020-26 con umbral 0.2 / 0.3 / 0.5 / 0.7 |
+|---|---|---|
+| historia completa | semanal | +105.9 % (DD −78.4) / +361.5 % (DD −77.5) / +527.6 % (DD −75.0) / +413.4 % (DD −74.3) |
+| historia completa | mensual | +219.1 % (DD −73.1) en **todos** los umbrales (= buy&hold) |
+| desde 2017 | semanal | +29.3 % (DD 0.0) / +29.3 % / −6.9 % / +10.5 % |
+| desde 2017 | mensual | +27.9 % (DD 0.0) / +27.9 % / +5.6 % / −2.3 % |
+
+**La anomalía no es del umbral: es del modelo.** En todos los casos el MS o **nunca se activa**
+(→ buy&hold, DD −75 %) o **se activa siempre** (→ cash, 0 % de participación). Nunca hay un régimen
+intermedio útil.
+
+### 6.4 Conclusión del estudio por frecuencia
+
+1. **Cambiar a semanal/mensual NO rescata el MS-gate.** No bate a v2 en ninguna combinación.
+2. Es **inestable al borde de la navaja**: el resultado depende por completo de la ventana de
+   estimación (¿se incluye la era 2010-2017?), pasando de "nunca dispara" a "siempre dispara".
+   Esto **confirma empíricamente la advertencia del propio autor** ("este modelo es muy sensible a
+   los datos"; incluir 2020 rompe la inferencia de estados).
+3. **El v2 escalado sí es estable** en las dos frecuencias y en todas las ventanas: protección
+   real del downside (DD −24 % a −39 % frente a −73 %/−75 % de buy&hold) y siguen rechazándose los
+   iid en los retornos estandarizados por BDS (semanal: D₂=+0.024, p<0.001).
+4. **Veredicto sin cambios: no promover el MS como gate.** La regla heurística (tendencia + drawdown
+   + vitalidad) es superior y mucho más robusta a decisiones de diseño.
+
+---
+
+## 7. Reproducir
 
 ```bash
 cd /opt/data/qlib
@@ -150,6 +224,10 @@ MLFLOW_ALLOW_FILE_STORE=true PYTHONPATH=/opt/data/qlib \
   /opt/data/qlib-venv/bin/python work/crypto/ms_regime.py          # ~20 min (148 refits + BDS)
 MLFLOW_ALLOW_FILE_STORE=true PYTHONPATH=/opt/data/qlib \
   /opt/data/qlib-venv/bin/python work/crypto/ms_regime_variants.py # ~30 s
+MLFLOW_ALLOW_FILE_STORE=true PYTHONPATH=/opt/data/qlib \
+  /opt/data/qlib-venv/bin/python work/crypto/ms_regime_freq.py        # ~90 s (semanal + mensual)
+MLFLOW_ALLOW_FILE_STORE=true PYTHONPATH=/opt/data/qlib \
+  /opt/data/qlib-venv/bin/python work/crypto/ms_regime_freq_sweep.py --tag fit2017 --fit-start 2017-01-01
 ```
 
 Sin cambios en los scripts oficiales del proyecto (`regime_switch_v2.py`, `regime_switch.py`,

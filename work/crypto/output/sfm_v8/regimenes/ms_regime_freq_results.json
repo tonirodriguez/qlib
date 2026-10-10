@@ -1,0 +1,408 @@
+{
+  "weekly": {
+    "freq": "weekly",
+    "rule": "W-SUN",
+    "days_per_period": 7,
+    "n_periods_total": 848,
+    "n_refits": 57,
+    "params_ultimo_refit": {
+      "p[0->0]": 0.9709654158097637,
+      "p[1->0]": 0.0953247581728038,
+      "const[0]": 0.008982627421824214,
+      "const[1]": 0.04112082296770873,
+      "sigma2[0]": 0.005414324325355567,
+      "sigma2[1]": 0.05396796795197435
+    },
+    "bds": {
+      "raw_m2": {
+        "stat": 0.03053037501685152,
+        "p": 0.0
+      },
+      "raw_m3": {
+        "stat": 0.06367251332301649,
+        "p": 0.0
+      },
+      "std_m2": {
+        "stat": 0.023779938602234818,
+        "p": 0.0
+      },
+      "std_m3": {
+        "stat": 0.05026737506455087,
+        "p": 0.0
+      }
+    },
+    "th_enter": 0.5,
+    "th_exit": 0.3,
+    "resultados": {
+      "sel_bull2021": {
+        "rows": {
+          "MS-gate §53.3 (weekly)": {
+            "ret_pct": 364.5,
+            "maxdd_pct": -48.2,
+            "vol_anual_pct": 71.9,
+            "sharpe": 2.37,
+            "trades": 7
+          },
+          "regime_switch_v2 escalado": {
+            "ret_pct": 245.4,
+            "maxdd_pct": -33.3,
+            "vol_anual_pct": 70.4,
+            "sharpe": 2.0,
+            "trades": 7
+          },
+          "buy&hold BTC": {
+            "ret_pct": 316.6,
+            "maxdd_pct": -47.0,
+            "vol_anual_pct": 79.5,
+            "sharpe": 2.09,
+            "trades": 0
+          },
+          "USDT puro": {
+            "ret_pct": 4.8,
+            "maxdd_pct": 0.0,
+            "vol_anual_pct": 0.0,
+            "sharpe": 52111570002405.72,
+            "trades": 0
+          }
+        },
+        "acuerdo_ms_v2": 0.6667,
+        "n_periodos": 57
+      },
+      "sel_giro2022": {
+        "rows": {
+          "MS-gate §53.3 (weekly)": {
+            "ret_pct": -52.8,
+            "maxdd_pct": -75.0,
+            "vol_anual_pct": 55.0,
+            "sharpe": -0.59,
+            "trades": 5
+          },
+          "regime_switch_v2 escalado": {
+            "ret_pct": 16.0,
+            "maxdd_pct": -31.3,
+            "vol_anual_pct": 32.8,
+            "sharpe": 0.45,
+            "trades": 6
+          },
+          "buy&hold BTC": {
+            "ret_pct": -53.0,
+            "maxdd_pct": -75.2,
+            "vol_anual_pct": 56.7,
+            "sharpe": -0.56,
+            "trades": 0
+          },
+          "USDT puro": {
+            "ret_pct": 7.1,
+            "maxdd_pct": 0.0,
+            "vol_anual_pct": 0.0,
+            "sharpe": 57549116022719.6,
+            "trades": 0
+          }
+        },
+        "acuerdo_ms_v2": 0.3415,
+        "n_periodos": 82
+      },
+      "oos_rally2024": {
+        "rows": {
+          "MS-gate §53.3 (weekly)": {
+            "ret_pct": 112.9,
+            "maxdd_pct": -23.0,
+            "vol_anual_pct": 51.4,
+            "sharpe": 1.76,
+            "trades": 1
+          },
+          "regime_switch_v2 escalado": {
+            "ret_pct": 48.8,
+            "maxdd_pct": -38.4,
+            "vol_anual_pct": 45.5,
+            "sharpe": 1.11,
+            "trades": 9
+          },
+          "buy&hold BTC": {
+            "ret_pct": 112.9,
+            "maxdd_pct": -23.0,
+            "vol_anual_pct": 51.4,
+            "sharpe": 1.76,
+            "trades": 0
+          },
+          "USDT puro": {
+            "ret_pct": 4.4,
+            "maxdd_pct": 0.0,
+            "vol_anual_pct": 0.0,
+            "sharpe": 50981649661921.55,
+            "trades": 0
+          }
+        },
+        "acuerdo_ms_v2": 0.7308,
+        "n_periodos": 52
+      },
+      "oos_base2025": {
+        "rows": {
+          "MS-gate §53.3 (weekly)": {
+            "ret_pct": -21.0,
+            "maxdd_pct": -51.8,
+            "vol_anual_pct": 41.7,
+            "sharpe": -0.14,
+            "trades": 1
+          },
+          "regime_switch_v2 escalado": {
+            "ret_pct": -21.3,
+            "maxdd_pct": -28.5,
+            "vol_anual_pct": 22.2,
+            "sharpe": -0.54,
+            "trades": 12
+          },
+          "buy&hold BTC": {
+            "ret_pct": -21.0,
+            "maxdd_pct": -51.8,
+            "vol_anual_pct": 41.7,
+            "sharpe": -0.14,
+            "trades": 0
+          },
+          "USDT puro": {
+            "ret_pct": 7.5,
+            "maxdd_pct": 0.0,
+            "vol_anual_pct": 0.0,
+            "sharpe": 58242248501739.61,
+            "trades": 0
+          }
+        },
+        "acuerdo_ms_v2": 0.3793,
+        "n_periodos": 87
+      },
+      "full_2020_2026": {
+        "rows": {
+          "MS-gate §53.3 (weekly)": {
+            "ret_pct": 527.6,
+            "maxdd_pct": -75.0,
+            "vol_anual_pct": 55.0,
+            "sharpe": 0.85,
+            "trades": 11
+          },
+          "regime_switch_v2 escalado": {
+            "ret_pct": 290.8,
+            "maxdd_pct": -38.8,
+            "vol_anual_pct": 38.0,
+            "sharpe": 0.8,
+            "trades": 30
+          },
+          "buy&hold BTC": {
+            "ret_pct": 464.5,
+            "maxdd_pct": -75.2,
+            "vol_anual_pct": 57.1,
+            "sharpe": 0.8,
+            "trades": 0
+          },
+          "USDT puro": {
+            "ret_pct": 29.3,
+            "maxdd_pct": 0.0,
+            "vol_anual_pct": 0.0,
+            "sharpe": 59791754369075.97,
+            "trades": 0
+          }
+        },
+        "acuerdo_ms_v2": 0.3377,
+        "n_periodos": 305
+      }
+    }
+  },
+  "monthly": {
+    "freq": "monthly",
+    "rule": "ME",
+    "days_per_period": 30,
+    "n_periods_total": 196,
+    "n_refits": 24,
+    "params_ultimo_refit": {
+      "p[0->0]": 0.9830859389358297,
+      "p[1->0]": 0.08672002754473405,
+      "const[0]": 0.035480653308425536,
+      "const[1]": 0.2707781235341384,
+      "sigma2[0]": 0.035891038522799165,
+      "sigma2[1]": 0.31470858477562214
+    },
+    "bds": {
+      "raw_m2": {
+        "stat": 0.024484775798393366,
+        "p": 0.0
+      },
+      "raw_m3": {
+        "stat": 0.049455397003375756,
+        "p": 0.0
+      }
+    },
+    "th_enter": 0.5,
+    "th_exit": 0.3,
+    "resultados": {
+      "sel_bull2021": {
+        "rows": {
+          "MS-gate §53.3 (monthly)": {
+            "ret_pct": 189.4,
+            "maxdd_pct": -40.4,
+            "vol_anual_pct": 81.1,
+            "sharpe": 1.78,
+            "trades": 1
+          },
+          "regime_switch_v2 escalado": {
+            "ret_pct": 190.7,
+            "maxdd_pct": -13.6,
+            "vol_anual_pct": 60.6,
+            "sharpe": 2.12,
+            "trades": 6
+          },
+          "buy&hold BTC": {
+            "ret_pct": 189.4,
+            "maxdd_pct": -40.4,
+            "vol_anual_pct": 81.1,
+            "sharpe": 1.78,
+            "trades": 0
+          },
+          "USDT puro": {
+            "ret_pct": 4.4,
+            "maxdd_pct": 0.0,
+            "vol_anual_pct": 0.0,
+            "sharpe": 97575026968362.39,
+            "trades": 0
+          }
+        },
+        "acuerdo_ms_v2": 0.6154,
+        "n_periodos": 13
+      },
+      "sel_giro2022": {
+        "rows": {
+          "MS-gate §53.3 (monthly)": {
+            "ret_pct": -52.8,
+            "maxdd_pct": -73.1,
+            "vol_anual_pct": 61.9,
+            "sharpe": -0.49,
+            "trades": 1
+          },
+          "regime_switch_v2 escalado": {
+            "ret_pct": 5.2,
+            "maxdd_pct": -24.0,
+            "vol_anual_pct": 25.4,
+            "sharpe": 0.26,
+            "trades": 6
+          },
+          "buy&hold BTC": {
+            "ret_pct": -52.8,
+            "maxdd_pct": -73.1,
+            "vol_anual_pct": 61.9,
+            "sharpe": -0.49,
+            "trades": 0
+          },
+          "USDT puro": {
+            "ret_pct": 6.7,
+            "maxdd_pct": 0.0,
+            "vol_anual_pct": 0.0,
+            "sharpe": 114707604874271.5,
+            "trades": 0
+          }
+        },
+        "acuerdo_ms_v2": 0.3158,
+        "n_periodos": 19
+      },
+      "oos_rally2024": {
+        "rows": {
+          "MS-gate §53.3 (monthly)": {
+            "ret_pct": 119.5,
+            "maxdd_pct": -17.3,
+            "vol_anual_pct": 61.5,
+            "sharpe": 1.73,
+            "trades": 1
+          },
+          "regime_switch_v2 escalado": {
+            "ret_pct": 78.9,
+            "maxdd_pct": -27.7,
+            "vol_anual_pct": 62.8,
+            "sharpe": 1.32,
+            "trades": 8
+          },
+          "buy&hold BTC": {
+            "ret_pct": 119.5,
+            "maxdd_pct": -17.3,
+            "vol_anual_pct": 61.5,
+            "sharpe": 1.73,
+            "trades": 0
+          },
+          "USDT puro": {
+            "ret_pct": 4.1,
+            "maxdd_pct": 0.0,
+            "vol_anual_pct": 0.0,
+            "sharpe": 94446059353959.55,
+            "trades": 0
+          }
+        },
+        "acuerdo_ms_v2": 0.6667,
+        "n_periodos": 12
+      },
+      "oos_base2025": {
+        "rows": {
+          "MS-gate §53.3 (monthly)": {
+            "ret_pct": -38.6,
+            "maxdd_pct": -49.4,
+            "vol_anual_pct": 36.6,
+            "sharpe": -0.7,
+            "trades": 1
+          },
+          "regime_switch_v2 escalado": {
+            "ret_pct": -5.5,
+            "maxdd_pct": -17.7,
+            "vol_anual_pct": 19.6,
+            "sharpe": -0.09,
+            "trades": 6
+          },
+          "buy&hold BTC": {
+            "ret_pct": -38.6,
+            "maxdd_pct": -49.4,
+            "vol_anual_pct": 36.6,
+            "sharpe": -0.7,
+            "trades": 0
+          },
+          "USDT puro": {
+            "ret_pct": 6.7,
+            "maxdd_pct": 0.0,
+            "vol_anual_pct": 0.0,
+            "sharpe": 114707604874271.5,
+            "trades": 0
+          }
+        },
+        "acuerdo_ms_v2": 0.3158,
+        "n_periodos": 19
+      },
+      "full_2020_2026": {
+        "rows": {
+          "MS-gate §53.3 (monthly)": {
+            "ret_pct": 219.1,
+            "maxdd_pct": -73.1,
+            "vol_anual_pct": 61.3,
+            "sharpe": 0.64,
+            "trades": 1
+          },
+          "regime_switch_v2 escalado": {
+            "ret_pct": 226.0,
+            "maxdd_pct": -30.8,
+            "vol_anual_pct": 37.1,
+            "sharpe": 0.74,
+            "trades": 22
+          },
+          "buy&hold BTC": {
+            "ret_pct": 219.1,
+            "maxdd_pct": -73.1,
+            "vol_anual_pct": 61.3,
+            "sharpe": 0.64,
+            "trades": 0
+          },
+          "USDT puro": {
+            "ret_pct": 27.9,
+            "maxdd_pct": 0.0,
+            "vol_anual_pct": 0.0,
+            "sharpe": 129929915545941.27,
+            "trades": 0
+          }
+        },
+        "acuerdo_ms_v2": 0.3333,
+        "n_periodos": 69
+      }
+    }
+  }
+}
