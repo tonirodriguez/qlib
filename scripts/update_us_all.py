@@ -34,6 +34,7 @@ sys.path.append(str(COLLECTOR_DIR))
 
 import collector
 from collector import Run, YahooCollectorUS1d
+from qlib.utils import code_to_fname
 
 
 def _install_fake_useragent_fallback():
@@ -110,12 +111,29 @@ def _read_last_calendar_date(data_dir: Path) -> pd.Timestamp | None:
     return last_date.normalize()
 
 
-def _sanitize_normalized_daily_csv(file_path: Path) -> dict | None:
+def _last_closed_session_date() -> pd.Timestamp:
+    """Ultima fecha cuya sesion ya ha cerrado en NY (16:00 ET, con 15 min de margen).
+
+    Yahoo devuelve barras del dia en curso para algunos simbolos; si se volcaran,
+    el dia entra en el calendario con datos intradia y cobertura parcial, y
+    DumpDataUpdate no reescribe fechas ya volcadas (queda NaN permanente).
+    """
+    now_ny = pd.Timestamp.now(tz="America/New_York")
+    close_today = now_ny.normalize() + pd.Timedelta(hours=16, minutes=15)
+    last = now_ny.normalize() if now_ny >= close_today else now_ny.normalize() - pd.Timedelta(days=1)
+    return last.tz_localize(None)
+
+
+def _sanitize_normalized_daily_csv(file_path: Path, max_date: pd.Timestamp = None) -> dict | None:
     df = pd.read_csv(file_path)
     if df.empty or "date" not in df.columns:
         return None
 
-    parsed_dates = pd.to_datetime(df["date"], errors="coerce")
+    # format="mixed": sin esto pandas infiere el formato de la primera fila y convierte
+    # en NaT las que traen hora, descartandolas en silencio.
+    parsed_dates = pd.to_datetime(df["date"], format="mixed", errors="coerce")
+    if getattr(parsed_dates.dt, "tz", None) is not None:
+        parsed_dates = parsed_dates.dt.tz_localize(None)
     valid_mask = parsed_dates.notna()
     if not valid_mask.all():
         df = df.loc[valid_mask].copy()
@@ -124,9 +142,20 @@ def _sanitize_normalized_daily_csv(file_path: Path) -> dict | None:
         return None
 
     normalized_dates = parsed_dates.dt.normalize()
+    future_rows = 0
+    if max_date is not None:
+        future_mask = normalized_dates > max_date
+        future_rows = int(future_mask.sum())
+        if future_rows:
+            df = df.loc[~future_mask].copy()
+            parsed_dates = parsed_dates.loc[~future_mask]
+            normalized_dates = normalized_dates.loc[~future_mask]
+            if df.empty:
+                file_path.write_text(",".join(df.columns) + "\n")
+                return {"file_name": file_path.name, "rows_with_time": 0, "duplicate_rows_removed": 0, "future_rows_removed": future_rows}
     duplicate_rows = int(normalized_dates.duplicated(keep=False).sum())
     rows_with_time = int((parsed_dates != normalized_dates).sum())
-    if duplicate_rows == 0 and rows_with_time == 0:
+    if duplicate_rows == 0 and rows_with_time == 0 and future_rows == 0:
         return None
 
     cleaned_df = df.copy()
@@ -141,25 +170,102 @@ def _sanitize_normalized_daily_csv(file_path: Path) -> dict | None:
         "file_name": file_path.name,
         "rows_with_time": rows_with_time,
         "duplicate_rows_removed": int(len(df) - len(cleaned_df)),
+        "future_rows_removed": future_rows,
     }
 
 
-def _sanitize_normalize_dir(normalize_dir: Path):
+def _sanitize_normalize_dir(normalize_dir: Path, max_date: pd.Timestamp = None):
+    if max_date is None:
+        max_date = _last_closed_session_date()
+    collector.logger.info(f"Discarding rows after the last closed session: {max_date.date()}")
     summaries = []
     for file_path in sorted(normalize_dir.glob("*.csv")):
-        summary = _sanitize_normalized_daily_csv(file_path)
+        summary = _sanitize_normalized_daily_csv(file_path, max_date=max_date)
         if summary is not None:
             summaries.append(summary)
 
     if summaries:
         total_time_rows = sum(item["rows_with_time"] for item in summaries)
         total_removed = sum(item["duplicate_rows_removed"] for item in summaries)
+        total_future = sum(item.get("future_rows_removed", 0) for item in summaries)
         collector.logger.warning(
             "Sanitized normalized daily CSV files before dump_bin: "
-            f"files={len(summaries)}, rows_with_time={total_time_rows}, duplicate_rows_removed={total_removed}"
+            f"files={len(summaries)}, rows_with_time={total_time_rows}, "
+            f"duplicate_rows_removed={total_removed}, future_rows_removed={total_future}"
         )
     else:
         collector.logger.info("Normalized daily CSV files are already deduplicated by date")
+
+
+def _check_recent_coverage(
+    qlib_data_1d_dir: Path, lookback: int = 5, min_ratio: float = 0.6, sample_size: int = 800
+) -> list:
+    """Avisa si algun dia recien volcado tiene cobertura anomala.
+
+    Un dia que entra en el calendario con datos de pocos simbolos (p. ej. barras del dia
+    en curso) deja NaN permanente en el resto: DumpDataUpdate no reescribe fechas ya
+    volcadas. Detectarlo el mismo dia permite corregirlo antes de que se acumule.
+    """
+    qlib_data_1d_dir = Path(qlib_data_1d_dir)
+    calendar_path = qlib_data_1d_dir / "calendars" / "day.txt"
+    instruments_path = qlib_data_1d_dir / "instruments" / "all.txt"
+    if not calendar_path.exists() or not instruments_path.exists():
+        return []
+
+    calendar = pd.read_csv(calendar_path, header=None)[0].tolist()
+    if not calendar:
+        return []
+    recent = calendar[-lookback:]
+    recent_idx = {d: len(calendar) - lookback + i for i, d in enumerate(recent)}
+
+    symbols = pd.read_csv(
+        instruments_path, sep="\t", names=["symbol", "start_date", "end_date"], keep_default_na=False
+    )["symbol"].tolist()
+    symbols = [s for s in symbols if s]
+    if not symbols:
+        return []
+    step = max(1, len(symbols) // sample_size)
+    symbols = symbols[::step][:sample_size]
+
+    counts = {d: 0 for d in recent}
+    checked = 0
+    for symbol in symbols:
+        bin_path = qlib_data_1d_dir / "features" / code_to_fname(symbol).lower() / "close.day.bin"
+        if not bin_path.exists():
+            continue
+        try:
+            arr = np.fromfile(bin_path, dtype="<f4")
+        except OSError:
+            continue
+        if arr.size < 2:
+            continue
+        checked += 1
+        start = int(arr[0])
+        values = arr[1:]
+        for d, idx in recent_idx.items():
+            pos = idx - start
+            if 0 <= pos < values.size and not np.isnan(values[pos]):
+                counts[d] += 1
+
+    if not checked:
+        return []
+
+    anomalies = []
+    for d in recent:
+        ratio = counts[d] / checked
+        msg = f"{d}: {counts[d]}/{checked} simbolos con dato ({ratio:.0%})"
+        if ratio < min_ratio:
+            anomalies.append((d, counts[d], checked, ratio))
+            collector.logger.error(f"COBERTURA ANOMALA -> {msg}")
+        else:
+            collector.logger.info(f"cobertura {msg}")
+
+    if anomalies:
+        collector.logger.error(
+            "Hay dias con cobertura anomala. DumpDataUpdate no reescribe fechas ya volcadas: "
+            "corrige esos dias explicitamente (parche dirigido o clean rebuild --full)."
+        )
+    return anomalies
 
 
 def _should_use_tmp_work_dir(path: Path) -> bool:
@@ -640,6 +746,7 @@ class USAllRun(Run):
         self.max_workers = original_max_workers
 
         self._refresh_us_indexes(qlib_data_1d_dir)
+        _check_recent_coverage(Path(qlib_data_1d_dir))
 
     def rebuild_data_to_bin(
         self,
@@ -740,6 +847,7 @@ class USAllRun(Run):
             raise RuntimeError("Clean rebuild failed: instruments/all.txt was generated empty.")
 
         self._refresh_us_indexes(str(qlib_data_1d_dir))
+        _check_recent_coverage(Path(qlib_data_1d_dir))
 
 
 if __name__ == "__main__":

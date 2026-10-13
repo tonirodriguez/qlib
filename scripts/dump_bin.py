@@ -180,6 +180,13 @@ class DumpDataBase:
         df = read_as_df(file_path, low_memory=False)
         if self.date_field_name in df.columns:
             df[self.date_field_name] = self._normalize_datetime_values(df[self.date_field_name])
+        # Tickers como "NA" (Nano Labs) los lee pandas como NaN. El nombre del fichero
+        # es la fuente fiable del simbolo, asi que se usa para rellenar los nulos.
+        if self.symbol_field_name in df.columns and df[self.symbol_field_name].isna().any():
+            _code = self.get_symbol_from_file(file_path).upper()
+            df[self.symbol_field_name] = df[self.symbol_field_name].astype(object).where(
+                df[self.symbol_field_name].notna(), _code
+            )
         # df.drop_duplicates([self.date_field_name], inplace=True)
         return df
 
@@ -229,8 +236,14 @@ class DumpDataBase:
         if isinstance(instruments_data, pd.DataFrame):
             _df_fields = [self.symbol_field_name, self.INSTRUMENTS_START_FIELD, self.INSTRUMENTS_END_FIELD]
             instruments_data = instruments_data.loc[:, _df_fields]
+            _null_symbols = instruments_data[self.symbol_field_name].isna()
+            if _null_symbols.any():
+                logger.warning(
+                    f"save_instruments: {int(_null_symbols.sum())} filas sin simbolo, se descartan"
+                )
+                instruments_data = instruments_data.loc[~_null_symbols]
             instruments_data[self.symbol_field_name] = instruments_data[self.symbol_field_name].apply(
-                lambda x: fname_to_code(x.lower()).upper()
+                lambda x: fname_to_code(str(x).lower()).upper()
             )
             instruments_data.to_csv(instruments_path, header=False, sep=self.INSTRUMENTS_SEP, index=False)
         else:
