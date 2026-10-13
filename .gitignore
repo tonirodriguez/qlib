@@ -54,3 +54,7 @@ tags
 /examples/rl/checkpoints
 scripts/logs/*
 work/crypto/output/sfm_v8/logs/
+
+# Backups de parches del pipeline (quedan en disco, no en el repo)
+*.bak_*
+*.bak2_*
