@@ -1,0 +1,71 @@
+{
+  "nombre": "rally2024sw",
+  "proxy": "btc",
+  "start_date": "2024-01-01",
+  "end_date": "2024-12-31",
+  "n_dias": 366,
+  "ret_switch_usd_pct": 38.97,
+  "ret_buyhold_proxy_pct": 111.31,
+  "ret_puro_usdt_pct": 4.51,
+  "n_cambios": 10,
+  "ops": [
+    {
+      "date": "2024-04-10",
+      "action": "BUY_LONG",
+      "px": 70628.54
+    },
+    {
+      "date": "2024-04-13",
+      "action": "SELL_CASH",
+      "px": 64021.36
+    },
+    {
+      "date": "2024-04-23",
+      "action": "BUY_LONG",
+      "px": 66415.06
+    },
+    {
+      "date": "2024-04-24",
+      "action": "SELL_CASH",
+      "px": 64263.95
+    },
+    {
+      "date": "2024-05-24",
+      "action": "BUY_LONG",
+      "px": 68548.33
+    },
+    {
+      "date": "2024-06-18",
+      "action": "SELL_CASH",
+      "px": 65158.02
+    },
+    {
+      "date": "2024-07-28",
+      "action": "BUY_LONG",
+      "px": 68252.75
+    },
+    {
+      "date": "2024-07-31",
+      "action": "SELL_CASH",
+      "px": 64617.83
+    },
+    {
+      "date": "2024-10-19",
+      "action": "BUY_LONG",
+      "px": 68370.04
+    },
+    {
+      "date": "2024-12-22",
+      "action": "SELL_CASH",
+      "px": 95098.66
+    }
+  ],
+  "dias_en_long": 96,
+  "dias_en_cash": 270,
+  "parametros": {
+    "MA": 200,
+    "drawdown_salir": 0.2,
+    "drawdown_entrar": 0.1,
+    "min_state_days": 10
+  }
+}

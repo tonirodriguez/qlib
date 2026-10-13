@@ -1,0 +1,81 @@
+{
+  "nombre": "bull2021sw",
+  "proxy": "btc",
+  "start_date": "2020-11-01",
+  "end_date": "2021-11-30",
+  "n_dias": 395,
+  "ret_switch_usd_pct": -2.34,
+  "ret_buyhold_proxy_pct": 314.01,
+  "ret_puro_usdt_pct": 4.88,
+  "n_cambios": 12,
+  "ops": [
+    {
+      "date": "2021-02-09",
+      "action": "BUY_LONG",
+      "px": 46509.57
+    },
+    {
+      "date": "2021-02-23",
+      "action": "SELL_CASH",
+      "px": 48898.7
+    },
+    {
+      "date": "2021-03-15",
+      "action": "BUY_LONG",
+      "px": 55665.01
+    },
+    {
+      "date": "2021-03-22",
+      "action": "SELL_CASH",
+      "px": 54095.36
+    },
+    {
+      "date": "2021-04-01",
+      "action": "BUY_LONG",
+      "px": 58730.82
+    },
+    {
+      "date": "2021-04-18",
+      "action": "SELL_CASH",
+      "px": 56246.82
+    },
+    {
+      "date": "2021-05-08",
+      "action": "BUY_LONG",
+      "px": 58943.13
+    },
+    {
+      "date": "2021-05-10",
+      "action": "SELL_CASH",
+      "px": 55870.01
+    },
+    {
+      "date": "2021-10-17",
+      "action": "BUY_LONG",
+      "px": 61520.54
+    },
+    {
+      "date": "2021-10-27",
+      "action": "SELL_CASH",
+      "px": 58464.42
+    },
+    {
+      "date": "2021-11-06",
+      "action": "BUY_LONG",
+      "px": 61529.76
+    },
+    {
+      "date": "2021-11-16",
+      "action": "SELL_CASH",
+      "px": 60108.9
+    }
+  ],
+  "dias_en_long": 60,
+  "dias_en_cash": 335,
+  "parametros": {
+    "MA": 200,
+    "drawdown_salir": 0.2,
+    "drawdown_entrar": 0.1,
+    "min_state_days": 10
+  }
+}

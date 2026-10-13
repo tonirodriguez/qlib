@@ -1,0 +1,80 @@
+{
+  "best": {
+    "ma_win": 50,
+    "dd_entrar": 0.15,
+    "minsd": 5,
+    "fitness": 1.5,
+    "evals": {
+      "seleccion_bull2021": {
+        "ret": 1.5858636878615773,
+        "bh": 314.01329194315826,
+        "usdt": 4.878747546046869,
+        "trades": 16,
+        "days": 395
+      },
+      "seleccion_giro2022": {
+        "ret": 15.878391510107171,
+        "bh": -54.93531017070068,
+        "usdt": 7.231948535828714,
+        "trades": 6,
+        "days": 579
+      },
+      "oos_rally2024": {
+        "ret": 49.595048101098115,
+        "bh": 111.30549819322808,
+        "usdt": 4.512602854492265,
+        "trades": 14,
+        "days": 366
+      },
+      "oos_base2025": {
+        "ret": -2.788794709552944,
+        "bh": -17.701362110192854,
+        "usdt": 7.594643986025873,
+        "trades": 12,
+        "days": 607
+      }
+    }
+  },
+  "top5": [
+    {
+      "params": {
+        "ma_win": 50,
+        "dd_entrar": 0.15,
+        "minsd": 5
+      },
+      "fitness": 1.5
+    },
+    {
+      "params": {
+        "ma_win": 200,
+        "dd_entrar": 0.15,
+        "minsd": 10
+      },
+      "fitness": -4.58
+    },
+    {
+      "params": {
+        "ma_win": 100,
+        "dd_entrar": 0.15,
+        "minsd": 10
+      },
+      "fitness": -5.08
+    },
+    {
+      "params": {
+        "ma_win": 150,
+        "dd_entrar": 0.15,
+        "minsd": 10
+      },
+      "fitness": -5.08
+    },
+    {
+      "params": {
+        "ma_win": 200,
+        "dd_entrar": 0.05,
+        "minsd": 20
+      },
+      "fitness": -7.34
+    }
+  ]
+}

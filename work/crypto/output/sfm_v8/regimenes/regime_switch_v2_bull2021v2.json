@@ -1,0 +1,24 @@
+{
+  "nombre": "bull2021v2",
+  "proxy": "btc",
+  "start_date": "2020-11-01",
+  "end_date": "2021-11-30",
+  "n_dias": 395,
+  "ret_v2_usd_pct": 1.59,
+  "ret_buyhold_pct": 314.01,
+  "ret_usdt_pct": 4.88,
+  "n_cambios": 16,
+  "dias_long": 147,
+  "dias_cash": 248,
+  "param_v2": {
+    "base": {
+      "ma": 50,
+      "dd_entrar": 0.15,
+      "minsd": 5
+    },
+    "vitalidad": {
+      "vital_dd": 0.3,
+      "pico_win": 90
+    }
+  }
+}

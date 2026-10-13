@@ -1,0 +1,44 @@
+{
+  "NVO": {
+    "symbol": "NVO",
+    "price": 37.855,
+    "prev_close": 38.2599983215332,
+    "currency": "USD",
+    "regularMarketTime": 1791483282
+  },
+  "AAPL": {
+    "symbol": "AAPL",
+    "price": 339.255,
+    "prev_close": 336.6700134277344,
+    "currency": "USD",
+    "regularMarketTime": 1791483290
+  },
+  "GOOGL": {
+    "symbol": "GOOGL",
+    "price": 347.195,
+    "prev_close": 350.5,
+    "currency": "USD",
+    "regularMarketTime": 1791483281
+  },
+  "MSFT": {
+    "symbol": "MSFT",
+    "price": 519.84,
+    "prev_close": 529.760009765625,
+    "currency": "USD",
+    "regularMarketTime": 1791483289
+  },
+  "META": {
+    "symbol": "META",
+    "price": 718.44,
+    "prev_close": 721.3099975585938,
+    "currency": "USD",
+    "regularMarketTime": 1791483291
+  },
+  "EURUSD=X": {
+    "symbol": "EURUSD=X",
+    "price": 1.1208,
+    "prev_close": 1.1253530979156494,
+    "currency": "USD",
+    "regularMarketTime": 1791483290
+  }
+}

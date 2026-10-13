@@ -1,0 +1,24 @@
+{
+  "nombre": "rally2024fix",
+  "proxy": "btc",
+  "start_date": "2024-01-01",
+  "end_date": "2024-12-31",
+  "n_dias": 366,
+  "ret_v2_usd_pct": 111.12,
+  "ret_buyhold_pct": 111.31,
+  "ret_usdt_pct": 4.51,
+  "n_cambios": 1,
+  "dias_long": 366,
+  "dias_cash": 0,
+  "param_v2": {
+    "base": {
+      "ma": 50,
+      "dd_entrar": 0.15,
+      "minsd": 5
+    },
+    "vitalidad": {
+      "vital_dd": 0.3,
+      "pico_win": 90
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "nombre": "t_fix100",
+  "proxy": "btc",
+  "start_date": "2020-11-01",
+  "end_date": "2026-10-07",
+  "n_dias": 2167,
+  "ret_v2_usd_pct": 15.68,
+  "ret_buyhold_pct": 505.12,
+  "ret_usdt_pct": 29.87,
+  "n_cambios": 35,
+  "dias_long": 1822,
+  "dias_cash": 345,
+  "param_v2": {
+    "base": {
+      "ma": 50,
+      "dd_entrar": 0.15,
+      "minsd": 5
+    },
+    "vitalidad": {
+      "vital_dd": 0.3,
+      "pico_win": 90
+    }
+  }
+}

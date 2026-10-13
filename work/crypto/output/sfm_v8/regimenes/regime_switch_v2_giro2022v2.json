@@ -1,0 +1,24 @@
+{
+  "nombre": "giro2022v2",
+  "proxy": "btc",
+  "start_date": "2021-06-01",
+  "end_date": "2022-12-31",
+  "n_dias": 579,
+  "ret_v2_usd_pct": 15.88,
+  "ret_buyhold_pct": -54.94,
+  "ret_usdt_pct": 7.23,
+  "n_cambios": 6,
+  "dias_long": 95,
+  "dias_cash": 484,
+  "param_v2": {
+    "base": {
+      "ma": 50,
+      "dd_entrar": 0.15,
+      "minsd": 5
+    },
+    "vitalidad": {
+      "vital_dd": 0.3,
+      "pico_win": 90
+    }
+  }
+}
