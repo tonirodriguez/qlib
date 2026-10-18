@@ -1,0 +1,102 @@
+{
+  "universo": "sp500_liquid",
+  "lookback": 120,
+  "topk": 30,
+  "bt_start": "2022-01-01",
+  "bt_end": "2026-08-07",
+  "memoria_efectiva": [
+    {
+      "h": "inf (media simple)",
+      "peso_ultimos_63d": 0.525,
+      "peso_ultimos_21d": 0.175,
+      "peso_ultimos_5d": 0.042,
+      "n_dias_con_99%_del_peso": 119
+    },
+    {
+      "h": 60.0,
+      "peso_ultimos_63d": 0.738,
+      "peso_ultimos_21d": 0.285,
+      "peso_ultimos_5d": 0.069,
+      "n_dias_con_99%_del_peso": 116
+    },
+    {
+      "h": 50.0,
+      "peso_ultimos_63d": 0.804,
+      "peso_ultimos_21d": 0.329,
+      "peso_ultimos_5d": 0.08,
+      "n_dias_con_99%_del_peso": 112
+    },
+    {
+      "h": 40.0,
+      "peso_ultimos_63d": 0.885,
+      "peso_ultimos_21d": 0.399,
+      "peso_ultimos_5d": 0.099,
+      "n_dias_con_99%_del_peso": 100
+    },
+    {
+      "h": 35.0,
+      "peso_ultimos_63d": 0.927,
+      "peso_ultimos_21d": 0.449,
+      "peso_ultimos_5d": 0.112,
+      "n_dias_con_99%_del_peso": 90
+    },
+    {
+      "h": 25.0,
+      "peso_ultimos_63d": 0.988,
+      "peso_ultimos_21d": 0.594,
+      "peso_ultimos_5d": 0.156,
+      "n_dias_con_99%_del_peso": 65
+    },
+    {
+      "h": 15.0,
+      "peso_ultimos_63d": 1.0,
+      "peso_ultimos_21d": 0.833,
+      "peso_ultimos_5d": 0.256,
+      "n_dias_con_99%_del_peso": 39
+    }
+  ],
+  "resultados": [
+    {
+      "name": "momentum 120d (media simple)",
+      "sharpe": 0.9209830464071178,
+      "maxdd": -0.18343356281726997,
+      "anual": 0.18430225883221746
+    },
+    {
+      "name": "kernel h=60d",
+      "sharpe": 1.0476815970084197,
+      "maxdd": -0.2308722628576958,
+      "anual": 0.2381309574236406
+    },
+    {
+      "name": "kernel h=40d",
+      "sharpe": 1.1088776238862248,
+      "maxdd": -0.22745373331439056,
+      "anual": 0.23626543498830319
+    },
+    {
+      "name": "kernel h=25d",
+      "sharpe": 0.8995866722034028,
+      "maxdd": -0.22968170877380745,
+      "anual": 0.17176155909191612
+    },
+    {
+      "name": "kernel h=15d",
+      "sharpe": 0.7559889832183649,
+      "maxdd": -0.24328840986422895,
+      "anual": 0.15167552546743804
+    },
+    {
+      "name": "kernel h=50d",
+      "sharpe": 0.7995113826580239,
+      "maxdd": -0.22889900095237448,
+      "anual": 0.16726760986336836
+    },
+    {
+      "name": "kernel h=35d",
+      "sharpe": 1.2150395840896147,
+      "maxdd": -0.2244604748470701,
+      "anual": 0.3017368239800859
+    }
+  ]
+}
