@@ -21,15 +21,33 @@ def realized_vol(close, win=20):
 
 
 def vol_percentile(close, vol_win=20, hist_win=252):
-    """Percentil histórica de la vol realizada (último valor vs su historia rolante)."""
+    """Percentil CAUSAL de la vol realizada (valor de hoy vs su historia pasada).
+
+    CORREGIDO 2026-10-17 (dos bugs reales detectados en producción):
+
+    1. **Rama equivocada con historia corta.** Antes, si `len(vol) <= hist_win` se usaba
+       `vol / vol.max()`, que NO es un percentil sino "fracción de la vol máxima". Como
+       `prices_live.csv` tiene 160 filas (< 252), la simulación en vivo ejecutaba esa rama
+       mientras la validación (con años de historia Qlib) ejecutaba el percentil → **el gate
+       validado y el gate desplegado eran reglas distintas**. Ahora la ventana se ESCALA a la
+       historia disponible: `win = min(hist_win, n)`, conservando la semántica de percentil.
+    2. **Look-ahead.** `vol.max()` es una estadística de toda la muestra (incluye el futuro).
+       Eliminado: el percentil se calcula solo con el pasado (`x.iloc[:-1]`).
+    """
     vol = realized_vol(close, vol_win)
-    if hist_win and len(vol) > hist_win:
-        # percentil del último valor dentro de su ventana histórica rolante
-        pct = vol.rolling(hist_win, min_periods=hist_win // 2).apply(
-            lambda x: (x.iloc[-1] > x).mean(), raw=False
-        )
-        return vol, pct
-    return vol, vol / vol.max()
+    n = int(len(vol))
+    if n == 0:
+        return vol, vol
+    win = int(min(hist_win, n)) if hist_win else n
+    if win < 10:
+        # Sin historia suficiente no hay percentil posible: devolvemos NaN (no una regla falsa).
+        return vol, pd.Series(np.nan, index=vol.index)
+    minp = max(10, min(win // 2, 60))
+    # percentil causal: fracción de valores PASADOS por debajo del de hoy
+    pct = vol.rolling(win, min_periods=minp).apply(
+        lambda x: (x.iloc[-1] > x.iloc[:-1]).mean(), raw=False
+    )
+    return vol, pct
 
 
 def gate_level_from_pct(pct, p75=0.75, p90=0.90):

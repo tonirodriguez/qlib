@@ -58,3 +58,7 @@ work/crypto/output/sfm_v8/logs/
 # Backups de parches del pipeline (quedan en disco, no en el repo)
 *.bak_*
 *.bak2_*
+
+# run logs de experimentos (byproduct)
+work/estrategias/*.log
+work/estrategias/**/*.log
