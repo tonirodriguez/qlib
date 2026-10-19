@@ -4,6 +4,7 @@ from pathlib import Path
 import types
 import shutil
 import csv
+import time
 import multiprocessing
 import numpy as np
 import pandas as pd
@@ -34,7 +35,7 @@ sys.path.append(str(COLLECTOR_DIR))
 
 import collector
 from collector import Run, YahooCollectorUS1d
-from qlib.utils import code_to_fname
+from qlib.utils import code_to_fname, fname_to_code
 
 
 def _install_fake_useragent_fallback():
@@ -218,10 +219,9 @@ def _check_recent_coverage(
     recent = calendar[-lookback:]
     recent_idx = {d: len(calendar) - lookback + i for i, d in enumerate(recent)}
 
-    symbols = pd.read_csv(
-        instruments_path, sep="\t", names=["symbol", "start_date", "end_date"], keep_default_na=False
-    )["symbol"].tolist()
-    symbols = [s for s in symbols if s]
+    # Solo simbolos activos: all.txt conserva los delistados (sin dato reciente por
+    # definicion) y meterlos en la muestra bajaria la cobertura sin que haya fallo.
+    symbols = sorted(_active_symbols(qlib_data_1d_dir, days=30))
     if not symbols:
         return []
     step = max(1, len(symbols) // sample_size)
@@ -266,6 +266,258 @@ def _check_recent_coverage(
             "corrige esos dias explicitamente (parche dirigido o clean rebuild --full)."
         )
     return anomalies
+
+
+def _read_instruments_df(instruments_path: Path) -> pd.DataFrame:
+    # keep_default_na=False: "NA" (Nano Labs) es un ticker real, no un nulo
+    df = pd.read_csv(
+        instruments_path,
+        sep="\t",
+        names=["symbol", "start_date", "end_date"],
+        usecols=[0, 1, 2],
+        dtype=str,
+        keep_default_na=False,
+    )
+    return df.loc[df["symbol"] != ""].reset_index(drop=True)
+
+
+def _read_calendar_list(qlib_data_1d_dir: Path) -> list:
+    calendar_path = Path(qlib_data_1d_dir) / "calendars" / "day.txt"
+    if not calendar_path.exists():
+        return []
+    return pd.read_csv(calendar_path, header=None, dtype=str)[0].tolist()
+
+
+def _active_symbols(qlib_data_1d_dir: Path, days: int = 10) -> set:
+    """Simbolos cuyo end_date esta a <= `days` dias naturales del ultimo end_date."""
+    instruments_path = Path(qlib_data_1d_dir) / "instruments" / "all.txt"
+    if not instruments_path.exists():
+        return set()
+    df = _read_instruments_df(instruments_path)
+    end_dates = pd.to_datetime(df["end_date"], errors="coerce")
+    if end_dates.dropna().empty:
+        return set()
+    cutoff = end_dates.max() - pd.Timedelta(days=days)
+    return set(df.loc[end_dates >= cutoff, "symbol"])
+
+
+def _current_index_members(qlib_data_1d_dir: Path, index_names=("sp500", "nasdaq100")) -> set:
+    members = set()
+    for name in index_names:
+        path = Path(qlib_data_1d_dir) / "instruments" / f"{name}.txt"
+        if not path.exists():
+            continue
+        df = _read_instruments_df(path)
+        end_dates = pd.to_datetime(df["end_date"], errors="coerce")
+        if end_dates.dropna().empty:
+            continue
+        members |= set(df.loc[end_dates >= end_dates.max(), "symbol"])
+    return members
+
+
+def _source_file_name(symbol: str) -> str:
+    # Mismo nombre que YahooCollectorUS.save_instrument: code_to_fname(symbol).upper()
+    return f"{code_to_fname(symbol).upper()}.csv"
+
+
+def _remap_bin_to_calendar(arr: np.ndarray, old_calendar: list, new_index: dict) -> np.ndarray | None:
+    """Reubica un .bin (cabecera = posicion de inicio en el calendario) en otro calendario.
+
+    Devuelve None si algun valor no nulo cae en una fecha que no existe en el nuevo.
+    """
+    start = int(arr[0])
+    values = arr[1:]
+    if values.size == 0:
+        return None
+    dates = old_calendar[start : start + values.size]
+    if len(dates) != values.size:
+        return None
+    positions = np.array([new_index.get(d, -1) for d in dates])
+    valid = ~np.isnan(values)
+    if (positions[valid] < 0).any():
+        return None
+    keep = positions >= 0
+    positions, values = positions[keep], values[keep]
+    new_start = int(positions.min())
+    out = np.full(int(positions.max()) - new_start + 1, np.nan, dtype="<f4")
+    out[positions - new_start] = values
+    return np.concatenate([np.array([new_start], dtype="<f4"), out])
+
+
+def _restore_missing_from_backup(target_dir: Path, backup_dir: Path, symbols=None) -> list:
+    """Copia al dataset nuevo el historico de los simbolos que estaban en el backup y faltan.
+
+    Un clean rebuild solo contiene lo que Yahoo devolvio en esa ejecucion: los delistados
+    que Yahoo ya no sirve y los simbolos que fallaron de forma transitoria desaparecian
+    (Fallo 6: 2.387 simbolos, entre ellos ABT). Aqui se conservan con su end_date original;
+    los que siguen cotizando se ponen al dia en el siguiente incremental/resync.
+    """
+    target_dir, backup_dir = Path(target_dir), Path(backup_dir)
+    target_ins = target_dir / "instruments" / "all.txt"
+    backup_ins = backup_dir / "instruments" / "all.txt"
+    if not target_ins.exists() or not backup_ins.exists() or target_dir.resolve() == backup_dir.resolve():
+        return []
+
+    new_df = _read_instruments_df(target_ins)
+    old_df = _read_instruments_df(backup_ins).drop_duplicates("symbol", keep="last")
+    present = set(new_df["symbol"])
+    candidates = old_df.loc[~old_df["symbol"].isin(present)]
+    if symbols is not None:
+        candidates = candidates.loc[candidates["symbol"].isin(set(symbols))]
+    if candidates.empty:
+        collector.logger.info("Restauracion desde backup: no falta ningun simbolo")
+        return []
+
+    old_calendar = _read_calendar_list(backup_dir)
+    new_calendar = _read_calendar_list(target_dir)
+    same_prefix = len(old_calendar) <= len(new_calendar) and new_calendar[: len(old_calendar)] == old_calendar
+    new_index = None if same_prefix else {d: i for i, d in enumerate(new_calendar)}
+
+    restored, skipped, corrupt = [], [], []
+    for row in candidates.itertuples(index=False):
+        fname = code_to_fname(row.symbol).lower()
+        src = backup_dir / "features" / fname
+        dst = target_dir / "features" / fname
+        if not src.is_dir() or dst.exists():
+            skipped.append(row.symbol)
+            continue
+        # Un .bin mas largo que su calendario viene del append ciego de DumpDataUpdate
+        # (fechas desplazadas): copiarlo propagaria datos corruptos.
+        if any(
+            int(a[0]) + a.size - 1 > len(old_calendar)
+            for a in (np.fromfile(p, dtype="<f4") for p in src.glob("*.bin"))
+            if a.size
+        ):
+            corrupt.append(row.symbol)
+            continue
+        if same_prefix:
+            shutil.copytree(src, dst)
+        else:
+            remapped = {}
+            for bin_path in src.glob("*.bin"):
+                out = _remap_bin_to_calendar(np.fromfile(bin_path, dtype="<f4"), old_calendar, new_index)
+                if out is None:
+                    break
+                remapped[bin_path.name] = out
+            else:
+                dst.mkdir(parents=True)
+                for name, out in remapped.items():
+                    out.astype("<f4").tofile(dst / name)
+            if not dst.exists():
+                skipped.append(row.symbol)
+                continue
+        restored.append((row.symbol, row.start_date, row.end_date))
+
+    if restored:
+        with open(target_ins, "a", encoding="utf-8") as fh:
+            for symbol, start_date, end_date in restored:
+                fh.write(f"{symbol}\t{start_date}\t{end_date}\n")
+    collector.logger.warning(
+        f"Restauracion desde {backup_dir.name}: {len(restored)} simbolos recuperados, "
+        f"{len(skipped)} sin features utilizables en el backup, {len(corrupt)} descartados por .bin "
+        f"desalineado ({'copia directa' if same_prefix else 'reubicados en el calendario nuevo'})"
+    )
+    if corrupt:
+        collector.logger.error(f"Backup con .bin desalineados, no restaurados: {sorted(corrupt)[:50]}")
+    if skipped:
+        collector.logger.warning(f"No restaurados: {sorted(skipped)[:50]}")
+    return [s for s, _, _ in restored]
+
+
+def _check_universe_after_rebuild(target_dir: Path, previous_dir: Path = None) -> list:
+    """Compara el universo resultante con el anterior y comprueba los miembros de indices."""
+    target_dir = Path(target_dir)
+    problems = []
+    new_symbols = set(_read_instruments_df(target_dir / "instruments" / "all.txt")["symbol"])
+    if previous_dir is not None and (Path(previous_dir) / "instruments" / "all.txt").exists():
+        old_symbols = set(_read_instruments_df(Path(previous_dir) / "instruments" / "all.txt")["symbol"])
+        lost = old_symbols - new_symbols
+        collector.logger.info(
+            f"Universo: {len(old_symbols)} antes -> {len(new_symbols)} ahora "
+            f"(+{len(new_symbols - old_symbols)} / -{len(lost)})"
+        )
+        if lost:
+            problems.append(f"{len(lost)} simbolos del dataset anterior no estan: {sorted(lost)[:30]}")
+
+    # Los ficheros de indices usan "BRK.B"; Yahoo y features/ usan "brk-b"
+    missing_members = sorted(
+        s for s in _current_index_members(target_dir)
+        if not (target_dir / "features" / code_to_fname(s.replace(".", "-")).lower()).is_dir()
+    )
+    if missing_members:
+        problems.append(f"miembros actuales de sp500/nasdaq100 sin features: {missing_members}")
+
+    for problem in problems:
+        collector.logger.error(f"UNIVERSO INCOMPLETO -> {problem}")
+    return problems
+
+
+ADJUST_STATE_FILE = "adjust_state.csv"
+
+
+def _load_adjust_state(qlib_data_1d_dir: Path) -> dict:
+    """symbol -> ultima fecha cuyos ajustes (dividendos/splits) estan en todo su historico.
+
+    El resync enlaza cada ventana con lo ya guardado, asi que un dividendo nuevo no
+    reajusta el historico anterior a la ventana. Este estado dice desde cuando un
+    simbolo necesita reconstruirse entero. Si falta el fichero, la base es
+    QLIB_ADJ_BASELINE o, en su defecto, el ultimo dia del calendario.
+    """
+    path = Path(qlib_data_1d_dir) / ADJUST_STATE_FILE
+    if path.exists():
+        df = pd.read_csv(path, dtype=str, keep_default_na=False)
+        return {r.symbol: pd.Timestamp(r.full_as_of) for r in df.itertuples(index=False) if r.symbol}
+    baseline = os.environ.get("QLIB_ADJ_BASELINE")
+    if not baseline:
+        calendar = _read_calendar_list(qlib_data_1d_dir)
+        baseline = calendar[-1] if calendar else None
+    if not baseline:
+        return {}
+    collector.logger.warning(f"No existe {ADJUST_STATE_FILE}: se toma {baseline} como base para todos los simbolos")
+    symbols = _read_instruments_df(Path(qlib_data_1d_dir) / "instruments" / "all.txt")["symbol"]
+    return {s: pd.Timestamp(baseline) for s in symbols}
+
+
+def _save_adjust_state(qlib_data_1d_dir: Path, state: dict):
+    path = Path(qlib_data_1d_dir) / ADJUST_STATE_FILE
+    df = pd.DataFrame(
+        sorted((s, d.strftime("%Y-%m-%d")) for s, d in state.items()), columns=["symbol", "full_as_of"]
+    )
+    tmp = path.with_suffix(".tmp")
+    df.to_csv(tmp, index=False)
+    os.replace(tmp, path)
+
+
+def _symbols_with_new_adjustments(source_dir: Path, state: dict, default_as_of: pd.Timestamp, max_date) -> dict:
+    """Simbolos cuya descarga trae un dividendo o split posterior a su full_as_of.
+
+    Devuelve symbol -> fecha del ultimo evento. Yahoo reajusta adjclose de todo el
+    historico anterior al evento; enlazar solo la ventana dejaria el resto sin ajustar.
+    """
+    flagged = {}
+    for csv_path in Path(source_dir).glob("*.csv"):
+        try:
+            df = pd.read_csv(csv_path, usecols=lambda c: c in ("date", "dividends", "splits"))
+        except (ValueError, pd.errors.EmptyDataError):
+            continue
+        if "date" not in df or not ({"dividends", "splits"} & set(df.columns)):
+            continue
+        event = pd.Series(False, index=df.index)
+        for col in ("dividends", "splits"):
+            if col in df:
+                event |= pd.to_numeric(df[col], errors="coerce").fillna(0) != 0
+        if not event.any():
+            continue
+        dates = _parse_mixed_dates(df.loc[event, "date"]).dt.normalize().dropna()
+        if max_date is not None:
+            dates = dates[dates <= max_date]
+        if dates.empty:
+            continue
+        symbol = fname_to_code(csv_path.stem.lower()).upper()
+        last_event = dates.max()
+        if last_event > state.get(symbol, default_as_of):
+            flagged[symbol] = last_event
+    return flagged
 
 
 def _should_use_tmp_work_dir(path: Path) -> bool:
@@ -398,21 +650,67 @@ def _patch_mixed_date_parsing():
 
 def _patch_yahoo_normalize_extend():
     def _get_old_data(self, qlib_data_dir: [str, Path]):
-        qlib_data_dir = str(Path(qlib_data_dir).expanduser().resolve())
-        collector.qlib.init(provider_uri=qlib_data_dir, expression_cache=None, dataset_cache=None)
-        df = collector.D.features(collector.D.instruments("all"), ["$" + col for col in self.column_list])
-        df.columns = self.column_list
-        if df.empty:
-            return pd.DataFrame(columns=["latest_date", *self.column_list])
+        """Ultimo valor guardado de cada simbolo (y, en el resync, los de la ventana).
 
-        valid_df = df[df["close"].notna()].reset_index()
-        if valid_df.empty:
-            return pd.DataFrame(columns=["latest_date", *self.column_list])
+        Antes cargaba con D.features el historico completo de todos los simbolos
+        (~15.000 x 6.700 dias x 7 campos) para quedarse con la ultima fila: el
+        incremental del 2026-10-16 murio por OOM (Killed) en este paso. Ahora lee de
+        cada .bin solo lo necesario con memmap.
+        """
+        qlib_data_dir = Path(qlib_data_dir).expanduser().resolve()
+        calendar = pd.DatetimeIndex(pd.to_datetime(_read_calendar_list(qlib_data_dir)))
+        rewrite_from = os.environ.get("US_ALL_REWRITE_FROM")
+        window_pos = int(calendar.searchsorted(pd.Timestamp(rewrite_from))) if rewrite_from else None
+        self.old_qlib_window = {}
+        rows = {}
+        for symbol in _read_instruments_df(qlib_data_dir / "instruments" / "all.txt")["symbol"]:
+            fdir = qlib_data_dir / "features" / code_to_fname(symbol).lower()
+            close_path = fdir / "close.day.bin"
+            if not close_path.exists():
+                continue
+            close = np.memmap(close_path, dtype="<f4", mode="r")
+            if close.size < 2:
+                continue
+            start = int(close[0])
+            valid = np.flatnonzero(~np.isnan(close[1:]))
+            if valid.size == 0:
+                continue
+            last = int(valid[-1])
+            if start + last >= len(calendar):
+                continue
+            last_pos = start + last  # posicion en el calendario del ultimo cierre valido
+            columns = {}
+            for col in self.column_list:
+                path = fdir / f"{col}.day.bin"
+                columns[col] = np.memmap(path, dtype="<f4", mode="r") if path.exists() else None
 
-        latest_df = valid_df.groupby("instrument", sort=False, as_index=False).tail(1).copy()
-        latest_df.rename(columns={"datetime": "latest_date"}, inplace=True)
-        latest_df.set_index("instrument", inplace=True)
-        return latest_df.loc[:, ["latest_date", *self.column_list]]
+            def _slice(arr, lo_pos, hi_pos):
+                """Valores de arr para las posiciones de calendario [lo_pos, hi_pos]."""
+                out = np.full(hi_pos - lo_pos + 1, np.nan)
+                if arr is None or arr.size < 2:
+                    return out
+                a_start = int(arr[0])
+                a_lo, a_hi = max(lo_pos, a_start), min(hi_pos, a_start + arr.size - 2)
+                if a_lo <= a_hi:
+                    out[a_lo - lo_pos : a_hi - lo_pos + 1] = arr[1 + a_lo - a_start : 2 + a_hi - a_start]
+                return out
+
+            key = str(symbol).upper()
+            rows[key] = [calendar[last_pos]] + [float(_slice(arr, last_pos, last_pos)[0]) for arr in columns.values()]
+            if window_pos is not None and last_pos >= window_pos:
+                lo_pos = max(window_pos, start)
+                frame = pd.DataFrame(
+                    {col: _slice(arr, lo_pos, last_pos) for col, arr in columns.items()},
+                    index=calendar[lo_pos : last_pos + 1],
+                )
+                frame = frame[frame["close"].notna()]
+                if not frame.empty:
+                    self.old_qlib_window[key] = frame
+        if not rows:
+            return pd.DataFrame(columns=["latest_date", *self.column_list])
+        latest_df = pd.DataFrame.from_dict(rows, orient="index", columns=["latest_date", *self.column_list])
+        latest_df.index.name = "instrument"
+        return latest_df
 
     def normalize(self, df: pd.DataFrame) -> pd.DataFrame:
         df = collector.YahooNormalize1d.normalize(self, df)
@@ -420,6 +718,25 @@ def _patch_yahoo_normalize_extend():
         symbol_name = str(df[self._symbol_field_name].iloc[0]).upper()
         if symbol_name not in self.old_qlib_data.index:
             return df.reset_index()
+
+        rewrite_from = os.environ.get("US_ALL_REWRITE_FROM")
+        old_window = getattr(self, "old_qlib_window", {}).get(symbol_name) if rewrite_from else None
+        if old_window is not None:
+            window = df.loc[pd.Timestamp(rewrite_from) :]
+            common = [d for d in window.index[window["close"].notna()] if d in old_window.index]
+            if common:
+                df = window.copy()
+                # Ancla = primer dia de la ventana con dato en ambos lados. Se escala la
+                # ventana entera para que coincida ahi y se devuelve completa (el resync
+                # la reescribe), ancla incluida.
+                anchor = common[0]
+                for col in self.column_list[:-1]:
+                    new_v, old_v = df.at[anchor, col], old_window.at[anchor, col]
+                    if pd.isna(new_v) or pd.isna(old_v) or new_v == 0:
+                        continue
+                    df[col] = df[col] * (old_v / new_v)
+                return df.reset_index()
+            # sin dia comun: se enlaza con el ultimo dato guardado, como en el incremental
 
         old_latest_data = self.old_qlib_data.loc[symbol_name]
         latest_date = old_latest_data["latest_date"]
@@ -548,15 +865,29 @@ class USAllCollector(YahooCollectorUS1d):
         )
         ins_path = Path(data_dir) / "instruments" / "all.txt"
 
-        # US_ALL_UNIVERSE_MODE=known: solo los simbolos que ya tienen datos. Evita
+        # US_ALL_SYMBOLS_FILE: lista explicita (un simbolo por linea). La usan los
+        # reintentos de descargas fallidas y scripts/recover_lost_symbols.py.
+        symbols_file = os.environ.get("US_ALL_SYMBOLS_FILE")
+        if symbols_file:
+            forced = [s.strip() for s in Path(symbols_file).read_text().splitlines() if s.strip()]
+            print(f"Universo (lista forzada): {len(forced)} simbolos de {symbols_file}")
+            return sorted(set(forced))
+
+        # US_ALL_UNIVERSE_MODE=known: solo los simbolos activos que ya tienen datos. Evita
         # reintentar cada dia los ~4.600 que la fuente lista pero Yahoo no sirve, y
         # ahorra ademas la consulta a la fuente externa (~13 min). Las altas nuevas
-        # entran en el resync semanal, que corre en modo "full".
+        # entran en el resync semanal, que corre en modo "full". Se excluyen los que
+        # llevan mas de US_ALL_KNOWN_ACTIVE_DAYS sin dato: all.txt conserva los delistados
+        # (ver _restore_missing_from_backup) y pedirlos cada noche solo cuesta tiempo.
         universe_mode = os.environ.get("US_ALL_UNIVERSE_MODE", "full").strip().lower()
         if universe_mode == "known":
-            known = self._read_historical_symbols(ins_path)
+            active_days = int(os.environ.get("US_ALL_KNOWN_ACTIVE_DAYS", "30"))
+            known = _active_symbols(Path(data_dir), days=active_days)
             if known:
-                print(f"Universo (modo known): {len(known)} simbolos con datos en {ins_path.name}")
+                print(
+                    f"Universo (modo known): {len(known)} simbolos con dato en los ultimos "
+                    f"{active_days} dias en {ins_path.name}"
+                )
                 return sorted(known)
             print(f"Modo known sin historico utilizable en {ins_path}; se usa el universo completo.")
 
@@ -683,6 +1014,50 @@ class USAllRun(Run):
     def collector_class_name(self):
         return "USAllCollector"
 
+    def _retry_missing_downloads(self, expected_symbols, start: str, end: str, delay: float = 1) -> list:
+        """Vuelve a pedir los simbolos esperados que no dejaron CSV en source_dir.
+
+        get_data_from_remote se traga los errores de red y los trata como "may be
+        delisted" (2 intentos en ~30 s). Un corte de Yahoo de un minuto bastaba para
+        perder un simbolo vivo en un clean rebuild (ABT, 2026-10-16). Aqui se reintenta
+        por rondas, con esperas crecientes, mientras cada ronda recupere algo.
+        Devuelve los simbolos que siguen sin datos.
+        """
+        waits = [
+            int(w) for w in os.environ.get("QLIB_MISSING_RETRY_WAITS", "60,300,900").split(",") if w.strip()
+        ]
+        missing = sorted(s for s in expected_symbols if not (self.source_dir / _source_file_name(s)).exists())
+        if not missing:
+            return []
+        collector.logger.warning(f"{len(missing)} simbolos esperados sin datos tras la descarga: {missing[:30]}")
+
+        symbols_file = self.source_dir.parent / "retry_symbols.txt"
+        previous = os.environ.get("US_ALL_SYMBOLS_FILE")
+        try:
+            for round_no, wait in enumerate(waits, start=1):
+                collector.logger.info(f"Reintento {round_no}/{len(waits)} en {wait}s para {len(missing)} simbolos")
+                time.sleep(wait)
+                symbols_file.write_text("\n".join(missing) + "\n")
+                os.environ["US_ALL_SYMBOLS_FILE"] = str(symbols_file)
+                self.download_data(delay=max(delay, 1), start=start, end=end)
+                still = [s for s in missing if not (self.source_dir / _source_file_name(s)).exists()]
+                collector.logger.info(f"Reintento {round_no}: recuperados {len(missing) - len(still)}, faltan {len(still)}")
+                if len(still) == len(missing):
+                    break
+                missing = still
+                if not missing:
+                    break
+        finally:
+            if previous is None:
+                os.environ.pop("US_ALL_SYMBOLS_FILE", None)
+            else:
+                os.environ["US_ALL_SYMBOLS_FILE"] = previous
+            symbols_file.unlink(missing_ok=True)
+
+        if missing:
+            collector.logger.warning(f"Siguen sin datos tras los reintentos ({len(missing)}): {missing[:50]}")
+        return missing
+
     def update_data_to_bin(
         self,
         qlib_data_1d_dir: str,
@@ -691,7 +1066,11 @@ class USAllRun(Run):
         check_data_length: int = None,
         delay: float = 1,
         exists_skip: bool = False,
+        rewrite_window: bool = False,
     ):
+        """rewrite_window=True (resync semanal): reescribe todas las fechas >= trading_date
+        y reconstruye entero cualquier simbolo con un dividendo/split nuevo o que no
+        estuviera en el dataset (ver _rebuild_full_history)."""
         if self.interval.lower() != "1d":
             collector.logger.warning("currently supports 1d data updates: --interval 1d")
 
@@ -726,27 +1105,160 @@ class USAllRun(Run):
         effective_date_str = effective_date.strftime("%Y-%m-%d")
         collector.logger.info(f"Incremental effective date={effective_date_str}")
 
+        # Directorios de trabajo limpios: save_instrument concatena con el CSV que ya
+        # exista, asi que sin esto se acumulaban las descargas de todas las noches (y los
+        # historicos completos del ultimo rebuild): ~88 M filas que normalizar y cargar.
+        for work_dir in (self.source_dir, self.normalize_dir):
+            if work_dir.exists():
+                shutil.rmtree(work_dir)
+            work_dir.mkdir(parents=True, exist_ok=True)
+
         self.download_data(delay=delay, start=trading_date, end=end_date, check_data_length=check_data_length)
+        # Solo los miembros de indices: el resto de huecos de un dia los cubre el resync
+        # del sabado, y reintentar ~900 simbolos sin barra cada noche costaria horas.
+        # Solo los que ya existen: un simbolo nuevo creado con una ventana de 2 dias se
+        # quedaria sin historico (DumpDataUpdate no rellena hacia atras); esos van por
+        # scripts/recover_lost_symbols.py o el resync.
+        known = set(_read_instruments_df(Path(qlib_data_1d_dir) / "instruments" / "all.txt")["symbol"])
+        index_members = {s.replace(".", "-") for s in _current_index_members(Path(qlib_data_1d_dir))} & known
+        self._retry_missing_downloads(index_members, start=trading_date, end=end_date, delay=delay)
         normalize_workers = self._resolve_normalize_workers()
         collector.logger.info(f"Using max_workers={normalize_workers} for incremental normalization")
         original_max_workers = self.max_workers
         self.max_workers = normalize_workers
-        self.normalize_data_1d_extend(qlib_data_1d_dir)
-        _sanitize_normalize_dir(Path(self.normalize_dir))
+        if rewrite_window:
+            os.environ["US_ALL_REWRITE_FROM"] = trading_date
+            collector.logger.info(f"Resync: se reescriben todas las fechas >= {trading_date}")
+        try:
+            self.normalize_data_1d_extend(qlib_data_1d_dir)
+        finally:
+            os.environ.pop("US_ALL_REWRITE_FROM", None)
+        max_date = _last_closed_session_date()
+        _sanitize_normalize_dir(Path(self.normalize_dir), max_date=max_date)
         dump_workers = self._resolve_dump_workers()
         collector.logger.info(f"Using max_workers={dump_workers} for incremental bin dump")
         self.max_workers = dump_workers
 
+        if not any(
+            sum(1 for _ in open(f)) > 1 for f in Path(self.normalize_dir).glob("*.csv")
+        ):
+            # Sin sesiones nuevas (festivo, o ya volcado): DumpDataUpdate falla con
+            # "No objects to concatenate" si no hay ninguna fila que volcar.
+            collector.logger.warning("No hay filas nuevas que volcar; el dataset no cambia")
+            self.max_workers = original_max_workers
+            _check_recent_coverage(Path(qlib_data_1d_dir))
+            return
+
+        if rewrite_window:
+            adjust_state = _load_adjust_state(Path(qlib_data_1d_dir))
         collector.DumpDataUpdate(
             data_path=self.normalize_dir,
             qlib_dir=qlib_data_1d_dir,
             exclude_fields="symbol,date",
             max_workers=dump_workers,
+            rewrite_from=trading_date if rewrite_window else None,
         ).dump()
+
+        if rewrite_window:
+            default_as_of = pd.Timestamp(os.environ.get("QLIB_ADJ_BASELINE") or trading_date)
+            flagged = _symbols_with_new_adjustments(self.source_dir, adjust_state, default_as_of, max_date)
+            new_symbols = {
+                fname_to_code(p.stem.lower()).upper() for p in Path(self.normalize_dir).glob("*.csv")
+            } - set(adjust_state)
+            collector.logger.info(
+                f"Resync: {len(flagged)} simbolos con dividendo/split nuevo y {len(new_symbols)} nuevos "
+                "en el dataset -> reconstruccion de su historico completo"
+            )
+            # QLIB_RESYNC_FULL_ON_ADJUST=0 desactiva la reconstruccion por dividendo/split
+            # (los simbolos nuevos se reconstruyen siempre). Con la normalizacion por el
+            # primer cierre, un dividendo nuevo no cambia los valores anteriores a la
+            # ventana y el enlace ya reproduce un rebuild (verificado el 2026-10-19 con
+            # JEPI, O, KO y AAPL: diferencias <= 2e-6); la reconstruccion es una red de
+            # seguridad frente a revisiones de Yahoo, a costa de 1-2 h por semana.
+            if os.environ.get("QLIB_RESYNC_FULL_ON_ADJUST", "1") == "0":
+                collector.logger.info("Resync: reconstruccion por ajustes desactivada (QLIB_RESYNC_FULL_ON_ADJUST=0)")
+                flagged = {}
+            rebuilt = self._rebuild_full_history(
+                Path(qlib_data_1d_dir), sorted(set(flagged) | new_symbols), end=end_date, delay=delay
+            )
+            calendar_last = pd.Timestamp(_read_calendar_list(Path(qlib_data_1d_dir))[-1])
+            for symbol in set(_read_instruments_df(Path(qlib_data_1d_dir) / "instruments" / "all.txt")["symbol"]):
+                adjust_state.setdefault(symbol, default_as_of)
+            for symbol in rebuilt:
+                adjust_state[symbol] = calendar_last
+            _save_adjust_state(Path(qlib_data_1d_dir), adjust_state)
+            pending = sorted(set(flagged) - set(rebuilt))
+            if pending:
+                collector.logger.warning(
+                    f"Resync: {len(pending)} simbolos con ajuste nuevo sin reconstruir (se reintentan el "
+                    f"proximo sabado): {pending[:50]}"
+                )
         self.max_workers = original_max_workers
 
         self._refresh_us_indexes(qlib_data_1d_dir)
         _check_recent_coverage(Path(qlib_data_1d_dir))
+
+    def _rebuild_full_history(self, qlib_data_1d_dir: Path, symbols, end: str, delay: float = 1) -> list:
+        """Descarga desde REBUILD_START_DATE y sustituye entero el historico de `symbols`.
+
+        Mismo calculo que un clean rebuild (YahooNormalize1d, normalizado por el primer
+        cierre), pero solo para estos simbolos. Solo se sustituye un simbolo si la
+        descarga completa llega al menos hasta su end_date actual; si no, se queda con
+        la ventana enlazada y su estado no avanza (se reintenta la semana siguiente).
+        """
+        if not symbols:
+            return []
+        work = self.source_dir.parent / "full_history"
+        for sub in ("source", "normalize", "batches"):
+            if (work / sub).exists():
+                shutil.rmtree(work / sub)
+            (work / sub).mkdir(parents=True)
+        start = os.environ.get("REBUILD_START_DATE", "1999-12-31")
+        runner = USAllRun(source_dir=work / "source", normalize_dir=work / "normalize", max_workers=self.max_workers)
+        symbols_file = work / "symbols.txt"
+        symbols_file.write_text("\n".join(symbols) + "\n")
+        previous = os.environ.get("US_ALL_SYMBOLS_FILE")
+        os.environ["US_ALL_SYMBOLS_FILE"] = str(symbols_file)
+        try:
+            runner.download_data(delay=delay, start=start, end=end)
+        finally:
+            if previous is None:
+                os.environ.pop("US_ALL_SYMBOLS_FILE", None)
+            else:
+                os.environ["US_ALL_SYMBOLS_FILE"] = previous
+        runner.max_workers = self._resolve_normalize_workers()
+        runner.normalize_data(end_date=end)
+        calendar_last = pd.Timestamp(_read_calendar_list(qlib_data_1d_dir)[-1])
+        _sanitize_normalize_dir(work / "normalize", max_date=calendar_last)
+
+        current = _read_instruments_df(qlib_data_1d_dir / "instruments" / "all.txt").set_index("symbol")
+        accepted = []
+        batch_size = int(os.environ.get("QLIB_FULL_HISTORY_BATCH", "300"))
+        for csv_path in sorted((work / "normalize").glob("*.csv")):
+            symbol = fname_to_code(csv_path.stem.lower()).upper()
+            dates = pd.to_datetime(pd.read_csv(csv_path, usecols=["date"])["date"], errors="coerce").dropna()
+            current_end = pd.Timestamp(current.at[symbol, "end_date"]) if symbol in current.index else None
+            if dates.empty or (current_end is not None and dates.max() < current_end):
+                csv_path.unlink()
+                continue
+            batch_dir = work / "batches" / f"{len(accepted) // batch_size:04d}"
+            batch_dir.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(csv_path), str(batch_dir / csv_path.name))
+            accepted.append(symbol)
+        # Por lotes: DumpDataUpdate carga en memoria todo lo que hay en data_path y un
+        # historico completo son ~6.700 filas por simbolo.
+        for batch_dir in sorted((work / "batches").glob("*")) if accepted else []:
+            collector.DumpDataUpdate(
+                data_path=batch_dir,
+                qlib_dir=str(qlib_data_1d_dir),
+                exclude_fields="symbol,date",
+                max_workers=self._resolve_dump_workers(),
+                full_replace=True,
+            ).dump()
+        collector.logger.info(
+            f"Historico completo reconstruido para {len(accepted)} de {len(symbols)} simbolos"
+        )
+        return sorted(accepted)
 
     def rebuild_data_to_bin(
         self,
@@ -808,6 +1320,10 @@ class USAllRun(Run):
             end_date = pd.Timestamp(end_date).strftime("%Y-%m-%d")
 
         self.download_data(delay=delay, start=start_date, end=end_date)
+        expected = _active_symbols(universe_dir) | {
+            s.replace(".", "-") for s in _current_index_members(universe_dir)
+        }
+        self._retry_missing_downloads(expected, start=start_date, end=end_date, delay=delay)
         source_files = list(self.source_dir.glob("*.csv"))
         if not source_files:
             raise RuntimeError(
@@ -846,8 +1362,23 @@ class USAllRun(Run):
         if not instruments_path.exists() or instruments_path.stat().st_size == 0:
             raise RuntimeError("Clean rebuild failed: instruments/all.txt was generated empty.")
 
+        # all.txt solo crece: lo que estaba en el dataset anterior y Yahoo no ha devuelto
+        # (delistados, fallos transitorios) se conserva con su historico y su end_date.
+        if universe_dir != qlib_data_1d_dir:
+            _restore_missing_from_backup(qlib_data_1d_dir, universe_dir)
+
+        # Tras un clean rebuild todo el historico esta ajustado hasta el ultimo dia
+        calendar_last = pd.Timestamp(_read_calendar_list(qlib_data_1d_dir)[-1])
+        _save_adjust_state(
+            qlib_data_1d_dir,
+            {s: calendar_last for s in _read_instruments_df(instruments_path)["symbol"]},
+        )
+
         self._refresh_us_indexes(str(qlib_data_1d_dir))
         _check_recent_coverage(Path(qlib_data_1d_dir))
+        _check_universe_after_rebuild(
+            qlib_data_1d_dir, universe_dir if universe_dir != qlib_data_1d_dir else None
+        )
 
 
 if __name__ == "__main__":

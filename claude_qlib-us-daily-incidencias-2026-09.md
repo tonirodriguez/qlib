@@ -12,6 +12,8 @@
 | 2 | `BrokenProcessPool` por OOM en `dump_bin.py` | Documentado, sin resolver de raíz |
 | 3 | (no recuperado del documento original) | Resuelto |
 | 4 | Universo de símbolos circular en `USAllCollector` | **Resuelto — 2026-09-08** |
+| 5 | Ticker `NA` (Nano Labs) leído como NaN (no documentado en este fichero) | Resuelto parcialmente; ver Fallo 6 |
+| 6 | Días 2026-09-30 y 2026-10-09 con barras intradía y NaN + `all.txt` congelado | **Resuelto — 2026-10-17** (clean rebuild) |
 
 ---
 
@@ -201,3 +203,295 @@ No recupera 1999-2017, pero detiene la sangría. **Pendiente de implementar.**
 - **Sesgo de supervivencia**: sigue abierto pese al Fallo 4 — ver la sección dedicada más
   arriba. El dataset no es apto para backtests que dependan de delistados anteriores a
   2018.
+
+---
+
+## Fallo 6 — Barras del día en curso volcadas como cierre + `all.txt` congelado
+
+> Diagnóstico y fix: 2026-10-13. Reparación: clean rebuild completo del 2026-10-16/17.
+> Verificación: 2026-10-19.
+
+### Síntoma
+
+Los días 2026-09-30 y 2026-10-09 tenían `$close` a NaN para la mayoría de símbolos; los
+pocos que tenían dato traían valores intradía en vez de cierres (AAPL 441,94 el 30-sep,
+frente al cierre real de 433,18). Cobertura de esos días: 29% y 32%, frente al ~81%
+normal (medido el 13-oct con `_check_recent_coverage`).
+
+### Causa 1 — descarga con `end_date = TODAY`
+
+La ejecución de la 01:01 descargaba con `end_date = TODAY`, y Yahoo devolvía barras del
+día en curso para unos pocos cientos de símbolos. Ese volcado metía el día en el
+calendario con una cobertura del ~33% y NaN para el resto. `DumpDataUpdate` no reescribe
+fechas ya volcadas (filtra por `> effective_end`, calculado con el final de cada `.bin`),
+así que el NaN se quedaba para siempre y ni siquiera el resync semanal lo corregía.
+
+### Causa 2 (encadenada) — `save_instruments` abortaba por el ticker `NA`
+
+`dump_bin.py` reventaba al final, en `save_instruments`, con
+`AttributeError: 'float' object has no attribute 'lower'`. Otra vez era el ticker `NA`
+(Nano Labs) leído como NaN, aunque esta vez desde la columna `symbol` de los CSV
+normalizados y no desde `instruments/all.txt`. Como el fallo ocurre **después** de
+escribir los `.bin`, los precios y el calendario avanzaban, pero `instruments/all.txt`
+se quedó congelado en 2026-09-11. Con él se congeló también el cálculo de la fecha de
+arranque incremental: todas las noches se volvían a descargar ~20 días
+(`Incremental effective date=2026-09-11` en todos los logs). Por eso el fix del Fallo 5
+parecía funcionar cuando en realidad solo estaba aplicado a medias.
+
+### Fix aplicado (2026-10-13)
+
+a. `scripts/dump_bin.py`: `_get_source_data` rellena el símbolo a partir del nombre del
+   fichero cuando pandas lo lee como nulo, y `save_instruments` descarta las filas sin
+   símbolo con un warning en vez de abortar.
+b. `scripts/update_us_all.py`: nueva función `_last_closed_session_date()` (16:00 ET
+   + 15 min de margen). El sanitizador descarta las filas posteriores a la última sesión
+   cerrada y lo registra como `future_rows_removed`.
+c. El sanitizador pasa a usar `pd.to_datetime(..., format="mixed")`. Antes infería el
+   formato a partir de la primera fila y convertía en NaT las filas con hora, que luego
+   se descartaban en silencio.
+d. Nueva función `_check_recent_coverage()`. Se ejecuta al final de cada update y de
+   cada rebuild, y registra un ERROR si algún día reciente baja del 60% de cobertura.
+   Se probó el 13-oct: detectó el 30-sep al 29% y el 9-oct al 32%, frente al 81% normal.
+
+### Backups (2026-10-13)
+
+- `scripts/dump_bin.py.bak_20261013_135104`
+- `scripts/update_us_all.py.bak2_20261013_135142`
+- Dataset: `/opt/qlib_home/qlib_data/us_data_prepatch_20261013_135945` (1,7 GB)
+- El rebuild dejó además un backup automático del dataset anterior:
+  `/opt/qlib_home/qlib_data/us_data_backup_20261016_220705` (1,7 GB)
+
+### Reparación de los dos días
+
+Se intentó un parche quirúrgico sobre los `.bin`. El script de dry-run quedó validado
+(200.969 valores en 13.465 símbolos), pero la escritura se bloqueó por permisos, así que
+la reparación se hizo con un **clean rebuild completo** (`DumpDataAll`), lanzado por una
+línea one-shot del cron:
+
+- Inicio: 2026-10-16 22:07:05. Fin: 2026-10-17 08:46:18. **Duración: ~10 h 39 min**
+  (se esperaban ~19-20 h). Log: `scripts/logs/run_full_20261016`.
+- Rango: `1999-12-31 → 2026-10-16`. El calendario termina en **2026-10-15**, lo cual es
+  correcto: a las 22:07 CEST la sesión del 16-oct aún no superaba el margen de 16:15 ET.
+- El resync del sábado 2026-10-17 a la 01:01 no llegó a ejecutarse porque el lock lo
+  tenía el rebuild (`run_rebuild_20261017` está vacío). Era lo esperado.
+
+**Resultado (medido el 2026-10-19): la reparación FUNCIONÓ.**
+
+- `_check_recent_coverage(lookback=25)` → `anomalias: []`. Todos los días entre
+  2026-09-11 y 2026-10-15 tienen una cobertura del 91-94% sobre la muestra de 800
+  símbolos. El 2026-09-30 está al **94%** y el 2026-10-09 al **93%**.
+- AAPL `$close` el 2026-09-30 = **433,1848** (el cierre real; antes era 441,94). Valores
+  de alrededor: 29-sep 428,48 · 01-oct 429,67 · 09-oct 437,89.
+- Sin `Traceback`, `AttributeError` ni `ERROR` en el log. `NA` aparece en `all.txt`
+  (`NA 2022-07-12 2026-10-15`), así que el fix (a) funciona en un volcado completo.
+- `instruments/all.txt` se ha regenerado (08:32 del 17-oct): todas las filas activas
+  terminan en 2026-10-15.
+
+### Efecto secundario: el universo se redujo en ~2.400 símbolos
+
+| Dataset | Filas `all.txt` | Directorios en `features/` |
+|---------|----------------:|---------------------------:|
+| `us_data_prepatch_20261013_135945` | 14.981 | 15.485 |
+| `us_data_backup_20261016_220705` (justo antes del rebuild) | 15.484 | 15.485 |
+| `us_data` tras el rebuild | **13.122** | **13.122** |
+
+- 2.387 símbolos del dataset anterior no están en el nuevo. De ellos, 1.739 terminaban
+  antes de sept-2026 (delistados que Yahoo ya no sirve: es el sesgo de supervivencia del
+  Fallo 4, que el clean rebuild empeora, tal y como se advertía en esa sección) y 644
+  terminaban entre sept y oct-2026, con picos el 09-oct (160) y el 13-oct (134).
+- El log registra **6.699 descargas vacías** (`save_instrument: ... is empty`) de 19.825
+  símbolos solicitados. La mayoría son delistados de verdad, pero hay al menos una
+  pérdida transitoria importante: **ABT (Abbott, miembro actual del S&P 500) no tiene
+  datos**. Yahoo devolvió error dos veces a las 22:30 del 16-oct y el símbolo se descartó.
+  El resto de miembros actuales de sp500 y nasdaq100 sí tienen `features/` (`BF.B` y
+  `BRK.B` existen como `bf-b` y `brk-b`).
+- **Pendiente**: recuperar ABT (y revisar los 644 símbolos con fin en sept-oct) a partir
+  de `us_data_backup_20261016_220705` o con una descarga puntual. Además, valorar
+  reintentos con backoff en `get_data_from_remote` para que un fallo transitorio de Yahoo
+  no elimine un símbolo en un rebuild completo.
+
+### Cron
+
+Línea one-shot `7 22 16 10 * ... update_us_qlib_rebuild.sh --full` y su comentario
+retirados del crontab el 2026-10-19 (copia previa en `/tmp/crontab.bak_20261019_115357`).
+Se mantienen el incremental `1 1 * * 2-5` y el resync `1 1 * * 6`.
+
+### Disco (2026-10-19)
+
+`/opt`: 477 GB libres (46% de uso). `/`: 83 GB libres. No hay presión de espacio. Los
+backups `us_data_prepatch_20261013_135945` (1,7 GB), `us_data_backup_20261016_220705`
+(1,7 GB) y `us_data_backup_20260912_010103` (1,5 GB) se podrían borrar, pero **no
+conviene borrar el del 16-oct hasta haber recuperado ABT** y los demás símbolos perdidos.
+
+### Hallazgo (2026-10-19): `.bin` desalineados por el append ciego de `DumpDataUpdate`
+
+Al revisar los backups antes de restaurar desde ellos, se encontró que en modo update
+`_data_to_bin` escribía con `open("ab")`: añadía los valores al final del fichero
+suponiendo que ese final era el día anterior al primer dato nuevo. Con `all.txt`
+congelado en 2026-09-11 (Causa 2), cada noche se volvía a añadir todo lo posterior al
+11-sep, y las fechas quedaban desplazadas.
+
+| Dataset | `.bin` más largos que su calendario | Exceso (mediana / máx.) |
+|---------|------------------------------------:|------------------------:|
+| `us_data_backup_20260912_010103` | 0 | — |
+| `us_data_prepatch_20261013_135945` | 13.694 | 195 / 1.244 |
+| `us_data_backup_20261016_220705` | 13.701 | 216 / 1.341 |
+| `us_data` tras el clean rebuild | **0** | — |
+
+Conclusión: entre el 12-sep y el 16-oct, **los datos posteriores al 11-sep de la mayoría
+de los símbolos estaban desplazados de fecha**. Cualquier señal o backtest calculado con
+ese dataset en ese periodo es sospechoso. El clean rebuild lo dejó limpio. Los backups del
+13-oct y del 16-oct **no deben usarse para restaurar `.bin`** (sí sirven sus `all.txt`).
+
+### Mejoras implementadas (2026-10-19)
+
+**`scripts/dump_bin.py`** (backup `dump_bin.py.bak_20261019_120241`):
+- `_write_bin_positional()`: en modo update, cada fecha se escribe en su posición del
+  calendario y se pueden repetir sin efectos. Se probó en una copia: con `all.txt`
+  retrasado, los `.bin` quedan idénticos (el append antiguo los habría alargado), y un
+  día nuevo cae en su posición.
+- `DumpDataUpdate`: `_read_instruments` con `keep_default_na=False` y relleno del símbolo
+  desde el nombre del fichero en `_load_all_source_data`. Antes, `NA` (Nano Labs) se
+  perdía de `all.txt` en cada incremental (no estaba en el backup del 16-oct) y nunca se
+  actualizaba.
+
+**`scripts/update_us_all.py`**:
+- `_retry_missing_downloads()`: tras la descarga, vuelve a pedir los símbolos esperados
+  sin CSV, por rondas con esperas crecientes (`QLIB_MISSING_RETRY_WAITS`, por defecto
+  `60,300,900`), y para cuando una ronda no recupera nada.
+  - Rebuild: símbolos activos del dataset anterior + miembros de sp500/nasdaq100.
+  - Incremental: solo los miembros de los índices que ya existen en `all.txt`.
+- `_restore_missing_from_backup()`: al terminar `DumpDataAll`, copia desde el dataset
+  anterior los símbolos que faltan, con su `end_date` original. `all.txt` ya no
+  pierde símbolos en un clean rebuild. Si los calendarios difieren, reubica los `.bin`, y
+  rechaza los `.bin` más largos que su calendario.
+- `_check_universe_after_rebuild()`: compara el universo antes y después y registra un
+  ERROR si faltan símbolos o algún miembro actual de los índices no tiene datos.
+- Modo `known` (incremental nocturno): solo símbolos con dato en los últimos
+  `US_ALL_KNOWN_ACTIVE_DAYS` (30) días, para no pedir cada noche los delistados que
+  ahora se conservan. Hoy son 13.112 símbolos.
+- `US_ALL_SYMBOLS_FILE`: lista explícita de símbolos para la descarga (reintentos y
+  recuperación).
+
+**`scripts/recover_lost_symbols.py`** (nuevo): recupera lo que perdió el rebuild. Por
+defecto solo simula.
+
+### Recuperación de los símbolos perdidos — simulación del 2026-10-19
+
+Log: `scripts/logs/recover_dryrun_20261019_1206`.
+- Perdidos frente a los backups del 16-oct y el 12-sep: **2.391**.
+- Activos desde el 2026-09-01: 648. 607 dejaron un CSV y los otros 41 no devolvieron
+  nada. **Corrección (aplicación, 2026-10-19):** 605 de esos 607 CSV tenían **una sola
+  fila** (la última cotización de warrants o derechos muertos: sufijos W, R, -WT), sin
+  histórico. El script los contaba como recuperados y no son fallos puntuales: Yahoo ya
+  no sirve su histórico. Fallos puntuales reales: ABT y muy pocos más.
+- 1.784 restantes: 1.772 se pueden copiar desde `us_data_backup_20260912_010103`
+  (limpio) y 12 no tienen fuente (altas posteriores al 12-sep que Yahoo no sirve).
+
+**Pendiente: ejecutar con `--apply`** (la escritura sobre el dataset real necesita
+permiso del usuario):
+
+    cp -a /opt/qlib_home/qlib_data/us_data /opt/qlib_home/qlib_data/us_data_prerecover_$(date +%Y%m%d_%H%M%S)
+    cd /opt/qlib && /usr/bin/flock -n /tmp/qlib_us_pipeline.lock \
+      /home/toni/miniconda3/envs/qlib/bin/python scripts/recover_lost_symbols.py \
+      --backup_dirs /opt/qlib_home/qlib_data/us_data_backup_20261016_220705,/opt/qlib_home/qlib_data/us_data_backup_20260912_010103 \
+      --restore_dir /opt/qlib_home/qlib_data/us_data_backup_20260912_010103 --apply \
+      > scripts/logs/recover_apply_$(date +%Y%m%d_%H%M) 2>&1
+
+Conviene hacerlo **antes del resync del sábado**: el resync recorre el universo completo y
+crearía ABT y los otros 606 solo con datos desde el día 1 del mes anterior. La
+recuperación ya no podría completar su histórico, porque `DumpDataUpdate` no rellena
+hacia atrás y la restauración no sobrescribe directorios que ya existen.
+
+### Recuperación aplicada (2026-10-19)
+
+Copia previa: `/opt/qlib_home/qlib_data/us_data_prerecover_20261019_125801`.
+
+1. `recover_lost_symbols.py --apply` (log `scripts/logs/recover_apply_20261019_125801`):
+   se volcaron ABT y AELV con su histórico completo y se restauraron 1.772 símbolos
+   desde `us_data_backup_20260912_010103`. Por el criterio erróneo de "hay CSV", los
+   605 de una sola fila quedaron fuera de la restauración (283 de ellos estaban en el
+   backup), y LGMK se volcó con una única sesión y perdió su histórico desde 2013.
+2. Corrección del script: ahora normaliza siempre y solo da por recuperado lo que tiene
+   `--min_rows` (20) sesiones o más. Lo demás va a la fase B.
+3. Fase B manual (log `scripts/logs/recover_phaseB_20261019_1502`): se quitó LGMK y se
+   restauraron desde el backup del 12-sep **284 símbolos** (los 283 + LGMK).
+
+**Estado final verificado (2026-10-19 15:05):**
+- `all.txt`: **15.180** símbolos, sin duplicados, y todos con `features/`. El universo pasó
+  de 14.956 (backup del 12-sep) a 15.180 (+224 / −0). El dataset del rebuild tenía 13.122.
+- **0 `.bin` desbordados** en todo el dataset. Calendario: 6.738 días, hasta 2026-10-15.
+- Ningún miembro actual de sp500/nasdaq100 sin datos. ABT 1999-12-31 → 2026-10-15,
+  `NA` y LGMK (2013-08-23 → 2026-09-04) presentes.
+- Cobertura de los últimos días: 92-95%. `_check_recent_coverage` ahora toma la muestra
+  solo de los símbolos activos, para que los delistados conservados no la bajen.
+- AAPL 2026-09-30 = 433,18 (sin cambios).
+- Sin recuperar: los 41 símbolos activos que Yahoo no sirve y 12 altas posteriores al
+  12-sep sin fuente.
+
+---
+
+## Cambios del 2026-10-19 (tarde): resync que reescribe su rango, ajustes por dividendo y OOM
+
+### OOM del incremental (el del 2026-10-16 murió con `Killed`)
+
+`run_daily_20261016` terminó con `Killed` al empezar la normalización (06:21). El 16 no
+se volcó: el 15 y el 16 llegaron con el clean rebuild. Hay dos causas, y las dos
+habrían vuelto a matar el incremental del 20-oct (la máquina tiene 15 GB):
+1. `_get_old_data` cargaba con `D.features` el histórico completo de todos los símbolos
+   (~15.000 × 6.700 días × 7 campos) solo para quedarse con el último valor de cada uno.
+   **Fix:** se lee cada `.bin` con `np.memmap` (33 s; mismos valores que `D.features`,
+   verificado en 20 símbolos, entre ellos `NA`, `CON`, `PRN` y `BRK-B`).
+2. `update_data_to_bin` no vaciaba `source/` ni `normalize/` y `save_instrument`
+   concatena con el CSV existente: se acumulaban las descargas de todas las noches, y
+   ahora estaban los 13.126 históricos completos del rebuild (~88 M filas).
+   **Fix:** se vacían al empezar cada ejecución.
+- Además, `DumpDataUpdate.__getstate__` deja de serializar `_all_data` en cada tarea del
+  ProcessPoolExecutor, y si no hay filas nuevas (un festivo) el update termina limpio en
+  vez de fallar con `No objects to concatenate`.
+- Prueba del incremental en una copia: añade el día nuevo en su posición con un máximo de
+  **488 MB de RAM**.
+
+### Resync semanal: reescribe todo su rango
+
+Antes, `DumpDataUpdate` solo escribía las fechas posteriores al último dato, así que el
+resync no corregía nada de lo ya volcado (tampoco el 30-sep ni el 9-oct). Ahora
+(`update_data_to_bin --rewrite_window True`, que el wrapper pasa cuando hay `START_DATE`):
+- La normalización extendida enlaza la descarga con el **primer día de la ventana ya
+  guardado**, no con el último, y devuelve la ventana entera.
+- `DumpDataUpdate(rewrite_from=...)` reescribe por posición todas las fechas >= inicio
+  de la ventana. Un NaN nuevo no borra un valor ya guardado.
+- `dump_bin`: en modo update, también los `.bin` que aún no existen se escriben por
+  posición. Antes, el primer dividendo de un símbolo creaba `dividends.day.bin` con la
+  posición relativa al tramo nuevo, es decir, desalineado.
+
+### Reconstrucción completa por dividendos y splits
+
+- `adjust_state.csv` (en el directorio del dataset) guarda, para cada símbolo,
+  `full_as_of`: la fecha hasta la que su histórico entero está ajustado. El clean
+  rebuild lo escribe para todos. Si no existe, se usa `QLIB_ADJ_BASELINE` (el wrapper
+  pone 2026-10-15, el último rebuild).
+- El resync lee las columnas `dividends`/`splits` de la descarga. Cada símbolo con un
+  evento posterior a su `full_as_of`, y cada símbolo que no estaba en el dataset, se
+  descarga desde 1999 y se sustituye entero (`DumpDataUpdate(full_replace=True)`, por
+  lotes de 300). Solo se sustituye si la descarga llega hasta su `end_date` actual; si
+  no, se reintenta la semana siguiente.
+- Volumen estimado: 400-1.600 símbolos por semana con algún evento (la mayoría, fondos
+  con dividendo mensual), lo que suma ~1-2 h al resync.
+
+**Verificación (copias del dataset, 2026-10-19):**
+- Resync 01-sep→16-oct sobre el dataset actual: AAPL y MSFT reescritos con diferencias
+  ≤ 1,2e-7 (precisión float32); NVDA, JEPI y SPY reconstruidos con diferencias ≤ 1,4e-6
+  frente al clean rebuild. SPY, borrado para simular un alta, vuelve con su histórico
+  desde 1999. Ningún `.bin` desbordado.
+- Resync sobre el backup del 12-sep (antes de los dividendos de septiembre/octubre de
+  JEPI, O y KO): los tres se reconstruyen y coinciden con el clean rebuild (≤ 2,2e-6).
+
+**Hallazgo:** AAPL, solo enlazado y sin reconstruir, también coincide (≤ 1,5e-6), y el
+backup del 12-sep ya tenía los mismos niveles históricos que el rebuild del 16-oct.
+Con la normalización de Qlib (todo dividido por el primer cierre ajustado), un
+dividendo o split nuevo multiplica por igual los valores anteriores al ex-date y ese
+primer cierre, así que **los valores ya guardados no cambian**. Solo cambian los
+posteriores al ex-date, que caen en la ventana enlazada. La reconstrucción completa
+queda como red de seguridad frente a revisiones de Yahoo y se puede desactivar con
+`QLIB_RESYNC_FULL_ON_ADJUST=0`. Los símbolos nuevos se reconstruyen siempre.

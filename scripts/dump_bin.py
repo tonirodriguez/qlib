@@ -2,6 +2,7 @@
 # Licensed under the MIT License.
 
 import abc
+import os
 import shutil
 import traceback
 from pathlib import Path
@@ -218,6 +219,9 @@ class DumpDataBase:
                 self.INSTRUMENTS_START_FIELD,
                 self.INSTRUMENTS_END_FIELD,
             ],
+            # "NA" (Nano Labs) es un ticker real: sin esto DumpDataUpdate lo leia como NaN,
+            # save_instruments descartaba la fila y el simbolo salia de all.txt.
+            keep_default_na=False,
         )
 
         return df
@@ -291,13 +295,47 @@ class DumpDataBase:
             bin_path = features_dir.joinpath(f"{field.lower()}.{self.freq}{self.DUMP_FILE_SUFFIX}")
             if field not in _df.columns:
                 continue
-            if bin_path.exists() and self._mode == self.UPDATE_MODE:
-                # update
-                with bin_path.open("ab") as fp:
-                    np.array(_df[field]).astype("<f").tofile(fp)
+            if self._mode == self.UPDATE_MODE:
+                # update: escritura por posicion de calendario, no "append" ciego. Con
+                # all.txt atrasado o huecos en el simbolo, el append desplazaba todas las
+                # fechas posteriores (Fallo 6: ~216 valores de mas por .bin). Tambien
+                # cuando el .bin no existe (p. ej. el primer dividendo de un simbolo):
+                # date_index es relativo a calendar_list, que aqui es solo el tramo nuevo.
+                self._write_bin_positional(bin_path, _df[field])
             else:
-                # append; self._mode == self.ALL_MODE or not bin_path.exists()
+                # self._mode == self.ALL_MODE
                 np.hstack([date_index, _df[field]]).astype("<f").tofile(str(bin_path.resolve()))
+
+    def _write_bin_positional(self, bin_path: Path, series: pd.Series):
+        calendar_list = getattr(self, "_new_calendar_list", None)
+        if not calendar_list:
+            raise RuntimeError("_write_bin_positional necesita el calendario completo (_new_calendar_list)")
+        calendar_pos = getattr(self, "_calendar_pos", None)
+        if calendar_pos is None:
+            calendar_pos = {pd.Timestamp(d): i for i, d in enumerate(calendar_list)}
+            self._calendar_pos = calendar_pos
+
+        positions = np.array([calendar_pos.get(pd.Timestamp(d), -1) for d in series.index])
+        new_values = np.asarray(series, dtype="<f4")
+        known = positions >= 0
+        if not known.all():
+            logger.warning(f"{bin_path.parent.name}: {int((~known).sum())} fechas fuera del calendario, se ignoran")
+            positions, new_values = positions[known], new_values[known]
+        if positions.size == 0:
+            return
+
+        arr = np.fromfile(bin_path, dtype="<f4") if bin_path.exists() else np.array([], dtype="<f4")
+        start = int(arr[0]) if arr.size else int(positions.min())
+        old_values = arr[1:]
+        new_start = min(start, int(positions.min()))
+        end = max(start + old_values.size, int(positions.max()) + 1)
+        out = np.full(end - new_start, np.nan, dtype="<f4")
+        out[start - new_start : start - new_start + old_values.size] = old_values
+        # Un NaN nuevo no borra un valor ya guardado: al reescribir una ventana, un dia
+        # que Yahoo omite (y normalize rellena con NaN) conservaria el dato anterior.
+        write = ~np.isnan(new_values) | np.isnan(out[positions - new_start])
+        out[positions[write] - new_start] = new_values[write]
+        np.hstack([[new_start], out]).astype("<f4").tofile(str(bin_path.resolve()))
 
     def _get_last_bin_calendar(self, code: str):
         """Return the last calendar date that has a real dumped value for a symbol."""
@@ -470,6 +508,8 @@ class DumpDataUpdate(DumpDataBase):
         exclude_fields: str = "",
         include_fields: str = "",
         limit_nums: int = None,
+        rewrite_from: str = None,
+        full_replace: bool = False,
     ):
         """
 
@@ -479,6 +519,13 @@ class DumpDataUpdate(DumpDataBase):
             stock data path or directory
         qlib_dir: str
             qlib(dump) data director
+        rewrite_from: str, default None
+            si se indica, en los simbolos existentes se reescriben todas las fechas
+            >= rewrite_from (no solo las posteriores al ultimo dato). Lo usa el resync.
+        full_replace: bool, default False
+            los simbolos presentes en data_path sustituyen por completo su historico
+            (todos sus .bin y su fila de all.txt). Para reconstruir un simbolo entero
+            cuando cambian sus ajustes por dividendos o splits.
         backup_dir: str, default None
             if backup_dir is not None, backup qlib_dir to backup_dir
         freq: str, default "day"
@@ -511,6 +558,8 @@ class DumpDataUpdate(DumpDataBase):
             include_fields,
         )
         self._mode = self.UPDATE_MODE
+        self._rewrite_from = pd.Timestamp(rewrite_from) if rewrite_from else None
+        self._full_replace = full_replace
         self._old_calendar_list = self._read_calendars(self._calendars_dir.joinpath(f"{self.freq}.txt"))
         # NOTE: all.txt only exists once for each stock
         # NOTE: if a stock corresponds to multiple different time ranges, user need to modify self._update_instruments
@@ -529,6 +578,37 @@ class DumpDataUpdate(DumpDataBase):
             set(self._old_calendar_list).union(filter(lambda x: x > self._old_calendar_list[-1], new_calendar_values))
         )
 
+    def __getstate__(self):
+        # Cada tarea del ProcessPoolExecutor recibe un metodo ligado a self: sin esto se
+        # serializaba _all_data (todas las filas) una vez por simbolo. Los procesos
+        # hijos solo necesitan el _df que se les pasa.
+        state = self.__dict__.copy()
+        state.pop("_all_data", None)
+        return state
+
+    def _replace_bins(self, df: pd.DataFrame):
+        """Sustituye todos los .bin de un simbolo por los de `df` (historico completo)."""
+        code = fname_to_code(str(df.iloc[0][self.symbol_field_name]).lower())
+        df = df.drop_duplicates(self.date_field_name, keep="last")
+        _df = self.data_merge_calendar(df, self._new_calendar_list)
+        if _df.empty:
+            raise ValueError(f"{code}: sin fechas dentro del calendario")
+        date_index = self.get_datetime_index(_df, self._new_calendar_list)
+        features_dir = self._features_dir.joinpath(code_to_fname(code).lower())
+        features_dir.mkdir(parents=True, exist_ok=True)
+        written = set()
+        for field in self.get_dump_fields(_df.columns):
+            if field not in _df.columns:
+                continue
+            bin_path = features_dir.joinpath(f"{field.lower()}.{self.freq}{self.DUMP_FILE_SUFFIX}")
+            tmp_path = bin_path.with_suffix(bin_path.suffix + ".tmp")
+            np.hstack([date_index, _df[field]]).astype("<f").tofile(str(tmp_path))
+            os.replace(tmp_path, bin_path)
+            written.add(bin_path.name)
+        for stale in features_dir.glob(f"*.{self.freq}{self.DUMP_FILE_SUFFIX}"):
+            if stale.name not in written:
+                stale.unlink()
+
     def _load_all_source_data(self):
         # NOTE: Need more memory
         logger.info("start load all source data....")
@@ -542,6 +622,12 @@ class DumpDataUpdate(DumpDataBase):
                 _df[self.date_field_name] = pd.to_datetime(_df[self.date_field_name])
             if self.symbol_field_name not in _df.columns:
                 _df[self.symbol_field_name] = self.get_symbol_from_file(file_path)
+            elif _df[self.symbol_field_name].isna().any():
+                # Mismo caso "NA" que en _get_source_data: groupby descarta los NaN y el
+                # simbolo no se actualizaba nunca en modo incremental.
+                _df[self.symbol_field_name] = _df[self.symbol_field_name].astype(object).where(
+                    _df[self.symbol_field_name].notna(), self.get_symbol_from_file(file_path).upper()
+                )
             return _df
 
         with tqdm(total=len(self.df_files)) as p_bar:
@@ -570,7 +656,29 @@ class DumpDataUpdate(DumpDataBase):
                 _start, _end = self._get_date(_df, is_begin_end=True)
                 if not (isinstance(_start, pd.Timestamp) and isinstance(_end, pd.Timestamp)):
                     continue
-                if _code in self._update_instruments:
+                if self._full_replace:
+                    _dt_range = self._update_instruments.setdefault(_code, dict())
+                    _dt_range[self.INSTRUMENTS_START_FIELD] = self._format_datetime(_start)
+                    _dt_range[self.INSTRUMENTS_END_FIELD] = self._format_datetime(_end)
+                    futures[executor.submit(self._replace_bins, _df)] = _code
+                elif _code in self._update_instruments and self._rewrite_from is not None:
+                    # resync: reescribe toda la ventana, no solo lo posterior al ultimo dato
+                    update_dates = pd.Series(
+                        pd.to_datetime(
+                            _df[_df[self.date_field_name] >= self._rewrite_from][self.date_field_name],
+                            errors="coerce",
+                        )
+                    ).dropna()
+                    if self.freq == "day":
+                        update_dates = update_dates.dt.normalize()
+                    _update_calendars = sorted(set(update_dates.to_list()))
+                    if _update_calendars:
+                        _old_end = pd.Timestamp(self._update_instruments[_code][self.INSTRUMENTS_END_FIELD])
+                        self._update_instruments[_code][self.INSTRUMENTS_END_FIELD] = self._format_datetime(
+                            max(_old_end, _end)
+                        )
+                        futures[executor.submit(self._dump_bin, _df, _update_calendars)] = _code
+                elif _code in self._update_instruments:
                     # exists stock, will append data
                     instrument_end = pd.Timestamp(self._update_instruments[_code][self.INSTRUMENTS_END_FIELD])
                     last_bin_end = self._get_last_bin_calendar(_code)

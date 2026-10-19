@@ -7,8 +7,11 @@ set -euo pipefail
 # revisiones de Yahoo (splits, dividendos, cierres ajustados a posteriori) y huecos que
 # haya dejado el update incremental diario.
 #
-# IMPORTANTE: esto NO es un clean rebuild. Usa update_data_to_bin (DumpDataUpdate), que
-# sobrescribe solo el rango indicado y conserva el histórico desde 1999. El clean rebuild
+# IMPORTANTE: esto NO es un clean rebuild. Usa update_data_to_bin --rewrite_window
+# (DumpDataUpdate con rewrite_from): reescribe por posicion todas las fechas del rango,
+# enlazadas con el primer dia ya guardado, y conserva el historico desde 1999. Ademas
+# reconstruye entero (desde 1999) cada simbolo nuevo o con un dividendo/split posterior a
+# su fecha en adjust_state.csv (desactivable con QLIB_RESYNC_FULL_ON_ADJUST=0). El clean rebuild
 # completo (rebuild_data_to_bin + DumpDataAll) reconstruye el dataset desde cero con los
 # datos descargados: lanzarlo con una fecha de inicio reciente DESTRUIRÍA el histórico.
 # Para un clean rebuild completo, usar --full (descarga desde REBUILD_START_DATE, ~19 h).

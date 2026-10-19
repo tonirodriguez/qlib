@@ -136,6 +136,12 @@ else
     echo "➡️ Actualizando datos Qlib US desde $START_DATE hasta $TODAY ..."
     echo "ℹ️  Forzando trading_date=$START_DATE"
     update_args+=(--trading_date "$START_DATE")
+    # Resync: reescribe toda la ventana y reconstruye entero cada simbolo nuevo o con un
+    # dividendo/split posterior a su adjust_state.csv (QLIB_RESYNC_FULL_ON_ADJUST=0 lo limita
+    # a los nuevos). QLIB_ADJ_BASELINE solo se usa si aun no existe adjust_state.csv: el
+    # ultimo clean rebuild ajusto todo hasta el 2026-10-15.
+    update_args+=(--rewrite_window True)
+    export QLIB_ADJ_BASELINE="${QLIB_ADJ_BASELINE:-2026-10-15}"
   else
     echo "➡️ Actualizando datos Qlib US en modo incremental automático hasta $TODAY ..."
   fi
