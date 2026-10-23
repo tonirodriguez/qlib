@@ -154,9 +154,24 @@ def _sanitize_normalized_daily_csv(file_path: Path, max_date: pd.Timestamp = Non
             if df.empty:
                 file_path.write_text(",".join(df.columns) + "\n")
                 return {"file_name": file_path.name, "rows_with_time": 0, "duplicate_rows_removed": 0, "future_rows_removed": future_rows}
+    # A la 01:01 Yahoo aun no ha consolidado la ultima sesion de ~30% de los simbolos:
+    # trae open/high/low/volume pero close/adjclose vacios. Volcada, esa fila deja un NaN
+    # permanente en close (DumpDataUpdate no reescribe fechas ya volcadas). Sin ella el
+    # .bin termina un dia antes y la diaria siguiente, que arranca en la ultima fecha del
+    # calendario, vuelve a descargar ese dia ya con cierre.
+    incomplete_rows = 0
+    if "close" in df.columns:
+        price_cols = [c for c in ("open", "high", "low", "volume") if c in df.columns]
+        if price_cols:
+            incomplete_mask = df["close"].isna() & df[price_cols].notna().any(axis=1)
+            incomplete_rows = int(incomplete_mask.sum())
+            if incomplete_rows:
+                df = df.loc[~incomplete_mask].copy()
+                parsed_dates = parsed_dates.loc[~incomplete_mask]
+                normalized_dates = normalized_dates.loc[~incomplete_mask]
     duplicate_rows = int(normalized_dates.duplicated(keep=False).sum())
     rows_with_time = int((parsed_dates != normalized_dates).sum())
-    if duplicate_rows == 0 and rows_with_time == 0 and future_rows == 0:
+    if duplicate_rows == 0 and rows_with_time == 0 and future_rows == 0 and incomplete_rows == 0:
         return None
 
     cleaned_df = df.copy()
@@ -172,6 +187,7 @@ def _sanitize_normalized_daily_csv(file_path: Path, max_date: pd.Timestamp = Non
         "rows_with_time": rows_with_time,
         "duplicate_rows_removed": int(len(df) - len(cleaned_df)),
         "future_rows_removed": future_rows,
+        "incomplete_close_removed": incomplete_rows,
     }
 
 
@@ -189,23 +205,33 @@ def _sanitize_normalize_dir(normalize_dir: Path, max_date: pd.Timestamp = None):
         total_time_rows = sum(item["rows_with_time"] for item in summaries)
         total_removed = sum(item["duplicate_rows_removed"] for item in summaries)
         total_future = sum(item.get("future_rows_removed", 0) for item in summaries)
+        total_incomplete = sum(item.get("incomplete_close_removed", 0) for item in summaries)
         collector.logger.warning(
             "Sanitized normalized daily CSV files before dump_bin: "
             f"files={len(summaries)}, rows_with_time={total_time_rows}, "
-            f"duplicate_rows_removed={total_removed}, future_rows_removed={total_future}"
+            f"duplicate_rows_removed={total_removed}, future_rows_removed={total_future}, "
+            f"incomplete_close_removed={total_incomplete}"
         )
     else:
         collector.logger.info("Normalized daily CSV files are already deduplicated by date")
 
 
 def _check_recent_coverage(
-    qlib_data_1d_dir: Path, lookback: int = 5, min_ratio: float = 0.6, sample_size: int = 800
+    qlib_data_1d_dir: Path,
+    lookback: int = 5,
+    min_ratio: float = 0.85,
+    sample_size: int = 800,
+    last_min_ratio: float = 0.4,
 ) -> list:
     """Avisa si algun dia recien volcado tiene cobertura anomala.
 
     Un dia que entra en el calendario con datos de pocos simbolos (p. ej. barras del dia
     en curso) deja NaN permanente en el resto: DumpDataUpdate no reescribe fechas ya
     volcadas. Detectarlo el mismo dia permite corregirlo antes de que se acumule.
+
+    Un dia sano ronda el 92-95%. La ultima sesion se mide contra last_min_ratio: el
+    sanitizador descarta las filas que Yahoo aun no ha cerrado (~30% a la 01:01) y esos
+    simbolos se completan en la diaria siguiente, asi que ahi un ~65% es lo esperado.
     """
     qlib_data_1d_dir = Path(qlib_data_1d_dir)
     calendar_path = qlib_data_1d_dir / "calendars" / "day.txt"
@@ -254,7 +280,8 @@ def _check_recent_coverage(
     for d in recent:
         ratio = counts[d] / checked
         msg = f"{d}: {counts[d]}/{checked} simbolos con dato ({ratio:.0%})"
-        if ratio < min_ratio:
+        threshold = last_min_ratio if d == recent[-1] else min_ratio
+        if ratio < threshold:
             anomalies.append((d, counts[d], checked, ratio))
             collector.logger.error(f"COBERTURA ANOMALA -> {msg}")
         else:

@@ -14,6 +14,7 @@
 | 4 | Universo de símbolos circular en `USAllCollector` | **Resuelto — 2026-09-08** |
 | 5 | Ticker `NA` (Nano Labs) leído como NaN (no documentado en este fichero) | Resuelto parcialmente; ver Fallo 6 |
 | 6 | Días 2026-09-30 y 2026-10-09 con barras intradía y NaN + `all.txt` congelado | **Resuelto — 2026-10-17** (clean rebuild) |
+| 7 | Última sesión sin `close` en ~30% de símbolos (NaN desde el 2026-10-19) | **Fix aplicado — 2026-10-23**; datos se reparan con el resync del 24-oct |
 
 ---
 
@@ -495,3 +496,43 @@ primer cierre, así que **los valores ya guardados no cambian**. Solo cambian lo
 posteriores al ex-date, que caen en la ventana enlazada. La reconstrucción completa
 queda como red de seguridad frente a revisiones de Yahoo y se puede desactivar con
 `QLIB_RESYNC_FULL_ON_ADJUST=0`. Los símbolos nuevos se reconstruyen siempre.
+
+---
+
+## Fallo 7 — Última sesión descargada sin cierre (NaN en `close`)
+
+> Diagnóstico y fix: 2026-10-23.
+
+### Síntoma
+
+Desde el 2026-10-19, ~3.500 símbolos por día (NVO, JPM, MSFT…) tienen `$close` a NaN
+con `open`, `high`, `low`, `volume` y `factor` válidos. Cobertura de `close` del 19 al
+22-oct: 62–68%, frente al 92–95% habitual. `_check_recent_coverage` no avisó porque
+el umbral era del 60%.
+
+### Causa raíz
+
+A la 01:01 (hora de Madrid) Yahoo todavía no ha consolidado la última sesión para ~30%
+de los símbolos. Devuelve la barra con OHLV, pero con `close` y `adjclose` vacíos (hoy:
+3.598 de 12.176 filas del 22-oct). El sanitizador no filtraba esas filas,
+`dump_bin` las escribía como NaN y `DumpDataUpdate` no reescribe fechas ya volcadas,
+así que el NaN se quedaba aunque la diaria siguiente sí trajera el cierre. Los días
+anteriores al 19-oct no lo muestran porque salen del clean rebuild del 17-oct.
+
+### Fix aplicado (2026-10-23)
+
+a. `_sanitize_normalized_daily_csv` descarta las filas con `close` NaN y algún dato
+   OHLV válido. Lo registra como `incomplete_close_removed`. El `.bin` de ese símbolo
+   termina un día antes, y la diaria siguiente, que arranca en la última fecha del
+   calendario, vuelve a descargar ese día ya con cierre y lo añade por posición.
+b. `_check_recent_coverage`: el umbral pasa de 0,6 a 0,85. La última sesión se mide
+   contra `last_min_ratio=0,4`, porque tras (a) en ella es normal un ~65%.
+
+Backup: `scripts/update_us_all.py.bak_20261023_122846`.
+
+### Reparación de los datos
+
+Los NaN del 19 al 22-oct se corrigen con el resync semanal (`--rewrite_window`, que
+reescribe desde el 1-sep), porque un valor nuevo válido sustituye al NaN. Hay que
+verificar tras el resync del 2026-10-24 que la cobertura de esos días vuelve a >90%.
+
