@@ -1,0 +1,69 @@
+{
+  "date": "2026-10-20",
+  "model": "sfm_top3.pth",
+  "signals": [
+    {
+      "crypto": "BTC",
+      "score": -0.025400662794709206,
+      "signal": "\ud83d\udd3b VENTA",
+      "confidence": "MEDIA",
+      "expected_return_pct": -2.54
+    },
+    {
+      "crypto": "ETH",
+      "score": -0.07465784251689911,
+      "signal": "\ud83d\udd3b VENTA",
+      "confidence": "MEDIA",
+      "expected_return_pct": -7.47
+    },
+    {
+      "crypto": "LTC",
+      "score": -0.09555011242628098,
+      "signal": "\ud83d\udd3b VENTA",
+      "confidence": "MEDIA",
+      "expected_return_pct": -9.56
+    },
+    {
+      "crypto": "DOGE",
+      "score": -0.12009359151124954,
+      "signal": "\ud83d\udd3b VENTA",
+      "confidence": "MEDIA",
+      "expected_return_pct": -12.01
+    },
+    {
+      "crypto": "XLM",
+      "score": -0.13730792701244354,
+      "signal": "\ud83d\udd3b VENTA",
+      "confidence": "MEDIA",
+      "expected_return_pct": -13.73
+    },
+    {
+      "crypto": "LINK",
+      "score": -0.157369926571846,
+      "signal": "\ud83d\udd3b VENTA",
+      "confidence": "MEDIA",
+      "expected_return_pct": -15.74
+    },
+    {
+      "crypto": "XRP",
+      "score": -0.17202167212963104,
+      "signal": "\ud83d\udd3b VENTA",
+      "confidence": "MEDIA",
+      "expected_return_pct": -17.2
+    },
+    {
+      "crypto": "SOL",
+      "score": -0.22211997210979462,
+      "signal": "\ud83d\udd3b VENTA",
+      "confidence": "MEDIA",
+      "expected_return_pct": -22.21
+    },
+    {
+      "crypto": "ADA",
+      "score": -0.24120336771011353,
+      "signal": "\ud83d\udd3b VENTA",
+      "confidence": "MEDIA",
+      "expected_return_pct": -24.12
+    }
+  ]
+}
