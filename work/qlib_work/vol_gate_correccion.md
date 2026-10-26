@@ -1,9 +1,45 @@
 # Vol-gate: corrección del percentil de volatilidad (look-ahead y ventana)
 
+> ## 🔴 ACTUALIZACIÓN 2026-10-26 — EL SHARPE 1.136 ES INVÁLIDO
+>
+> Se ejecutó la re-verificación pendiente (paso 2 de "Próximos pasos") y el
+> hallazgo es **más grave que el look-ahead**: la validación de agosto usaba un
+> mecanismo que **no podía funcionar**.
+>
+> `vol_gate_test.py` aplicaba el gate así:
+> ```python
+> sig_gated = mom.multiply(gate_col, axis=0)
+> ```
+> Pero `TopkDropoutStrategy` **ordena** la señal y compra el top-k. Multiplicar
+> por un escalar NO cambia el orden: `0.5·x` conserva el ranking, y `0·x` deja
+> todos los valores empatados. **El gate no podía afectar al backtest.**
+>
+> **Confirmación empírica:** ejecutado 4 veces (gate=1.0 / P70 / P75 / P80),
+> las cuatro dan **resultados idénticos** (Sharpe 1.1513, DD −33.8%, valor final
+> 462.476). Ver `vol_gate_validacion_v2.json` y el diagnóstico `{1.0: 240}`.
+>
+> **Consecuencias:**
+> - ❌ El **Sharpe 1.136 de P75 no es reproducible**. La tabla de agosto
+>   (0.960 / 0.967 / 1.136 / 1.071) es imposible con este código, porque
+>   produciría cuatro valores iguales.
+> - ❌ El criterio de promoción ("robusto en todos los umbrales") **no se puede
+>   evaluar** con esa validación: los umbrales nunca entraron en juego.
+> - ⚠️ El `git show cdd68576` confirma que el código de agosto era **idéntico**;
+>   no hubo un cambio posterior que lo rompiera.
+> - ✅ **Esto NO invalida `vol_gate.py`**, que es correcto y causal. Invalida
+>   únicamente su *medición*.
+>
+> **Validación correcta:** hecha el 2026-10-26 con el gate aplicado sobre
+> exposición real. Ver `vol_gate_e3_validacion.py` y la sección 6 de este
+> documento.
+>
+> **Acción:** no usar 1.136 como referencia en ninguna decisión.
+
 > **Fecha:** 2026-10-18
 > **Script:** `work/estrategias/vol_gate.py` (corregido) · `vol_gate_test.py` (validación)
 > **Documento previo:** `vol_gate_resultado.md` (validación 2026-08-22)
-> **Estado:** BUG REAL CORREGIDO — validado ≠ desplegado. Pendiente de re-verificación en producción.
+> **Estado:** BUG REAL CORREGIDO. Re-verificación **COMPLETADA el 2026-10-26**
+> (ver aviso superior y sección 6).
 
 ---
 
@@ -121,14 +157,122 @@ Ejecutado con el `prices_live.csv` real de 160 filas: el percentil ahora **sí c
 ## 5. Próximos pasos
 
 ### Inmediatos
-1. **Re-verificar E3 en producción** con el gate corregido: el último ciclo E3 ya se re-ejecutó tras el fix; confirmar que la señal de momentum se modula como se espera y que el `gate` reportado no usa `vol.max()`.
-2. **Re-correr `vol_gate_test.py`** sobre historia larga Qlib para confirmar que los números de validación (Sharpe 1.136 en P75) **se mantienen** — no deberían cambiar, porque esa rama no se tocó, pero conviene dejarlo registrado tras el fix.
-3. **Vigilar `prices_live.csv`:** si crece por encima de 252 filas, la ventana pasará sola a 252 y convergerá con la validación. Documentar cuándo ocurre.
+1. ✅ **HECHO (2026-10-26).** Re-verificar con el gate corregido. Resultado: el
+   1.136 era irreproducible por un fallo de mecanismo, no de look-ahead.
+   Ver sección 6.
+2. ✅ **HECHO (2026-10-26).** Re-ejecutado. Los números de agosto **NO se
+   mantienen**: la validación nunca midió el gate (los 4 umbrales daban el
+   mismo resultado). Ver aviso superior.
+3. **Vigilar `prices_live.csv`:** si crece por encima de 252 filas, la ventana
+   pasará sola a 252 y convergerá con la validación. Documentar cuándo ocurre.
 
 ### De fondo
 4. **Aplicar el mismo examen a las demás señales**: ¿alguna otra usa `max()`/`mean()` globales sobre la serie completa (look-ahead) o cambia de fórmula según la longitud de la historia? El patrón "validado ≠ desplegado" es fácil de repetir.
 5. **Test de invarianza de la historia:** comparar el gate con 160 vs 252 vs 504 filas de historia para cuantificar cuánta señal depende del warm-up.
 6. **Añadir un guard automático** (test en CI o en el cron de healthcheck) que detecte si `vol_percentile` vuelve a caer en una rama no-percentil.
+
+---
+
+## 6. Re-verificación y validación correcta (2026-10-26)
+
+### 6.1 Qué se hizo
+
+Se intentó reproducir la validación de agosto con el `vol_gate.py` corregido.
+Cuatro intentos, cada uno descartando una causa:
+
+| Intento | Script | Mecanismo | Resultado |
+|---|---|---|---|
+| 1 | `vol_gate_reverificacion.py` | `mom.multiply(gate)` (el original) | 4 resultados **idénticos** |
+| 2 | `vol_gate_validacion_v2.py` | subclase de `TopkDropout`, `self.topk` dinámico | idénticos; diag `{1.0: 240}` |
+| 3 | `gated_strategy.py` | estrategia propia, órdenes explícitas | **funciona** |
+| 4 | `vol_gate_e3_validacion.py` | **arquitectura real E3** (núcleo 65% + táctico 35%×gate) | ver 6.3 |
+
+**Causa raíz de los intentos fallidos 1 y 2:**
+
+- **Intento 1:** multiplicar la señal no cambia el orden del top-k.
+- **Intento 2:** `qlib/utils/mod.py:178-184` hace
+  ```python
+  try:    klass(**cls_kwargs, **try_kwargs, **kwargs)
+  except TypeError: klass(**cls_kwargs, **kwargs)
+  ```
+  Si el constructor lanza `TypeError`, qlib **reintenta sin los kwargs extra**
+  (el `gate`). La estrategia se construye sin gate, el backtest corre, y el
+  resultado sale idéntico al puro **sin ningún error visible**. Fallo silencioso.
+
+### 6.2 Resultado del mecanismo correcto (cartera completa)
+
+Con el gate sobre el **número de posiciones** de toda la cartera
+(`vol_gate_validacion_v3.py`), período 2022-01→2026-08, universo `sp500`:
+
+| | Sharpe | MaxDD | Anual | Final |
+|---|---|---|---|---|
+| Momentum puro | 1.151 | −33.8% | 39.2% | 462.476 |
+| gate P75 | **0.972** | −34.3% | 27.9% | 297.311 |
+
+- Gate activo: **169 días en cash**, 76 a media posición, 1911 a pleno.
+- Chequeo: ✅ los resultados difieren (el gate actúa).
+- **Delta Sharpe: −0.180. Delta MaxDD: −0.5 pp (sin mejora).**
+
+⚠️ Este mecanismo **no es el del proyecto**: reducir el número de posiciones
+concentra la cartera y es conceptualmente distinto a reducir capital.
+
+### 6.3 Resultado en la ARQUITECTURA REAL (E3)
+
+`simulate_pead_core.py` aplica el gate así (líneas 204-205):
+
+```python
+core_cash = portfolio_value * NUCLEO_W          # 65%, el gate NO lo toca
+tact_cash = portfolio_value * TACTICO_W * gate  # 35% × gate
+```
+
+`vol_gate_e3_validacion.py` replica esa estructura. Período 2018-01→2026-08,
+200 tickers de `sp500`, benchmark `^GSPC` real:
+
+| | Sharpe | MaxDD | Total | Final |
+|---|---|---|---|---|
+| A) sin gate | 0.257 | −41.0% | +132.3% | 232.322 |
+| B) con gate (35%×gate) | **0.273** | **−33.4%** | +126.6% | 226.557 |
+| **Delta** | **+0.017** | **+7.6 pp** | −5.7 pp | −5.765 |
+
+Gate: 281 días a 0.0, 304 a 0.5, 1570 a 1.0.
+
+### 6.4 Interpretación
+
+**El gate funciona como seguro de drawdown, no como mejora de rentabilidad.**
+
+- ✅ **Reduce el drawdown de forma sustancial:** −41.0% → −33.4% (**7.6 pp**).
+  Coherente con `jev_backtest_ab.py`, donde el gate sobre capital redujo el
+  DD de −36% a −15%.
+- ⚠️ **El Sharpe apenas cambia:** +0.017 sobre una base de 0.257 es ~6%, dentro
+  del margen de ruido de una sola muestra.
+- ⚠️ **Tiene un coste:** 5.765 $ menos de beneficio final (sobre 232k).
+
+**La pregunta correcta no es "¿gana más?" sino "¿es un intercambio que quieres?"**
+
+| | Sin gate | Con gate |
+|---|---|---|
+| Renuncias a | — | 5.765 $ |
+| A cambio de | — | 7.6 pp menos de caída máxima |
+
+### 6.5 Limitaciones de esta validación
+
+1. **El libro PEAD está aproximado con momentum**, no con SUE real, porque los
+   CSVs de earnings (`pead_earnings*.csv`) **no existen en el repo local** —
+   viven en la máquina con `/opt/data/`. Esto hace que núcleo y táctico sean
+   más parecidos de lo que deberían, **diluyendo el efecto diferencial del
+   gate** y probablemente deprimiendo el Sharpe absoluto (0.257 frente a
+   0.97-1.15 medidos en otros tests).
+2. **In-sample, una sola muestra.** Sin walk-forward ni out-of-sample.
+3. **200 tickers** (muestreo uniforme de 1.180), no el universo completo.
+4. Los **deltas A→B** son la parte fiable (la comparación es limpia, mismos
+   datos y costes); los **niveles absolutos** no deben citarse como el Sharpe
+   real de E3.
+
+### 6.6 Decisión recomendada
+
+Adoptar el gate **por su efecto sobre el drawdown**, con la evidencia
+consistente de dos tests independientes. No justificarlo por mejora de Sharpe,
+que no está demostrada.
 
 ---
 
