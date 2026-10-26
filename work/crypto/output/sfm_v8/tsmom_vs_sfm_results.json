@@ -1,0 +1,104 @@
+{
+  "window": {
+    "test_start": "2024-06-14",
+    "test_end": "2026-10-25",
+    "sessions": 864
+  },
+  "cost_one_way": 0.001,
+  "rows": [
+    {
+      "strategy": "TSMOM20-vol25",
+      "equity": 1.67,
+      "annual_pct": 24.18,
+      "sharpe": 0.912,
+      "sortino": 1.414,
+      "max_dd_pct": -32.27,
+      "calmar": 0.749,
+      "t_stat": 1.4,
+      "days": 864,
+      "turnover_daily": 0.3477,
+      "pct_days_invested": 75.3,
+      "avg_leverage": 0.421
+    },
+    {
+      "strategy": "TSMOM50-vol25",
+      "equity": 1.385,
+      "annual_pct": 14.73,
+      "sharpe": 0.65,
+      "sortino": 0.875,
+      "max_dd_pct": -30.23,
+      "calmar": 0.487,
+      "t_stat": 1.0,
+      "days": 864,
+      "turnover_daily": 0.2178,
+      "pct_days_invested": 74.8,
+      "avg_leverage": 0.475
+    },
+    {
+      "strategy": "TSMOM20-vol40",
+      "equity": 2.082,
+      "annual_pct": 36.32,
+      "sharpe": 0.922,
+      "sortino": 1.424,
+      "max_dd_pct": -46.37,
+      "calmar": 0.783,
+      "t_stat": 1.42,
+      "days": 864,
+      "turnover_daily": 0.3477,
+      "pct_days_invested": 75.3,
+      "avg_leverage": 0.659
+    },
+    {
+      "strategy": "BTC-BH",
+      "equity": 1.199,
+      "annual_pct": 7.99,
+      "sharpe": 0.395,
+      "sortino": 0.6,
+      "max_dd_pct": -53.06,
+      "calmar": 0.15,
+      "t_stat": 0.61,
+      "days": 864
+    },
+    {
+      "strategy": "EW-BH",
+      "equity": 1.108,
+      "annual_pct": 4.44,
+      "sharpe": 0.396,
+      "sortino": 0.594,
+      "max_dd_pct": -67.63,
+      "calmar": 0.066,
+      "t_stat": 0.61,
+      "days": 864
+    },
+    {
+      "strategy": "SFM-v8-A",
+      "equity": 1.773,
+      "annual_pct": null,
+      "sharpe": 0.7,
+      "max_dd_pct": -71.5,
+      "t_stat": 1.06,
+      "ic_mean": -0.0079,
+      "days": 843
+    },
+    {
+      "strategy": "SFM-v8-B",
+      "equity": 1.546,
+      "annual_pct": null,
+      "sharpe": 0.62,
+      "max_dd_pct": -74.4,
+      "t_stat": 0.94,
+      "ic_mean": 0.0009,
+      "days": 843
+    },
+    {
+      "strategy": "SFM-v8-C",
+      "equity": 3.024,
+      "annual_pct": null,
+      "sharpe": 1.0,
+      "max_dd_pct": -70.9,
+      "t_stat": 1.51,
+      "ic_mean": -0.0017,
+      "days": 843
+    }
+  ]
+}
