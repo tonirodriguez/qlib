@@ -1,0 +1,120 @@
+{
+  "rows": [
+    {
+      "strategy": "siempre",
+      "annual_pct": 12.0,
+      "total_pct": 116.4,
+      "sharpe": 4.6,
+      "dd_pct": -6.5,
+      "t": 12.0,
+      "n": 2486,
+      "final_eur": 21639.0,
+      "avg_exposure": 1.0
+    },
+    {
+      "strategy": "umbral",
+      "annual_pct": -1.79,
+      "total_pct": -11.6,
+      "sharpe": -0.75,
+      "dd_pct": -48.7,
+      "t": -1.97,
+      "n": 2486,
+      "final_eur": 8842.0,
+      "avg_exposure": 0.99
+    },
+    {
+      "strategy": "top3",
+      "annual_pct": -13.83,
+      "total_pct": -63.7,
+      "sharpe": -5.4,
+      "dd_pct": -76.0,
+      "t": -14.08,
+      "n": 2486,
+      "final_eur": 3629.0,
+      "avg_exposure": 0.99
+    }
+  ],
+  "first_dates": {
+    "btc": "2019-09-08",
+    "eth": "2019-11-27",
+    "sol": "2020-09-14",
+    "xlm": "2020-01-20",
+    "ada": "2020-01-31",
+    "xrp": "2020-01-06",
+    "doge": "2020-07-10",
+    "link": "2020-01-17",
+    "ltc": "2020-01-09"
+  },
+  "by_year_umbral": {
+    "2020": {
+      "strategy": "2020",
+      "annual_pct": 19.58,
+      "total_pct": 19.3,
+      "sharpe": 6.8,
+      "dd_pct": -2.3,
+      "t": 6.77,
+      "n": 361,
+      "final_eur": 11935.0
+    },
+    "2021": {
+      "strategy": "2021",
+      "annual_pct": 44.04,
+      "total_pct": 44.0,
+      "sharpe": 11.85,
+      "dd_pct": -2.3,
+      "t": 11.85,
+      "n": 365,
+      "final_eur": 14404.0
+    },
+    "2022": {
+      "strategy": "2022",
+      "annual_pct": -19.41,
+      "total_pct": -19.4,
+      "sharpe": -13.87,
+      "dd_pct": -19.6,
+      "t": -13.87,
+      "n": 365,
+      "final_eur": 8059.0
+    },
+    "2023": {
+      "strategy": "2023",
+      "annual_pct": -3.57,
+      "total_pct": -3.6,
+      "sharpe": -2.68,
+      "dd_pct": -7.6,
+      "t": -2.68,
+      "n": 365,
+      "final_eur": 9643.0
+    },
+    "2024": {
+      "strategy": "2024",
+      "annual_pct": 4.71,
+      "total_pct": 4.7,
+      "sharpe": 3.01,
+      "dd_pct": -5.6,
+      "t": 3.02,
+      "n": 366,
+      "final_eur": 10472.0
+    },
+    "2025": {
+      "strategy": "2025",
+      "annual_pct": -18.68,
+      "total_pct": -18.7,
+      "sharpe": -12.18,
+      "dd_pct": -18.8,
+      "t": -12.18,
+      "n": 365,
+      "final_eur": 8132.0
+    },
+    "2026": {
+      "strategy": "2026",
+      "annual_pct": -26.49,
+      "total_pct": -22.3,
+      "sharpe": -16.06,
+      "dd_pct": -22.2,
+      "t": -14.53,
+      "n": 299,
+      "final_eur": 7772.0
+    }
+  }
+}
