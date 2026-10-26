@@ -23,9 +23,37 @@ Es un **fork personal** (`tonirodriguez/qlib`) del [Microsoft Qlib](https://gith
 ### ✅ Lo que funciona / está completado
 
 1. **Modelo LightGBM probado y optimizado en mercado chino (CSI300):**
-   - Baseline con alpha158: 14.73% anual (Top50, label 1d)
-   - Label 5d mejora: 20.52% anual con Rank IC 0.0793
-   - SoftTopk20 alcanza **31.40% anual** (la mejor hasta ahora)
+
+   > ## 🔴 NO VERIFICADO — CONTRADICCIÓN DETECTADA (2026-10-26)
+   >
+   > Auditoría: [`work/qlib_work/auditoria_csi300.md`](work/qlib_work/auditoria_csi300.md)
+   >
+   > **Dos problemas:**
+   >
+   > 1. **Los experimentos MLflow no existen en el repositorio.** Ninguno de
+   >    los `experiment_id` citados en `baselines.md` está en `mlruns/`
+   >    (la base MLflow local tiene **0 runs**). Los números se generaron en
+   >    otra máquina y solo se copiaron los documentos.
+   >
+   > 2. **Contradicción sobre SoftTopk20 (~10x):**
+   >
+   >    | Documento | Valor | ¿Cita run_id? |
+   >    |---|---|---|
+   >    | `baselines.md`, `hypotheses.md`, `dashboard.md`, `signal-vs-portfolio.md` | **3.29%** | ✅ sí |
+   >    | **este documento**, `ROADMAP`, `Cambios_Qlib.md` | **31.40%** | ❌ no |
+   >
+   >    Los documentos que citan el `run_id`
+   >    (`3b121593ab2b45cea2bd85467a6302fc`) dan **0.0329** e IR 0.2635 con
+   >    DD −24.3%, y lo describen como resultado **flojo**.
+   >    `hypotheses.md` lo llama literalmente *"resultado flojo"*.
+   >
+   > **No usar las cifras de esta sección hasta reconciliarlas.** El 31.40%
+   > podría ser 0.0329 con el punto decimal desplazado, pero no está confirmado
+   > y no hay datos en el repo para zanjarlo.
+
+   - Baseline con alpha158: 14.73% anual (Top50, label 1d) ⚠️ *no verificado*
+   - Label 5d mejora: 20.52% anual con Rank IC 0.0793 ⚠️ *no verificado*
+   - SoftTopk20: **31.40%** 🔴 **en disputa** (otros docs citan 3.29% con run_id)
    - Se probaron múltiples configuraciones: baseline, v2, improved, improved_v2, optuna
    - La config `config_lightgbm_improved_v2` es la que mejor resultados netos tras costes ha dado
 
@@ -104,7 +132,12 @@ qlib/                          → Fork de Microsoft Qlib (core framework)
 
 ### 📌 Resumen ejecutivo
 
-El proyecto ha completado con éxito la fase de **prototipado en mercado chino** (CSI300) con resultados sólidos (~31% anual con SoftTopk). La expansión a **mercado US (S&P 500) está configurada pero sin ejecutar** — es la prioridad número 1. La infraestructura de datos US tiene cierta fragilidad pero ya existen herramientas de reparación y validación. El sistema de trading automático tiene la arquitectura definida pero **no está en producción**. Los modelos avanzados (GRU, Transformer, SFM v5, Ensemble) están documentados pero sin implementar.
+El proyecto completó la fase de **prototipado en mercado chino** (CSI300). 🔴
+**Los resultados de esa fase NO están verificados** y hay una contradicción
+documental de ~10x sobre SoftTopk20 (31.40% aquí vs 3.29% en los documentos que
+citan `run_id`); los experimentos MLflow no están en el repositorio. Ver
+`work/qlib_work/auditoria_csi300.md`. La expansión a **mercado US (S&P 500)** se
+ejecutó el 2026-10-26 (Rank IC 0.005, con costes −5.9% anual — tampoco viable). La infraestructura de datos US tiene cierta fragilidad pero ya existen herramientas de reparación y validación. El sistema de trading automático tiene la arquitectura definida pero **no está en producción**. Los modelos avanzados (GRU, Transformer, SFM v5, Ensemble) están documentados pero sin implementar.
 
 El próximo paso más crítico es **ejecutar el baseline SP500 US** para validar que el pipeline funciona en mercado americano antes de avanzar a modelos más complejos.
 

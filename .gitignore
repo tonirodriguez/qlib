@@ -66,3 +66,8 @@ work/estrategias/**/*.log
 # Fase 0 Jev: bundle CA generado e informes de sondeo.
 # El bundle se regenera solo; los informes son artefactos locales.
 work/estrategias/jev_phase0_out/
+
+# Outputs de experimentos generados (no versionar resultados crudos)
+work/crypto/output/sfm_v9_causal/
+work/estrategias/vol_gate_*validacion*.json
+work/estrategias/vol_gate_reverificacion.json
