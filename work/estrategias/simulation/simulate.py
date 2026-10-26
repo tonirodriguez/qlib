@@ -21,13 +21,29 @@ import pandas as pd
 
 SIM_DIR = os.path.dirname(os.path.abspath(__file__))
 STATE_FILE = os.path.join(SIM_DIR, "state.json")
-QLIB_URI = "/opt/data/profiles/investments/home/.qlib/qlib_data/us_data"
-UNIVERSE_FILE = os.path.join(QLIB_URI, "instruments/sp500_liquid.txt")
 START = "2018-01-01"
 
 MOM_W = 120
 TOPK = 30
 START_CAPITAL_EUR = 20000.0
+
+# --- Rutas y universo: resueltos dinamicamente ---------------------------
+# ADAPTADO 2026-10-26: antes estaban hardcodeadas a otra maquina
+#    QLIB_URI = "/opt/data/profiles/investments/home/.qlib/qlib_data/us_data"
+#    UNIVERSE_FILE = .../sp500_liquid.txt
+# Ninguna de las dos existe en este entorno. `rutas_entorno` las resuelve
+# y ademas RECHAZA el dataset de crypto (evita leer BTC en vez de AAPL).
+sys.path.insert(0, SIM_DIR)
+from rutas_entorno import get_qlib_uri, get_universe as _get_universe_auto
+
+QLIB_URI = get_qlib_uri()
+UNIVERSE_FILE = None   # se rellena al llamar a get_universe()
+
+# Liquidez: `sp500_liquid` pretendia ~390 tickers liquidos del S&P 500.
+# Como ese fichero no existe, si el universo tiene mas de 500 tickers se
+# filtra por volumen ajustado medio. Ajusta MIN_DOLLAR_VOL si quieres otro
+# corte (None = sin filtro, usa el universo completo).
+MIN_DOLLAR_VOL = float(os.environ.get("MIN_DOLLAR_VOL", 0)) or None
 
 import qlib
 from qlib.data import D
@@ -35,12 +51,11 @@ qlib.init(provider_uri=QLIB_URI, region='us')
 
 
 def get_universe():
-    tickers = []
-    with open(UNIVERSE_FILE) as f:
-        for line in f:
-            t = line.split("\t")[0].strip()
-            if t:
-                tickers.append(t)
+    """Tickers del universo (resuelto dinamicamente)."""
+    global UNIVERSE_FILE
+    tickers = _get_universe_auto(min_dollar_vol=MIN_DOLLAR_VOL)
+    from rutas_entorno import get_universe_file
+    UNIVERSE_FILE = get_universe_file()
     return tickers
 
 
@@ -106,7 +121,9 @@ def save_state(state):
 
 def main(reset=False):
     tickers = get_universe()
-    print(f"Universo: {len(tickers)} tickers (sp500_liquid)")
+    import os as _os
+    print(f"Universo: {len(tickers)} tickers "
+          f"({_os.path.basename(UNIVERSE_FILE) if UNIVERSE_FILE else 'auto'})")
 
     state = None if reset else load_state()
     if state:

@@ -5,14 +5,23 @@ simulate_pead_core.py) use las MISMAS funciones de precios, earnings y costes IB
 sin duplicar lógica. Los simuladores existentes NO se tocan; este módulo se usa
 por los nuevos (E3) desde el plan de Quinn (plan_E3_quinn_futuro.md).
 """
-import os, json, datetime
+import os, sys, json, datetime
 import numpy as np
 import pandas as pd
 
 SIM_DIR = os.path.dirname(os.path.abspath(__file__))
-QLIB_URI = os.environ.get("QLIB_US_DATA", "/opt/data/profiles/investments/home/.qlib/qlib_data/us_data")
-UNIVERSE_FILE = os.path.join(QLIB_URI, "instruments/sp500_liquid.txt")
 START = "2018-01-01"
+
+# --- Rutas resueltas dinamicamente (ADAPTADO 2026-10-26) -----------------
+# Antes: QLIB_URI = os.environ.get("QLIB_US_DATA", "/opt/data/...") y
+# UNIVERSE_FILE = .../sp500_liquid.txt. La ruta por defecto no existe aqui
+# y el fichero de universo tampoco. `rutas_entorno` resuelve ambos y
+# rechaza el dataset de crypto (evita leer BTC en vez de AAPL).
+sys.path.insert(0, SIM_DIR)
+from rutas_entorno import get_qlib_uri, get_universe_file as _get_uf
+
+QLIB_URI = get_qlib_uri()
+UNIVERSE_FILE = _get_uf()
 
 # Ear file: prioridad historial append-only
 EAR_FILE = os.path.join(SIM_DIR, "..", "pead_earnings_appended.csv")

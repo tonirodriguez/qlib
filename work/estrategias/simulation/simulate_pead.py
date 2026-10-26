@@ -14,9 +14,17 @@ import pandas as pd
 
 SIM_DIR = os.path.dirname(os.path.abspath(__file__))
 STATE_FILE = os.path.join(SIM_DIR, "state_pead.json")
-QLIB_URI = "/opt/data/profiles/investments/home/.qlib/qlib_data/us_data"
-UNIVERSE_FILE = os.path.join(QLIB_URI, "instruments/sp500_liquid.txt")
 START = "2018-01-01"
+
+# --- Rutas y universo: resueltos dinamicamente (ADAPTADO 2026-10-26) -----
+# Antes: QLIB_URI hardcodeado a /opt/data/... (otra maquina) y
+# UNIVERSE_FILE = sp500_liquid.txt (no existe). Ver `rutas_entorno.py`.
+sys.path.insert(0, SIM_DIR)
+from rutas_entorno import get_qlib_uri, get_universe as _get_universe_auto
+
+QLIB_URI = get_qlib_uri()
+UNIVERSE_FILE = None
+MIN_DOLLAR_VOL = float(os.environ.get("MIN_DOLLAR_VOL", 0)) or None
 
 MOM_W = 120
 TOPK = 30
@@ -44,12 +52,11 @@ qlib.init(provider_uri=QLIB_URI, region='us')
 
 
 def get_universe():
-    tickers = []
-    with open(UNIVERSE_FILE) as f:
-        for line in f:
-            t = line.split("\t")[0].strip()
-            if t:
-                tickers.append(t)
+    """Tickers del universo (resuelto dinamicamente)."""
+    global UNIVERSE_FILE
+    tickers = _get_universe_auto(min_dollar_vol=MIN_DOLLAR_VOL)
+    from rutas_entorno import get_universe_file
+    UNIVERSE_FILE = get_universe_file()
     return tickers
 
 
@@ -147,7 +154,9 @@ def save_state(state):
 
 def main(reset=False):
     tickers = get_universe()
-    print(f"Universo: {len(tickers)} tickers (sp500_liquid)")
+    import os as _os
+    print(f"Universo: {len(tickers)} tickers "
+          f"({_os.path.basename(UNIVERSE_FILE) if UNIVERSE_FILE else 'auto'})")
 
     state = None if reset else load_state()
     if state:
