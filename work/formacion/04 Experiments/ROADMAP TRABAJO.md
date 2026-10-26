@@ -38,8 +38,19 @@
 
 | Experimento | Estado | Periodo |
 |------------|:------:|:-------:|
-| **SP500 Baseline alpha158** | ⏳ Config listo, no ejecutado | 2008-2025 |
-| **SP500 Label 5d** | ⏳ Config listo, no ejecutado | 2008-2025 |
+| **SP500 Baseline alpha158** | 🟢 Config creada y verificada, listo para ejecutar | 2008-2026 |
+| **SP500 Label 5d** | ⏳ Pendiente (derivar del baseline) | — |
+
+> **Actualización 2026-10-26:** la config anterior apuntaba a rutas inexistentes
+> (`config/`, `scripts/run_baseline_workflow.py`, `.venv/`). Se creó de nuevo en
+> `work/auto_trading_system/conf/workflow_baseline_lightgbm_alpha158_sp500_us.yaml`
+> con un verificador de prerrequisitos. Ver `Ejecución Prioridad 1.md`.
+>
+> ```bash
+> cd /mnt/c/Users/trodriguez/src/qlib
+> conda run -n qlib python work/auto_trading_system/verificar_sp500_baseline.py
+> conda run -n qlib qrun work/auto_trading_system/conf/workflow_baseline_lightgbm_alpha158_sp500_us.yaml
+> ```
 
 - **Región:** US
 - **Benchmark:** ^GSPC
@@ -188,7 +199,7 @@ conda run -n qlib python work/crypto/sfm_daily_signal.py --model=top3
 | 3 | 🟡 Cronjob diario | Bajo | **Crítico** — automatización | ✅ **HECHO** (`0 9 * * *`) |
 | 4 | 🟡 Paper trading | Medio | Alto — validación en vivo | ✅ **HECHO** |
 | 5 | 🟡 Dump incremental Qlib | Bajo | Alto — datos actualizados sin regenerar | ✅ **HECHO** |
-| 6 | 🟢 SP500 US baseline | Bajo | Medio — diversificación | ⏳ Pendiente |
+| 6 | 🟢 SP500 US baseline | Bajo | Medio — diversificación | 🟢 **Config lista + verificador** (2026-10-26) |
 | 7 | 🟢 Dashboard monitorización | Medio | Medio — visibilidad | ⏳ Pendiente |
 
 ---

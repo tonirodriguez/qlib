@@ -62,3 +62,7 @@ work/crypto/output/sfm_v8/logs/
 # run logs de experimentos (byproduct)
 work/estrategias/*.log
 work/estrategias/**/*.log
+
+# Fase 0 Jev: bundle CA generado e informes de sondeo.
+# El bundle se regenera solo; los informes son artefactos locales.
+work/estrategias/jev_phase0_out/
