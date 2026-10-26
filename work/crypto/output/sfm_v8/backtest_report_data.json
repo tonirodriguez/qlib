@@ -1,0 +1,314 @@
+{
+  "total": [
+    {
+      "ret_pct": 4624.97,
+      "sharpe": 1.27,
+      "dd_pct": -41.3,
+      "n": 3951,
+      "eq": 47.24974228043318,
+      "strategy": "vol40-breadth",
+      "liquidated": false,
+      "years_beat": 4
+    },
+    {
+      "ret_pct": 21083.01,
+      "sharpe": 1.27,
+      "dd_pct": -56.0,
+      "n": 3951,
+      "eq": 211.8301238055447,
+      "strategy": "vol60-breadth",
+      "liquidated": false,
+      "years_beat": 5
+    },
+    {
+      "ret_pct": 6074.25,
+      "sharpe": 1.21,
+      "dd_pct": -54.3,
+      "n": 3951,
+      "eq": 61.74249318994021,
+      "strategy": "vol40-btc",
+      "liquidated": false,
+      "years_beat": 5
+    },
+    {
+      "ret_pct": 27369.31,
+      "sharpe": 1.21,
+      "dd_pct": -70.8,
+      "n": 3951,
+      "eq": 274.6931250120815,
+      "strategy": "vol60-btc",
+      "liquidated": false,
+      "years_beat": 7
+    },
+    {
+      "ret_pct": 10806.75,
+      "sharpe": 1.17,
+      "dd_pct": -78.2,
+      "n": 3951,
+      "eq": 109.06751580577289,
+      "strategy": "vol40-none",
+      "liquidated": false,
+      "years_beat": 5
+    },
+    {
+      "ret_pct": 46289.63,
+      "sharpe": 1.16,
+      "dd_pct": -91.1,
+      "n": 3951,
+      "eq": 463.89631274327473,
+      "strategy": "vol60-none",
+      "liquidated": false,
+      "years_beat": 6
+    },
+    {
+      "ret_pct": 18519.1796875,
+      "sharpe": 1.06,
+      "dd_pct": -83.3,
+      "n": 3951,
+      "eq": 186.1918487548828,
+      "strategy": "BTC buy & hold"
+    }
+  ],
+  "by_year_vol40": [
+    {
+      "year": 2016,
+      "ret_pct": -7.41,
+      "sharpe": -0.39,
+      "dd_pct": -13.3,
+      "btc_ret_pct": 124.06999969482422,
+      "btc_dd_pct": -32.6
+    },
+    {
+      "year": 2017,
+      "ret_pct": 335.5,
+      "sharpe": 3.55,
+      "dd_pct": -16.8,
+      "btc_ret_pct": 1337.68994140625,
+      "btc_dd_pct": -35.6
+    },
+    {
+      "year": 2018,
+      "ret_pct": -12.34,
+      "sharpe": -0.47,
+      "dd_pct": -24.8,
+      "btc_ret_pct": -72.94000244140625,
+      "btc_dd_pct": -81.2
+    },
+    {
+      "year": 2019,
+      "ret_pct": 22.99,
+      "sharpe": 0.95,
+      "dd_pct": -14.2,
+      "btc_ret_pct": 91.69999694824219,
+      "btc_dd_pct": -48.6
+    },
+    {
+      "year": 2020,
+      "ret_pct": 219.79,
+      "sharpe": 3.0,
+      "dd_pct": -14.9,
+      "btc_ret_pct": 303.29998779296875,
+      "btc_dd_pct": -52.5
+    },
+    {
+      "year": 2021,
+      "ret_pct": 155.2,
+      "sharpe": 2.71,
+      "dd_pct": -21.4,
+      "btc_ret_pct": 59.45000076293945,
+      "btc_dd_pct": -53.1
+    },
+    {
+      "year": 2022,
+      "ret_pct": -23.44,
+      "sharpe": -1.12,
+      "dd_pct": -31.5,
+      "btc_ret_pct": -64.22000122070312,
+      "btc_dd_pct": -67.0
+    },
+    {
+      "year": 2023,
+      "ret_pct": 62.91,
+      "sharpe": 1.56,
+      "dd_pct": -14.7,
+      "btc_ret_pct": 155.75999450683594,
+      "btc_dd_pct": -20.1
+    },
+    {
+      "year": 2024,
+      "ret_pct": 28.15,
+      "sharpe": 0.88,
+      "dd_pct": -37.0,
+      "btc_ret_pct": 120.88999938964844,
+      "btc_dd_pct": -26.2
+    },
+    {
+      "year": 2025,
+      "ret_pct": 3.69,
+      "sharpe": 0.27,
+      "dd_pct": -17.1,
+      "btc_ret_pct": -6.289999961853027,
+      "btc_dd_pct": -32.1
+    },
+    {
+      "year": 2026,
+      "ret_pct": -19.64,
+      "sharpe": -0.8,
+      "dd_pct": -35.6,
+      "btc_ret_pct": -8.529999732971191,
+      "btc_dd_pct": -39.6
+    }
+  ],
+  "by_year_vol60": [
+    {
+      "year": 2016,
+      "ret_pct": -11.81,
+      "sharpe": -0.39,
+      "dd_pct": -19.4,
+      "btc_ret_pct": 124.06999969482422,
+      "btc_dd_pct": -32.6
+    },
+    {
+      "year": 2017,
+      "ret_pct": 751.73,
+      "sharpe": 3.55,
+      "dd_pct": -24.7,
+      "btc_ret_pct": 1337.68994140625,
+      "btc_dd_pct": -35.6
+    },
+    {
+      "year": 2018,
+      "ret_pct": -19.52,
+      "sharpe": -0.47,
+      "dd_pct": -36.0,
+      "btc_ret_pct": -72.94000244140625,
+      "btc_dd_pct": -81.2
+    },
+    {
+      "year": 2019,
+      "ret_pct": 33.27,
+      "sharpe": 0.95,
+      "dd_pct": -20.7,
+      "btc_ret_pct": 91.69999694824219,
+      "btc_dd_pct": -48.6
+    },
+    {
+      "year": 2020,
+      "ret_pct": 435.18,
+      "sharpe": 2.99,
+      "dd_pct": -21.8,
+      "btc_ret_pct": 303.29998779296875,
+      "btc_dd_pct": -52.5
+    },
+    {
+      "year": 2021,
+      "ret_pct": 286.05,
+      "sharpe": 2.71,
+      "dd_pct": -30.8,
+      "btc_ret_pct": 59.45000076293945,
+      "btc_dd_pct": -53.1
+    },
+    {
+      "year": 2022,
+      "ret_pct": -34.25,
+      "sharpe": -1.12,
+      "dd_pct": -44.2,
+      "btc_ret_pct": -64.22000122070312,
+      "btc_dd_pct": -67.0
+    },
+    {
+      "year": 2023,
+      "ret_pct": 97.45,
+      "sharpe": 1.55,
+      "dd_pct": -21.5,
+      "btc_ret_pct": 155.75999450683594,
+      "btc_dd_pct": -20.1
+    },
+    {
+      "year": 2024,
+      "ret_pct": 37.6,
+      "sharpe": 0.87,
+      "dd_pct": -50.8,
+      "btc_ret_pct": 120.88999938964844,
+      "btc_dd_pct": -26.2
+    },
+    {
+      "year": 2025,
+      "ret_pct": 2.01,
+      "sharpe": 0.26,
+      "dd_pct": -24.9,
+      "btc_ret_pct": -6.289999961853027,
+      "btc_dd_pct": -32.1
+    },
+    {
+      "year": 2026,
+      "ret_pct": -30.16,
+      "sharpe": -0.82,
+      "dd_pct": -49.2,
+      "btc_ret_pct": -8.529999732971191,
+      "btc_dd_pct": -39.6
+    }
+  ],
+  "by_regime_vol40": [
+    {
+      "regimen": "Alcista (amplitud \u2265 50%)",
+      "dias": 1695,
+      "ret_pct": 4457.02,
+      "sharpe": 2.01,
+      "dd_pct": -34.3
+    },
+    {
+      "regimen": "Bajista (amplitud < 50%)",
+      "dias": 2256,
+      "ret_pct": 3.69,
+      "sharpe": 0.11,
+      "dd_pct": -22.6
+    },
+    {
+      "regimen": "Alcista (BTC > SMA200)",
+      "dias": 2452,
+      "ret_pct": 5837.17,
+      "sharpe": 1.84,
+      "dd_pct": -28.9
+    },
+    {
+      "regimen": "Bajista (BTC < SMA200)",
+      "dias": 1499,
+      "ret_pct": -20.42,
+      "sharpe": -0.14,
+      "dd_pct": -57.8
+    }
+  ],
+  "by_regime_vol60": [
+    {
+      "regimen": "Alcista (amplitud \u2265 50%)",
+      "dias": 1695,
+      "ret_pct": 20853.29,
+      "sharpe": 2.01,
+      "dd_pct": -48.9
+    },
+    {
+      "regimen": "Bajista (amplitud < 50%)",
+      "dias": 2256,
+      "ret_pct": 1.1,
+      "sharpe": 0.11,
+      "dd_pct": -33.0
+    },
+    {
+      "regimen": "Alcista (BTC > SMA200)",
+      "dias": 2452,
+      "ret_pct": 32418.29,
+      "sharpe": 1.84,
+      "dd_pct": -41.0
+    },
+    {
+      "regimen": "Bajista (BTC < SMA200)",
+      "dias": 1499,
+      "ret_pct": -34.86,
+      "sharpe": -0.15,
+      "dd_pct": -73.8
+    }
+  ],
+  "capital": 10000.0,
+  "chart": "/opt/data/investments/reports/crypto_tsmom_equity_10000eur.png"
+}

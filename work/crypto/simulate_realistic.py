@@ -67,7 +67,7 @@ def simulate(prices: pd.DataFrame, rets: pd.DataFrame, target: float,
     mom = (prices / prices.shift(20) - 1.0) > 0
     mom = mom.fillna(False).to_numpy()
     px = prices.to_numpy()
-    rr = rets.fillna(0.0).to_numpy()
+    rr = rets.replace([np.inf, -np.inf], 0.0).fillna(0.0).to_numpy()
 
     unlev_hist = []   # retornos de la cartera SIN apalancar, para estimar vol
     for t in range(21, n - 1):
@@ -129,7 +129,8 @@ def stats(r: np.ndarray, start_idx: int) -> dict:
 
 def main() -> int:
     prices = load_raw(CRYPTOS, START_DATE, END_DATE).dropna(how="all").ffill()
-    rets = prices.pct_change().fillna(0.0)
+    prices = prices.replace(0.0, np.nan).ffill()
+    rets = prices.pct_change().replace([np.inf, -np.inf], 0.0).fillna(0.0)
     start = int(np.searchsorted(prices.index, pd.Timestamp("2016-01-01")))
     print(f"{prices.shape[0]} filas x {prices.shape[1]} coins | "
           f"{prices.index[0].date()} -> {prices.index[-1].date()}")
