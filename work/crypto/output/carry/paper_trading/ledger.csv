@@ -1,0 +1,3 @@
+date,strategy,equity_eur,daily_ret_pct,funding_today_bps,n_coins,positions
+2026-10-26,carry-9,10000.0,0.0225,16.82,9,"{""btc"": 0.1111, ""eth"": 0.1111, ""sol"": 0.1111, ""xlm"": 0.1111, ""ada"": 0.1111, ""xrp"": 0.1111, ""doge"": 0.1111, ""link"": 0.1111, ""ltc"": 0.1111}"
+2026-10-26,carry-majors,10000.0,0.0053,3.81,2,"{""btc"": 0.5, ""eth"": 0.5}"

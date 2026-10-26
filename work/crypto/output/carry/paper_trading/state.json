@@ -1,0 +1,47 @@
+{
+  "capital": 10000.0,
+  "start_date": "2026-10-26",
+  "as_of": "2026-10-26",
+  "strategies": {
+    "carry-9": {
+      "coins": [
+        "btc",
+        "eth",
+        "sol",
+        "xlm",
+        "ada",
+        "xrp",
+        "doge",
+        "link",
+        "ltc"
+      ],
+      "rebalance": "mensual",
+      "equity_eur": 10000.0,
+      "positions": {
+        "btc": 0.1111,
+        "eth": 0.1111,
+        "sol": 0.1111,
+        "xlm": 0.1111,
+        "ada": 0.1111,
+        "xrp": 0.1111,
+        "doge": 0.1111,
+        "link": 0.1111,
+        "ltc": 0.1111
+      },
+      "funding_today_bps": 16.82
+    },
+    "carry-majors": {
+      "coins": [
+        "btc",
+        "eth"
+      ],
+      "rebalance": "mensual",
+      "equity_eur": 10000.0,
+      "positions": {
+        "btc": 0.5,
+        "eth": 0.5
+      },
+      "funding_today_bps": 3.81
+    }
+  }
+}
