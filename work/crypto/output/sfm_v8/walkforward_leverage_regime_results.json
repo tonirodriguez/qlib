@@ -1,0 +1,114 @@
+{
+  "cost_one_way": 0.001,
+  "fin_rate": 0.08,
+  "variants": [
+    {
+      "ret_pct": 2090.54,
+      "cagr_pct": 33.0,
+      "sharpe": 1.15,
+      "dd_pct": -59.4,
+      "calmar": 0.56,
+      "t": 3.78,
+      "n": 3951,
+      "strategy": "TSMOM20-vol25",
+      "avg_lev": 0.37,
+      "max_lev": 0.88
+    },
+    {
+      "ret_pct": 9098.67,
+      "cagr_pct": 51.85,
+      "sharpe": 1.15,
+      "dd_pct": -77.7,
+      "calmar": 0.67,
+      "t": 3.77,
+      "n": 3951,
+      "strategy": "TSMOM20-vol40",
+      "avg_lev": 0.59,
+      "max_lev": 1.4
+    },
+    {
+      "ret_pct": 36207.52,
+      "cagr_pct": 72.38,
+      "sharpe": 1.14,
+      "dd_pct": -90.8,
+      "calmar": 0.8,
+      "t": 3.74,
+      "n": 3951,
+      "strategy": "TSMOM20-vol60",
+      "avg_lev": 0.88,
+      "max_lev": 2.0
+    },
+    {
+      "ret_pct": 80056.22,
+      "cagr_pct": 85.47,
+      "sharpe": 1.13,
+      "dd_pct": -96.4,
+      "calmar": 0.89,
+      "t": 3.72,
+      "n": 3951,
+      "strategy": "TSMOM20-vol80",
+      "avg_lev": 1.15,
+      "max_lev": 2.0
+    },
+    {
+      "ret_pct": 1469.58,
+      "cagr_pct": 28.96,
+      "sharpe": 1.24,
+      "dd_pct": -38.1,
+      "calmar": 0.76,
+      "t": 4.08,
+      "n": 3951,
+      "strategy": "TSMOM20-vol25-reg",
+      "avg_lev": 0.21,
+      "max_lev": 0.79
+    },
+    {
+      "ret_pct": 6198.07,
+      "cagr_pct": 46.63,
+      "sharpe": 1.24,
+      "dd_pct": -54.8,
+      "calmar": 0.85,
+      "t": 4.08,
+      "n": 3951,
+      "strategy": "TSMOM20-vol40-reg",
+      "avg_lev": 0.34,
+      "max_lev": 1.27
+    },
+    {
+      "ret_pct": 28797.69,
+      "cagr_pct": 68.79,
+      "sharpe": 1.24,
+      "dd_pct": -71.2,
+      "calmar": 0.97,
+      "t": 4.06,
+      "n": 3951,
+      "strategy": "TSMOM20-vol60-reg",
+      "avg_lev": 0.51,
+      "max_lev": 1.91
+    },
+    {
+      "ret_pct": 92834.8,
+      "cagr_pct": 88.02,
+      "sharpe": 1.23,
+      "dd_pct": -82.4,
+      "calmar": 1.07,
+      "t": 4.06,
+      "n": 3951,
+      "strategy": "TSMOM20-vol80-reg",
+      "avg_lev": 0.67,
+      "max_lev": 2.0
+    },
+    {
+      "ret_pct": 18519.2,
+      "cagr_pct": 62.07,
+      "sharpe": 1.06,
+      "dd_pct": -83.3,
+      "calmar": 0.75,
+      "t": 3.49,
+      "n": 3951,
+      "strategy": "BTC-BH",
+      "avg_lev": 1.0,
+      "max_lev": 1.0
+    }
+  ]
+}
