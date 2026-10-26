@@ -1,0 +1,24 @@
+{
+  "trained_on": {
+    "start": "2015-01-01",
+    "end": "2026-09-01"
+  },
+  "train_rows": 2557,
+  "train_range": [
+    "2015-01-01",
+    "2021-12-31"
+  ],
+  "n_features": 54,
+  "cryptos": [
+    "btc",
+    "eth",
+    "sol",
+    "xlm",
+    "ada",
+    "xrp",
+    "doge",
+    "link",
+    "ltc"
+  ],
+  "fwd_days": 1
+}
