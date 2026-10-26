@@ -1,5 +1,38 @@
 # Reporte de Resultados: SFM v8
 
+> # 🔴 INVALIDADO EL 2026-10-26 — LEAK DE FUTURO CONFIRMADO
+>
+> **Los resultados de este documento NO son evidencia válida de rendimiento.**
+>
+> Auditoría: [`work/crypto/AUDITORIA_V8.md`](../../../../crypto/AUDITORIA_V8.md)
+>
+> **Tres leaks de información futura** en el preprocesado
+> (`qlib_sfm_pipeline.v8.py`):
+>
+> | Leak | Línea | Efecto medido |
+> |---|---|---|
+> | Denoising wavelet sobre toda la serie | 240 | Usa fechas futuras en el suavizado |
+> | Inflado de la correlación feature-label | 240+242 | **+0.1424** artificial |
+> | `bfill()` hacia atrás | 221, 227 | Propaga el primer valor futuro al pasado |
+>
+> **Dato decisivo:** la correlación feature↔label es **+0.1629** con el
+> denoising global (como está) y **−0.0205** con denoising causal. Es decir:
+> **toda la señal aparente desaparece al eliminar el leak.**
+>
+> **Consecuencias:**
+> - ❌ El **Sharpe 2.74** y la **equity 20.03x** están contaminados.
+> - ❌ El "Direction Accuracy 58%" probablemente también.
+> - ❌ **No usar estos números** para ninguna decisión.
+> - ⚠️ El paper-trading usa `sfm_top3.pth` entrenado así. Sus resultados **en
+>   vivo sí serán válidos** (no tienen el leak), y son la primera medición
+>   honesta disponible.
+>
+> **Acción:** ver §8 de `AUDITORIA_V8.md` (corrección en 3 cambios) y re-ejecutar.
+>
+> ---
+>
+> *El contenido original se conserva abajo como registro histórico.*
+
 > **Fecha de ejecución:** 1 Septiembre 2026
 > **Pipeline:** `work/crypto/qlib_sfm_pipeline.v8.py`
 > **Output:** `work/crypto/output/sfm_v8/`
