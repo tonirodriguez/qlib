@@ -1,0 +1,248 @@
+{
+  "window": {
+    "start": "2016-01-01",
+    "end": "2026-10-25"
+  },
+  "cost_one_way": 0.001,
+  "by_year": [
+    {
+      "year": 2016,
+      "tsmom25_ret_pct": -23.28,
+      "tsmom25_sharpe": -0.81,
+      "tsmom25_dd_pct": -38.1,
+      "tsmom40_ret_pct": -36.94,
+      "tsmom40_sharpe": -0.81,
+      "tsmom40_dd_pct": -54.8,
+      "btc_ret_pct": 124.07,
+      "btc_sharpe": 1.89,
+      "btc_dd_pct": -32.6,
+      "beat_btc": false
+    },
+    {
+      "year": 2017,
+      "tsmom25_ret_pct": 258.1,
+      "tsmom25_sharpe": 4.2,
+      "tsmom25_dd_pct": -17.9,
+      "tsmom40_ret_pct": 634.5,
+      "tsmom40_sharpe": 4.2,
+      "tsmom40_dd_pct": -27.5,
+      "btc_ret_pct": 1337.69,
+      "btc_sharpe": 3.29,
+      "btc_dd_pct": -35.6,
+      "beat_btc": false
+    },
+    {
+      "year": 2018,
+      "tsmom25_ret_pct": 7.69,
+      "tsmom25_sharpe": 0.41,
+      "tsmom25_dd_pct": -18.4,
+      "tsmom40_ret_pct": 8.85,
+      "tsmom40_sharpe": 0.41,
+      "tsmom40_dd_pct": -28.1,
+      "btc_ret_pct": -72.94,
+      "btc_sharpe": -1.16,
+      "btc_dd_pct": -81.2,
+      "beat_btc": true
+    },
+    {
+      "year": 2019,
+      "tsmom25_ret_pct": 21.42,
+      "tsmom25_sharpe": 0.87,
+      "tsmom25_dd_pct": -24.6,
+      "tsmom40_ret_pct": 35.18,
+      "tsmom40_sharpe": 0.93,
+      "tsmom40_dd_pct": -35.8,
+      "btc_ret_pct": 91.7,
+      "btc_sharpe": 1.28,
+      "btc_dd_pct": -48.6,
+      "beat_btc": false
+    },
+    {
+      "year": 2020,
+      "tsmom25_ret_pct": 179.83,
+      "tsmom25_sharpe": 3.58,
+      "tsmom25_dd_pct": -17.9,
+      "tsmom40_ret_pct": 371.73,
+      "tsmom40_sharpe": 3.54,
+      "tsmom40_dd_pct": -27.4,
+      "btc_ret_pct": 303.3,
+      "btc_sharpe": 2.27,
+      "btc_dd_pct": -52.5,
+      "beat_btc": false
+    },
+    {
+      "year": 2021,
+      "tsmom25_ret_pct": 47.58,
+      "tsmom25_sharpe": 1.58,
+      "tsmom25_dd_pct": -24.5,
+      "tsmom40_ret_pct": 79.89,
+      "tsmom40_sharpe": 1.58,
+      "tsmom40_dd_pct": -36.9,
+      "btc_ret_pct": 59.45,
+      "btc_sharpe": 0.98,
+      "btc_dd_pct": -53.1,
+      "beat_btc": false
+    },
+    {
+      "year": 2022,
+      "tsmom25_ret_pct": -41.88,
+      "tsmom25_sharpe": -1.82,
+      "tsmom25_dd_pct": -46.9,
+      "tsmom40_ret_pct": -58.45,
+      "tsmom40_sharpe": -1.8,
+      "tsmom40_dd_pct": -63.7,
+      "btc_ret_pct": -64.22,
+      "btc_sharpe": -1.28,
+      "btc_dd_pct": -67.0,
+      "beat_btc": true
+    },
+    {
+      "year": 2023,
+      "tsmom25_ret_pct": 56.54,
+      "tsmom25_sharpe": 1.78,
+      "tsmom25_dd_pct": -19.5,
+      "tsmom40_ret_pct": 92.63,
+      "tsmom40_sharpe": 1.75,
+      "tsmom40_dd_pct": -29.7,
+      "btc_ret_pct": 155.76,
+      "btc_sharpe": 2.35,
+      "btc_dd_pct": -20.1,
+      "beat_btc": false
+    },
+    {
+      "year": 2024,
+      "tsmom25_ret_pct": 39.24,
+      "tsmom25_sharpe": 1.32,
+      "tsmom25_dd_pct": -28.1,
+      "tsmom40_ret_pct": 63.79,
+      "tsmom40_sharpe": 1.35,
+      "tsmom40_dd_pct": -41.4,
+      "btc_ret_pct": 120.89,
+      "btc_sharpe": 1.75,
+      "btc_dd_pct": -26.2,
+      "beat_btc": false
+    },
+    {
+      "year": 2025,
+      "tsmom25_ret_pct": -8.58,
+      "tsmom25_sharpe": -0.23,
+      "tsmom25_dd_pct": -20.7,
+      "tsmom40_ret_pct": -15.95,
+      "tsmom40_sharpe": -0.23,
+      "tsmom40_dd_pct": -31.4,
+      "btc_ret_pct": -6.29,
+      "btc_sharpe": 0.05,
+      "btc_dd_pct": -32.1,
+      "beat_btc": false
+    },
+    {
+      "year": 2026,
+      "tsmom25_ret_pct": 27.51,
+      "tsmom25_sharpe": 1.07,
+      "tsmom25_dd_pct": -17.8,
+      "tsmom40_ret_pct": 42.15,
+      "tsmom40_sharpe": 1.1,
+      "tsmom40_dd_pct": -26.4,
+      "btc_ret_pct": -8.53,
+      "btc_sharpe": -0.02,
+      "btc_dd_pct": -39.6,
+      "beat_btc": true
+    }
+  ],
+  "full_period": {
+    "tsmom25": {
+      "ret_pct": 2090.54,
+      "sharpe": 1.15,
+      "dd_pct": -59.4,
+      "n": 3951
+    },
+    "tsmom40": {
+      "ret_pct": 8960.16,
+      "sharpe": 1.15,
+      "dd_pct": -77.1,
+      "n": 3951
+    },
+    "btc": {
+      "ret_pct": 18519.2,
+      "sharpe": 1.06,
+      "dd_pct": -83.3,
+      "n": 3951
+    },
+    "years_beat_btc": 3,
+    "n_years": 11
+  },
+  "rolling_3y": [
+    {
+      "window": "2016-2018",
+      "tsmom25_ret_pct": 195.84,
+      "tsmom25_sharpe": 1.39,
+      "tsmom25_dd_pct": -38.1,
+      "btc_ret_pct": 771.59,
+      "beat_btc": false
+    },
+    {
+      "window": "2017-2019",
+      "tsmom25_ret_pct": 368.23,
+      "tsmom25_sharpe": 1.95,
+      "tsmom25_dd_pct": -24.6,
+      "btc_ret_pct": 645.7,
+      "beat_btc": false
+    },
+    {
+      "window": "2018-2020",
+      "tsmom25_ret_pct": 265.88,
+      "tsmom25_sharpe": 1.69,
+      "tsmom25_dd_pct": -24.6,
+      "btc_ret_pct": 109.18,
+      "beat_btc": true
+    },
+    {
+      "window": "2019-2021",
+      "tsmom25_ret_pct": 401.42,
+      "tsmom25_sharpe": 2.07,
+      "tsmom25_dd_pct": -24.6,
+      "btc_ret_pct": 1132.79,
+      "beat_btc": false
+    },
+    {
+      "window": "2020-2022",
+      "tsmom25_ret_pct": 140.01,
+      "tsmom25_sharpe": 1.17,
+      "tsmom25_dd_pct": -59.4,
+      "btc_ret_pct": 130.12,
+      "beat_btc": true
+    },
+    {
+      "window": "2021-2023",
+      "tsmom25_ret_pct": 34.26,
+      "tsmom25_sharpe": 0.5,
+      "tsmom25_dd_pct": -59.4,
+      "btc_ret_pct": 45.93,
+      "beat_btc": false
+    },
+    {
+      "window": "2022-2024",
+      "tsmom25_ret_pct": 26.68,
+      "tsmom25_sharpe": 0.42,
+      "tsmom25_dd_pct": -46.9,
+      "btc_ret_pct": 102.16,
+      "beat_btc": false
+    },
+    {
+      "window": "2023-2025",
+      "tsmom25_ret_pct": 99.27,
+      "tsmom25_sharpe": 0.99,
+      "tsmom25_dd_pct": -28.1,
+      "btc_ret_pct": 429.41,
+      "beat_btc": false
+    },
+    {
+      "window": "2024-2026",
+      "tsmom25_ret_pct": 62.32,
+      "tsmom25_sharpe": 0.74,
+      "tsmom25_dd_pct": -32.3,
+      "btc_ret_pct": 89.34,
+      "beat_btc": false
+    }
+  ]
+}
