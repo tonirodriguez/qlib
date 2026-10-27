@@ -286,7 +286,7 @@ un backtest.
 | `--start` | `2018-01-01` | Fecha de inicio del backtest. Marca qué régimen de mercado se estudia. |
 | `--end` | `2026-12-31` | Fecha de fin. |
 | `--top-n` | `20` | Cuántos tickers se mantienen en cartera. Más = más diversificación y más coste. |
-| `--lookback` | `120` | Días de momentum para el ranking. **120 es el valor validado** (IC +0.066 OOS). |
+| `--lookback` | `120` | Días de momentum para el ranking. ⚠️ El IC +0.066 que se citaba aquí está **invalidado** (ver aviso en la sección 7). |
 | `--rebalance-days` | `5` | Cada cuántos días se rebalancea. 5 = semanal. |
 | `--cost-bps` | `5.0` | Coste por turnover en puntos básicos. 5 bps ≈ coste IB round-trip. |
 | `--max-tickers` | `120` | Tamaño del universo muestreado. **No es truncado alfabético**: muestreo uniforme. |
@@ -339,7 +339,7 @@ python3 jev_backtest_ab.py \
 |---|---|---|
 | `--start 2018-01-01` | Régimen moderno | El `vol_pct` necesita 252 días previos. Empezar antes mete la burbuja dot-com, poco representativa del mercado actual. |
 | `--top-n 20` | Ya validado | Tu paper-trading usa top-30 sobre universo amplio; 20 sobre 120 tickers mantiene concentración comparable. |
-| `--lookback 120` | **No cambiar** | Es el valor con IC OOS +0.066 medido en `momentum_backtest.py`. |
+| `--lookback 120` | Sin cambio justificado | ⚠️ Se citaba el IC +0.066 de `momentum_backtest.py`, pero ese script **no calcula IC**. El único que lo mide da IC purged **negativo**. Ver sección 7. |
 | `--rebalance-days 5` | Semanal | Igual que tu paper-trading real. |
 | `--cost-bps 5` | Realista | Aproxima el coste IB. Ponlo a 0 solo para diagnóstico. |
 | `--max-tickers 120` | Equilibrio | Suficiente representatividad, tiempo de ejecución razonable. |
