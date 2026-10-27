@@ -40,7 +40,7 @@ Cada semana (~sábado):
 
 | Métrica | Valor |
 |---|---|
-| **IC out-of-sample** | **+0.066** (alpha real confirmado) |
+| **IC out-of-sample** | **+0.032** ⚠️ (NO significativo, auditado 2026-10-27) |
 | Retorno anualizado (backtest) | ~+18–21% |
 | Sharpe | ~0.9–1.1 |
 | Max drawdown | ~−19% |
@@ -104,7 +104,7 @@ Se mide el IC **por año** (2018, 2019, ...) y se promedia. Si el IC se sostiene
 | ~ 0 | Ruido (sin alpha) |
 | < 0 | Señal invertida |
 
-**Nuestro caso:** momentum 120d → **IC OOS = +0.066** (alpha sólido y genuino).
+**Nuestro caso:** momentum 120d → **IC OOS = +0.032** (señal débil, **NO significativa**: t≈0.9 con ~17 observaciones independientes).
 
 ---
 
@@ -174,7 +174,7 @@ CADA SEMANA (sábado):
   5. Guardar estado
 ```
 
-- **IC (0.066)** = confirma que la *señal* predice (alpha)
+- **IC (+0.032)** = sugiere que la *señal* predice, pero SIN significancia estadística
 - **Vol-targeting** = confirma que la *exposición* es segura (riesgo)
 - **Rebalanceo** = confirma que la *ejecución* es eficiente (costes)
 

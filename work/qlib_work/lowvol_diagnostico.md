@@ -2,7 +2,7 @@
 
 > **Fecha:** 2026-08-14
 > **Proyecto:** Qlib Work — combinación de factores ortogonales para el momentum
-> **Contexto:** tras validar el momentum 120d (IC OOS +0.066), probamos combinar con un factor ortogonal. El candidato sin datos fundamentales era **low-volatility** (Frazzini-Pedersen 2014). Resultado: no mejoró en este régimen de mercado.
+> **Contexto:** tras medir el momentum 120d (IC +0.032, no significativo), probamos combinar con un factor ortogonal. El candidato sin datos fundamentales era **low-volatility** (Frazzini-Pedersen 2014). Resultado: no mejoró en este régimen de mercado.
 > **Script:** `toni/lowvol_walkforward.py`
 
 ---
@@ -40,7 +40,7 @@ El low-vol NO se usa como **señal de selección** (ique no aporta aquí). Pero 
 
 | Paso | Estado | Resultado |
 |---|---|---|
-| 1. Hallazgo momentum | ✅ | IC OOS +0.066 |
+| 1. Hallazgo momentum | ⚠️ | IC +0.032, no significativo |
 | 2. Robustez | ✅ | Label-120 óptimo |
 | 3. Backtest momentum | ✅ | +18.5%, Sharpe 0.96 |
 | 4. Low-vol como selección | ❌ | No mejora en alcista |

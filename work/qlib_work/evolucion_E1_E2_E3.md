@@ -22,7 +22,7 @@ La estrategia **momentum 120d**: comprar las **30 acciones** del S&P500 (sp500_l
 
 ### Por qué se creó
 - El **momentum es el factor con más respaldo empírico** de la literatura (Jegadeesh & Titman, 1993).
-- **Validado en backtest**: IC OOS +0.066, retorno +18-21% anual, Sharpe ~1.0.
+- **Backtest hecho**: IC +0.032 (⚠️ NO significativo, auditado 2026-10-27), retorno +18-21% anual, Sharpe ~1.0.
 - Era la **primera estrategia rentable** tras probar muchas (universo tech_giants falló, etc.).
 - Se montó el **paper-trading** (14-ago-2026) para validarla en vivo.
 

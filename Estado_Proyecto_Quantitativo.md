@@ -168,10 +168,10 @@ Hay **dos estrategias en paper-trading** con carteras reales simuladas, estado p
 
 | Script | Estrategia | Resultado conocido |
 |---|---|---|
-| `momentum_backtest.py` | Momentum 120d + top30, costes IB, 2018-2026 | **Hallazgo base: IC OOS +0.066** en universo amplio para momentum 120d |
+| `momentum_backtest.py` | Momentum 120d + top30, costes IB, 2018-2026 | ⚠️ El IC +0.066 está **retirado**: este script NO calcula IC. Auditado: +0.032 no significativo (120d), ≈0 (60d) |
 | `momentum_pead_backtest.py` | Momentum 120d + PEAD (suma de z-scores) | Backtest de la combinación de señales |
 | `momentum_pead_filter_backtest.py` | Momentum 120d con **filtro PEAD negativo** (excluye sorpresa < umbral) | Valida la estrategia 2 (la que está en paper-trading) |
-| `momentum_purgedcv.py` | Purged CV del momentum 120d (validación rigurosa sin leakage) | Confirma si el IC +0.066 se mantiene con CV temporal limpio |
+| `momentum_purgedcv.py` | Purged CV del momentum 120d (validación rigurosa sin leakage) | Único script que mide IC. Con embargo real: +0.032 (120d, no significativo) y ≈0 (60d) |
 | `momentum_walkforward.py` | Walk-forward del momentum | Validación temporal alternativa |
 | `lowvol_walkforward.py` | Low volatility + walk-forward | Estrategia de baja volatilidad |
 | `pead_faseA.py` / `pead_faseA2.py` | **FASE A — PEAD**: test del alpha de earnings surprise | Mide IC entre sorpresa de resultados y retorno post-anuncio |
@@ -228,7 +228,7 @@ En el roadmap de `04 Experiments/ROADMAP TRABAJO.md`, estas estrategias correspo
 
 1. **El paper-trading está vivo y funcionando** pero se ejecuta manualmente, no hay un cron automatizado
 2. **La cartera momentum y momentum+PEAD son idénticas** — el filtro PEAD no está siendo selectivo todavía (quizás el umbral es muy laxo o las sorpresas de los top-30 son siempre positivas)
-3. **Los backtests muestran IC positivo consistente** (+0.066 para momentum 120d), lo que valida la señal base
+3. ⚠️ **El IC del momentum es +0.032 y NO significativo** (antes se citaba 0.066). A label 60d es ≈0. No "valida la señal base": la deja como evidencia preliminar
 4. **FASE A del PEAD** está en progreso — se está midiendo si la sorpresa de earnings tiene poder predictivo independiente del momentum de precios
 5. **Todo el stack es post-Qlib**: las señales se construyen con datos de Qlib pero los backtests son custom (no usan `qrun` ni el workflow estándar de Qlib), lo que da flexibilidad pero requiere mantener más código propio
 

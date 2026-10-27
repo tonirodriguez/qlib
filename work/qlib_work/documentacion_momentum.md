@@ -21,7 +21,7 @@ momentum_120d = (precio_hoy / precio_hace_120_días) − 1
 ### Rendimiento validado (backtest OOS)
 | Métrica | Valor |
 |---|---|
-| IC out-of-sample | **+0.066** |
+| IC out-of-sample | **+0.032** ⚠️ (no significativo) |
 | Retorno anualizado | ~+18-21% |
 | Sharpe | ~0.9-1.1 |
 | Max drawdown | ~−19% |
@@ -37,7 +37,7 @@ momentum_120d = (precio_hoy / precio_hace_120_días) − 1
 │    momentum_walkforward.py [universo] [label_días]               │
 │    │  (IC del momentum a 20/60/120/250d vs retorno futuro)       │
 │    ▼                                                             │
-│    Resultado: IC OOS 120d = +0.066 (label 120d óptimo)          │
+│    Resultado: IC OOS 120d = +0.032 (NO significativo)            │
 │                                                                  │
 │ 2. BACKTEST BASE                                                 │
 │    momentum_backtest.py [universo] [topk] [mom_window]           │
@@ -100,7 +100,7 @@ Reduce exposición cuando sube la volatilidad del mercado → evita momentum-cra
 
 ## 4. Estado actual
 
-- ✅ Backtest validado (IC OOS 0.066, +18-21%, Sharpe ~1)
+- ⚠️ Backtest hecho (IC +0.032 NO significativo, +18-21%, Sharpe ~1)
 - ✅ Vol-targeting integrado (+21.7%, Sharpe 1.07)
 - ✅ **Paper-trading en vivo** con €20,000 ficticios (desde 14-ago)
 - 📊 Estado paper-trading: **−2.45%** (22-ago) — corrección de mercado, dentro de lo esperado

@@ -2,7 +2,7 @@
 
 > **Fecha:** 2026-08-14
 > **Proyecto:** Qlib Work — progresión de la estrategia momentum 120d
-> **Contexto:** el momentum 120d sobre sp500_liquid ya superó el backtest (IC OOS +0.066, +21.7% anual, Sharpe 1.07) y está en simulación paper-trading con €20,000 ficticios (rebalanceo semanal vía cronjobs del sábado).
+> **Contexto:** el momentum 120d sobre sp500_liquid ya superó el backtest (IC +0.032 NO significativo, +21.7% anual, Sharpe 1.07) y está en simulación paper-trading con €20,000 ficticios (rebalanceo semanal vía cronjobs del sábado).
 
 ---
 
@@ -12,7 +12,7 @@
 
 ### 1.1 Durante el paper-trading (meses 1-2) — acumular evidencia
 Cada semana (el cronjob del sábado 15:00 ya lo hace), registrar:
-- **IC / long-short en vivo** vs el IC OOS esperado (0.066)
+- **IC / long-short en vivo** vs el IC OOS esperado (0.032)
 - **Retorno y drawdown en vivo** vs backtest (+21.7% anual, DD −18.6%)
 - **Costes reales** (IB ~0.1% round-trip) — ¿se comen el alpha o no?
 

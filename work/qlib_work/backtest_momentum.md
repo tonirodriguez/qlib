@@ -2,7 +2,9 @@
 
 > **Fecha:** 2026-08-14
 > **Proyecto:** Qlib Work — implementación de la señal de momentum con alpha OOS
-> **Base:** momentum 120d + label 120d (IC OOS +0.066) sobre sp500_liquid
+> **Base:** momentum 120d + label 120d sobre sp500_liquid
+>
+> ⚠️ **IC revisado el 2026-10-27.** El IC real del momentum 120d es **+0.032 y NO significativo** (t≈0.9, ~17 observaciones independientes). A label 60d es **≈0**. El +0.066 no es reproducible: `momentum_backtest.py` no calcula IC. Ver `work/estrategias/audit_momentum_ic.py`.
 > **Script:** `toni/momentum_backtest.py`
 
 ---
@@ -32,7 +34,7 @@
 ## 3. Interpretación
 
 - **+18.5% anual con Sharpe 0.96 y drawdown −19.4%** — perfil sólido y coherente.
-- La señal tiene **alpha out-of-sample validado** (IC 0.066), y el backtest lo convierte en retorno real.
+- La señal tiene un alpha **débil y no confirmado** (IC +0.032, no significativo). El backtest convierte ese alpha en retorno, pero el IC no permite afirmar significancia.
 - **Drawdown mucho mejor** que el Alpha158 de tech_giants (−48%): −19.4%.
 - ⚠️ Los valores de "exceso +10329%" y "benchmark NaN" son **artefactos del script** (anualización semanal incorrecta + benchmark no cargado). **Se ignoran.** El retorno absoluto y su drawdown/Sharpe sí son fiables.
 
@@ -41,9 +43,9 @@
 | Estrategia | IC OOS | Retorno anual | Sharpe | Max DD |
 |---|---|---|---|---|
 | Alpha158+LightGBM (tech_giants) | 0.008 | +24.3% (beta) | 1.10 | −48% |
-| Momentum 120d (sp500_liquid) | **0.066** | **+18.5%** | **0.96** | **−19.4%** |
+| Momentum 120d (sp500_liquid) | **0.032** ⚠️ | **+18.5%** | **0.96** | **−19.4%** |
 
-**Clave:** el Alpha158 daba más retorno pero era beta (IC≈0) y con drawdown brutal. El momentum 120d da menos retorno pero es **alpha real** (IC 0.066) con **drawdown mucho menor** (−19% vs −48%). Para invertir de verdad, la segunda es mejor: menos beta, más predicción, menos riesgo.
+**Clave:** el Alpha158 daba más retorno pero era beta (IC≈0) y con drawdown brutal. El momentum 120d da menos retorno pero es **señal positiva aunque no significativa** (IC +0.032) con **drawdown mucho menor** (−19% vs −48%). Para invertir de verdad, la segunda es mejor: menos beta, más predicción, menos riesgo.
 
 ## 5. Próximos pasos
 

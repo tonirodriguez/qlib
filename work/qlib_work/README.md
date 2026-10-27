@@ -112,7 +112,7 @@ Aprender y aplicar **Qlib** (plataforma de inversión cuantitativa con ML de Mic
 | 2026-08-14 | `plan_post_paper_pead.md` | Plan post-paper-trading (validación/escalado), descripción de PEAD/SUE, y cómo conseguir datos fundamentales para Qlib |
 | 2026-08-14 | `lowvol_diagnostico.md` | Factor low-vol: no mejora en mercado alcista (IC +0.13 a favor de high-vol); usar vol como control de riesgo, no selección |
 | 2026-08-14 | `backtest_momentum.md` | Backtest momentum 120d sobre sp500_liquid: +18.5% anual, Sharpe 0.96, DD −19.4% (primer resultado completo) |
-| 2026-08-14 | `momentum_largo_alpha.md` | 🚀 HALLAZGO CLAVE: momentum 120d + label 120d sobre S&P 500 → IC OOS +0.066 (primer alpha genuino) |
+| 2026-08-14 | `momentum_largo_alpha.md` | HALLAZGO: momentum 120d + label 120d sobre S&P 500 → IC OOS +0.032 ⚠️ NO significativo (revisado 2026-10-27; el 0.066 no se reproduce) |
 | 2026-08-14 | `roadmap_aprendizaje.md` | Roadmap de aprendizaje Qlib: direcciones A-E (universo amplio+momentum, factor mining, beta calidad, datos fundamentales, validación) |
 | 2026-08-14 | `meta_quinn_analisis.md` | Quinn: análisis de la posición META (coste $664, hoy ~$595) → mantener + promediar por tramos $540/$480, tope 15% |
 | 2026-08-14 | `ic_y_oos_guia.md` | Guía del IC (Information Coefficient) y del OOS (out-of-sample): qué son, origen, interpretación y cómo usarlos como inversor |
@@ -145,7 +145,7 @@ Aprender y aplicar **Qlib** (plataforma de inversión cuantitativa con ML de Mic
 ### La estrategia (validada)
 - **Señal:** momentum 120d (retorno acumulado 120 días) sobre `sp500_liquid` (292 tickers)
 - **Selección:** topk 30, asignación igualitaria
-- **IC out-of-sample:** +0.066 (primer alpha genuino del proyecto)
+- **IC out-of-sample:** +0.032 ⚠️ (no significativo; revisado 2026-10-27)
 - **Backtest:** +21.7% anual, Sharpe 1.07, max drawdown −18.6%
 
 ### Flujo semanal (cronjobs, hora de España)

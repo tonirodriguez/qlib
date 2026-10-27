@@ -24,7 +24,7 @@ La respuesta corta a "¿puedo saltarme el backtest?" es: **no te lo recomiendo, 
 
 | Componente | Estado | Confianza | Fuente de la evidencia |
 |---|---|---|---|
-| Momentum 120d: señal sólida, rentable y de bajo riesgo relativo | **VALIDADO** (IC OOS +0.066, +18-21% anual, Sharpe ~1, DD −19%) | **Alta** | Backtest OOS + ya en paper-trading desde 14-ago (€20k, −2.45% hasta ahora) |
+| Momentum 120d: señal sólida, rentable y de bajo riesgo relativo | **HECHO** (IC +0.032 NO significativo, +18-21% anual, Sharpe ~1, DD −19%) | **Alta** | Backtest OOS + ya en paper-trading desde 14-ago (€20k, −2.45% hasta ahora) |
 | PEAD: la sorpresa de earnings predice el retorno post-anuncio | **VALIDADO como señal de ranking** (IC Spearman 0.19-0.22) | **Alta** (pero muestra corta, ver abajo) | Investigación de Toni |
 | PEAD como estrategia pura binaria | **MARGINAL** (+1%/evento, 49% acierto) | Alta (bajo poder, no sobrecargarlo) | Investigación de Toni |
 | **Combinación momentum+PEAD: mejora real vs momentum solo** | **DESCONOCIDO** | **Baja — es exactamente lo que no está medido** | — |

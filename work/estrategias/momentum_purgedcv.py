@@ -1,9 +1,19 @@
 """PURGED CV aplicado al MOMENTUM 120d sobre sp500_liquid.
 
-Valida si el IC OOS del momentum 120d (+0.066) se mantiene con el método
-riguroso (purged cross-validation), igual que hicimos con el PEAD.
+Valida si el IC OOS del momentum 120d se mantiene con el metodo riguroso
+(purged cross-validation), igual que hicimos con el PEAD.
 
-Método:
+RESULTADO (2026-08-22): NO se mantiene. IC purged -0.036 (label 120d) y
+-0.062 (label 60d). Ver momentum_purgedcv_resultado.md.
+
+REVISADO 2026-10-27: este script NO purga de verdad — divide por numero de
+FILAS (no por fecha) y no deja hueco entre pliegues, asi que las ventanas
+del label se solapan. Usar `audit_momentum_ic.py`, que si lo hace bien:
+  label 120d: IC +0.032, NO significativo (t~0.9, ~17 obs independientes)
+  label  60d: IC  ~0.000 (sin senal, con mejor potencia estadistica)
+El +0.066 que se citaba antes no es reproducible.
+
+Metodo:
 - Señal: momentum 120d (retorno acumulado en 120 días)
 - Label: retorno futuro a FWD días
 - Muestras: todos los (fecha, ticker) del universo

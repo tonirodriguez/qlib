@@ -1,6 +1,9 @@
 """Backtest de la señal de momentum 120d sobre sp500_liquid, con costes IB.
 
-Hallazgo base: momentum 120d + label 120d da IC OOS +0.066 en universo amplio.
+Hallazgo base: momentum 120d + label 120d en universo amplio.
+AVISO (2026-10-27): este script NO calcula IC. El +0.066 que se citaba aqui
+no es reproducible; el IC cross-sectional real es +0.032 (label 120d, NO
+significativo) y ~0 con label 60d. Ver audit_momentum_ic.py.
 Este script construye la señal de momentum (retorno acumulado 120 días) y la
 ejecuta con TopkDropoutStrategy, rebalanceo mensual, costes Interactive Brokers.
 

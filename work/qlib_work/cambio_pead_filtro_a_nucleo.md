@@ -19,6 +19,8 @@
 Cuando se recomendó el **PEAD como filtro** (estrategia 2), el supuesto de fondo era:
 
 > *"El momentum 120d es una estrategia robusta y validada (IC OOS 0.066, Sharpe ~1.0). El PEAD es una señal adicional para mejorar algo ya bueno."*
+>
+> ⚠️ Cita textual de la época. El IC 0.066 está **retirado**: el real es **+0.032 y no significativo** (auditado 2026-10-27).
 
 - **Momentum = pilar** (la base sólida)
 - **PEAD = refinamiento** — un filtro para evitar comprar momentum "tocado" por malas sorpresas

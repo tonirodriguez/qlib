@@ -15,7 +15,9 @@ Factores:
   - rev_1d                      -> reversal diario (-ret de ayer)
   - vol_20d                     -> volatilidad 20d
 
-Referencia: el proyecto mide IC OOS +0.066 con momentum 120d en acciones (mas fuerte).
+Referencia: IC cross-sectional del momentum 120d en acciones = +0.032, NO
+significativo (label 120d); con label 60d es ~0. El +0.066 citado antes no
+es reproducible (auditado 2026-10-27, audit_momentum_ic.py).
 Aqui se busca si el horizonte CORTO tiene base.
 
 Config por env vars (opcional):
@@ -120,7 +122,7 @@ def main():
         ic, n = ic_series(fac.rename("f"), fwd_long.rename("y"))
         print(f"  {name:10s} IC={ic:+.4f}  (n_dias={n})")
 
-    print("\nReferencia: IC OOS +0.066 con momentum 120d (hallazgo validado del proyecto).")
+    print("\nReferencia: IC ~+0.032 con momentum 120d, NO significativo (auditado 2026-10-27).")
     print("Interpretacion: |IC| medio < 0.005 en horizontes 1d/5d -> el corto plazo es")
     print("debil y la SFM v8 tal cual (label 1d, alta rotacion) NO tendria base en acciones.")
 

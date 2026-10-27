@@ -230,14 +230,134 @@ def purged_cv_by_date(ics: pd.Series, n_splits: int, embargo_days: int) -> list[
     return res
 
 
+def grid_horizontes(close: pd.DataFrame, horizontes: list[int],
+                    n_splits: int) -> list[dict]:
+    """Mide el IC en varios horizontes de label.
+
+    POR QUE ESTE MODO
+        El IC del momentum solo aparece a 120d, que es justo donde caben
+        menos observaciones independientes (~17 en 8 anos). A horizontes
+        mas cortos hay MAS potencia estadistica. Barrer horizontes responde:
+        ¿donde vive la senal, y donde se puede DEMOSTRAR?
+
+        Ademas informa el horizonte real de la operativa: la estrategia
+        rebalancea semanal y rota ~5 de 30 posiciones por semana, asi que
+        la posicion media dura ~6 semanas (~30 dias habiles).
+    """
+    mom = close / close.shift(MOM_W) - 1
+    filas = []
+    for h in horizontes:
+        fwd = close.shift(-h) / close - 1
+        ics = ic_cross_sectional(mom, fwd)
+        if len(ics) < 20:
+            continue
+        media = float(ics.mean())
+        no = non_overlapping_t(ics, step=max(5, h))
+        folds = purged_cv_by_date(ics, n_splits, embargo_days=h)
+        filas.append({
+            "horizonte": h,
+            "n_fechas": int(len(ics)),
+            "ic_medio": media,
+            "ic_std": float(ics.std()),
+            "t_clasico": float(media / (ics.std() / np.sqrt(len(ics)))
+                               ) if ics.std() > 0 else float("nan"),
+            "t_no_solapado": no["t"],
+            "n_indep": no["n"],
+            "pct_positivas": float((ics > 0).mean()),
+            "fold_medio": float(np.mean([f["ic_medio"] for f in folds]))
+            if folds else float("nan"),
+        })
+        print(f"  label {h:>3}d: IC {media:+.4f} | t_clasico {filas[-1]['t_clasico']:+6.2f} "
+              f"| t_honesto {no['t']:+6.2f} (n={no['n']:>3}) "
+              f"| pos {100*(ics>0).mean():.0f}%")
+    return filas
+
+
+def modo_grid(args) -> int:
+    """Barrido de horizontes: ¿donde vive la senal y donde se puede demostrar?"""
+    HORIZONTES = [5, 10, 20, 30, 60, 120]
+
+    print("=" * 78)
+    print(" IC DEL MOMENTUM 120d POR HORIZONTE DE LABEL")
+    print("=" * 78)
+    print(f"  momentum: {MOM_W}d | periodo: {START} -> {END}")
+    print(f"  horizontes: {HORIZONTES}")
+    print("  Nota: horizonte corto = MAS observaciones independientes = mas potencia")
+
+    close = load_prices(args.universe)
+    print(f"  cierres: {close.shape[0]} fechas x {close.shape[1]} tickers\n")
+
+    filas = grid_horizontes(close, HORIZONTES, args.n_splits)
+
+    print("\n" + "=" * 78)
+    print(" RESUMEN")
+    print("=" * 78)
+    print(f"  {'label':>6} {'IC':>9} {'t_clasico':>11} {'t_honesto':>11} "
+          f"{'n_indep':>8} {'%pos':>6}")
+    print("  " + "-" * 60)
+    for f in filas:
+        print(f"  {f['horizonte']:>5}d {f['ic_medio']:+9.4f} "
+              f"{f['t_clasico']:+11.2f} {f['t_no_solapado']:+11.2f} "
+              f"{f['n_indep']:>8} {100*f['pct_positivas']:>5.0f}%")
+
+    # --- donde es significativo ---
+    sig = [f for f in filas
+           if f["ic_medio"] > 0.01 and abs(f["t_no_solapado"]) >= 2]
+    print("\n" + "=" * 78)
+    print(" VEREDICTO")
+    print("=" * 78)
+    if sig:
+        print("  Horizontes con senal POSITIVA y SIGNIFICATIVA (t_honesto>=2):")
+        for f in sig:
+            print(f"    {f['horizonte']}d: IC {f['ic_medio']:+.4f}, "
+                  f"t={f['t_no_solapado']:+.2f}, n={f['n_indep']}")
+        print("\n  >> La senal del momentum es DEMOSTRABLE a estos horizontes.")
+        print("     Si incluyen el de la operativa (~30d), el edge esta respaldado.")
+    else:
+        print("  NINGUN horizonte alcanza significancia con t_honesto >= 2.")
+        print("  El IC es positivo a 120d pero la muestra no permite demostrarlo.")
+        print("\n  Lectura: la senal es PLAUSIBLE (consistente en pliegues,")
+        print("  coherente con la literatura) pero NO DEMOSTRADA con estos datos.")
+
+    # --- horizonte de la operativa ---
+    print("\n  Horizonte de la operativa real:")
+    print("    rebalanceo semanal, topk=30, n_drop=5 -> rota 5/30 por semana")
+    print("    -> posicion media ~6 semanas (~30 dias habiles)")
+    op = [f for f in filas if f["horizonte"] == 30]
+    if op:
+        o = op[0]
+        print(f"    Medido a 30d: IC {o['ic_medio']:+.4f}, "
+              f"t_honesto {o['t_no_solapado']:+.2f}, n={o['n_indep']}")
+        if o["ic_medio"] > 0.01 and abs(o["t_no_solapado"]) >= 2:
+            print("    -> El horizonte real SI tiene senal demostrable.")
+        else:
+            print("    -> El horizonte real NO muestra senal demostrable.")
+
+    out = {
+        "fecha": pd.Timestamp.now().isoformat(),
+        "momentum_dias": MOM_W, "periodo": [START, END],
+        "tickers": int(close.shape[1]), "modo": "grid",
+        "horizontes": filas,
+    }
+    Path(args.out).write_text(json.dumps(out, indent=2, ensure_ascii=False,
+                                         default=float), encoding="utf-8")
+    print(f"\n  Guardado en: {args.out}")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--fwd", type=int, default=120,
                     help="dias del label (el 0.066 era con 120)")
     ap.add_argument("--universe", default=None)
     ap.add_argument("--n-splits", type=int, default=5)
+    ap.add_argument("--grid", action="store_true",
+                    help="barrer horizontes 5,10,20,30,60,120 en vez de uno")
     ap.add_argument("--out", default=str(HERE / "audit_momentum_ic.json"))
     args = ap.parse_args()
+
+    if args.grid:
+        return modo_grid(args)
 
     print("=" * 78)
     print(" AUDIT DEL IC DEL MOMENTUM 120d")

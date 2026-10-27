@@ -26,7 +26,7 @@
 
 ✔️ **Lo correcto:** mismo universo (sp500_liquid, 292), mismo topk 30, mismo rebalanceo semanal, misma política de costes IB. La única variable que cambia es el filtro. Eso es el control limpio que pide el rigor. Mantener las dos vivas en paralelo es **deshacer el sesgo de "elegir resultado ganador"**: si solo corrieras la 2, nunca sabrías si su comportamiento es por el filtro o por el régimen.
 
-⚠️ **El sesgo real (y no es menor):** la estrategia 2 fue *reconstruida retroactivamente* (14→22-ago) para la comparación. Esto la convierte en **in-sample**: se definió/ajustó sobre los mismos 2 rebalanceos que ahora se usan para evaluarla. Su −1.78% no es evidencia fuera de muestra; es exactamente el tipo de dato sobre el que no se puede concluir nada. La 1, en cambio, sí tiene IC OOS +0.066 validado y Sharpe ~0.9–1.1.
+⚠️ **El sesgo real (y no es menor):** la estrategia 2 fue *reconstruida retroactivamente* (14→22-ago) para la comparación. Esto la convierte en **in-sample**: se definió/ajustó sobre los mismos 2 rebalanceos que ahora se usan para evaluarla. Su −1.78% no es evidencia fuera de muestra; es exactamente el tipo de dato sobre el que no se puede concluir nada. La 1, en cambio, tiene IC +0.032 (no significativo) y Sharpe ~0.9–1.1.
 
 ⚠️ **Beta compartida:** ambas estrategias cargan el mismo factor momentum/market el mismo periodo (ambas ~−2%). No son dos observaciones independientes de alpha; son dos réplicas del mismo drawdown de factor (en su portfolio real, META −6.8% / MSFT −2.5% esa semana muestran el mismo régimen). La diferencia de 67 bps está dentro del solapamiento de holdings, no es señal de habilidad diferencial.
 
@@ -111,7 +111,7 @@ Dirección conceptualmente correcta; tres matices importantes:
 ## 3. Convicción y señales de alarma
 
 **Convicción (declarada):**
-- 🟢 **Alta:** el momentum 120d es un alpha genuino y validado (IC OOS +0.066). El uso del PEAD como **filtro/refuerzo** (no como señal de ranking sumada) es conceptualmente correcto y coherente con tu propia evidencia (la suma dio Sharpe 0.57 vs 1.0). La arquitectura A/B paralela es el diseño adecuado — mantenerla.
+- 🟡 **Media:** el momentum 120d tiene señal positiva pero NO significativa (IC +0.032). El uso del PEAD como **filtro/refuerzo** (no como señal de ranking sumada) es conceptualmente correcto y coherente con tu propia evidencia (la suma dio Sharpe 0.57 vs 1.0). La arquitectura A/B paralela es el diseño adecuado — mantenerla.
 - 🟡 **Media:** que el filtro PEAD añada valor *en vivo* sobre el momentum. Es una hipótesis plausible y no contraria a la literatura, pero aún sin validación OOS propia de la variante con filtro.
 
 **Señales de alarma (en orden de importancia):**
