@@ -103,6 +103,42 @@ def cargar_datos(start: str, end: str):
     return adj, raw, vol, bench
 
 
+def identificar_series(px_a: pd.DataFrame, px_b: pd.DataFrame,
+                       etiqueta_a: str = "$close",
+                       etiqueta_b: str = "$close/$factor") -> dict:
+    """Determina CUAL de las dos series es PRECIO y cual TOTAL RETURN.
+
+    POR QUE NO SE PUEDE ASUMIR
+        El primer intento asumio que `$close/$factor` era el ajustado (total
+        return), siguiendo la convencion habitual de qlib. Es FALSO en estos
+        datos: `$close` es el total return y `$close/$factor` es el precio.
+
+        Consecuencia del error: se comparo EW-con-dividendos (13.9%) contra
+        ^GSPC-sin-dividendos (12.6%) y el script concluyo "el EW bate al
+        indice" cuando en la comparacion honesta (precio vs precio) el EW
+        PIERDE (11.3% vs 12.6%).
+
+    COMO SE DETERMINA
+        Empiricamente: las series con dividendos acumulan MAS retorno. Se
+        calcula el retorno del buy&hold equiponderado de cada una y la de
+        mayor CAGR es la de TOTAL RETURN.
+
+        Sanity check: la diferencia debe ser ~1-3%/ano (dividend yield tipico
+        de un universo large/mid cap). Si la diferencia es minuscula, las dos
+        series son equivalentes y da igual cual se use.
+    """
+    ca = float((px_a.pct_change(fill_method=None).mean(axis=1).add(1)
+                .prod()) ** (252 / max(len(px_a), 1)) - 1)
+    cb = float((px_b.pct_change(fill_method=None).mean(axis=1).add(1)
+                .prod()) ** (252 / max(len(px_b), 1)) - 1)
+    dif = ca - cb
+    if ca >= cb:
+        return {"precio": px_b, "total": px_a, "dif_pp": 100 * abs(dif),
+                "etiqueta_precio": etiqueta_b, "etiqueta_total": etiqueta_a}
+    return {"precio": px_a, "total": px_b, "dif_pp": 100 * abs(dif),
+            "etiqueta_precio": etiqueta_a, "etiqueta_total": etiqueta_b}
+
+
 def pesos_ew(px: pd.DataFrame) -> dict:
     from audit_momentum_alpha import weekly_dates
     out = {}
@@ -201,9 +237,21 @@ def main() -> int:
     w_ew = pesos_ew(adj)
     w_lq = pesos_liquidez(adj, vol)
 
-    r_ew_adj = simulate(adj, w_ew, COST_BPS)
-    r_ew_raw = simulate(raw, w_ew, COST_BPS)
-    r_lq_adj = simulate(adj, w_lq, COST_BPS)
+    # --- identificar EMPIRICAMENTE que serie es precio y cual total return ---
+    ident = identificar_series(raw, adj)
+    print("\n  identificacion de series (empirica, no por suposicion):")
+    print(f"    total return : {ident['etiqueta_total']}")
+    print(f"    precio       : {ident['etiqueta_precio']}")
+    print(f"    diferencia   : {ident['dif_pp']:.2f}pp/ano "
+          f"(deberia ser ~dividend yield, 1-3%)")
+    if ident["dif_pp"] < 0.3:
+        print("    AVISO: diferencia minuscula, las series son equivalentes")
+
+    px_precio = ident["precio"]
+    px_total = ident["total"]
+    r_ew_precio = simulate(px_precio, w_ew, COST_BPS)
+    r_ew_total = simulate(px_total, w_ew, COST_BPS)
+    r_lq_precio = simulate(px_precio, w_lq, COST_BPS)
 
     print(f"\n  concentracion (ultimo rebalanceo):")
     for nm, w in [("EW", w_ew), ("liquidez", w_lq)]:
@@ -215,20 +263,23 @@ def main() -> int:
         print("\n  SIN BENCHMARK: no se puede responder la pregunta.")
         return 1
 
-    r_b_adj = bench["adj"].pct_change(fill_method=None).dropna()
+    # ^GSPC es un indice de PRECIO por definicion. Si su factor es constante,
+    # las dos series dan lo mismo y no hay ambiguedad.
     r_b_raw = bench["raw"].pct_change(fill_method=None).dropna()
+    r_b_adj = bench["adj"].pct_change(fill_method=None).dropna()
+    print(f"\n  benchmark: ^GSPC es indice de PRECIO (no reparte dividendos)")
 
-    # --- comparacion (b): PRECIO, apples-to-apples ---
+    # --- comparacion PRINCIPAL: PRECIO vs PRECIO, apples-to-apples ---
     print("\n" + "=" * 78)
-    print(" COMPARACION (b) — PRECIO (sin dividendos en ambos)")
+    print(" COMPARACION PRINCIPAL — PRECIO vs PRECIO (justa)")
     print("=" * 78)
     print(f"  {'cartera':<28} {'CAGR':>9} {'vol':>8} {'Sharpe':>8} "
           f"{'maxDD':>9} {'Calmar':>7}")
     print("  " + "-" * 70)
 
     filas = {}
-    for nm, r in [("EW (292, semanal)", r_ew_raw),
-                  ("Liquidez (292, trim.)", simulate(raw, w_lq, COST_BPS)),
+    for nm, r in [("EW (292, semanal)", r_ew_precio),
+                  ("Liquidez (292, trim.)", r_lq_precio),
                   (f"{BENCH} (cap-weighted)", r_b_raw)]:
         m = metricas(r)
         if not m:
@@ -240,9 +291,9 @@ def main() -> int:
 
     # --- test: EW vs indice ---
     print("\n" + "=" * 78)
-    print(" TEST — EW vs INDICE (retornos diarios, precio)")
+    print(" TEST — EW vs INDICE (precio vs precio)")
     print("=" * 78)
-    bs = bootstrap_sharpe(r_ew_raw, r_b_raw, n_boot=2000, block=20)
+    bs = bootstrap_sharpe(r_ew_precio, r_b_raw, n_boot=2000, block=20)
     print(f"  delta Sharpe (EW - indice): {bs['delta']:+.3f}")
     print(f"  IC95: {bs['ic95_lo']:+.3f} .. {bs['ic95_hi']:+.3f}   "
           f"p={bs['p_valor']:.3f}")
@@ -279,51 +330,64 @@ def main() -> int:
             print("  -> Sin diferencia apreciable: el metodo de ponderacion")
             print("     no es lo que explica el resultado.")
 
-    # --- (a) ajustado, como referencia del sesgo de dividendos ---
+    # --- referencia: total return del EW (el indice no lo tiene) ---
     print("\n" + "=" * 78)
-    print(" COMPARACION (a) — AJUSTADO (si $factor incluye dividendos)")
+    print(" REFERENCIA — TOTAL RETURN del EW (el indice NO reparte dividendos)")
     print("=" * 78)
-    m_ew_a = metricas(r_ew_adj)
-    m_b_a = metricas(r_b_adj)
-    if m_ew_a and m_b_a:
-        print(f"  EW ajustado     : CAGR {100*m_ew_a['cagr']:.1f}% "
-              f"Sharpe {m_ew_a['sharpe']:.2f}")
-        print(f"  indice ajustado : CAGR {100*m_b_a['cagr']:.1f}% "
-              f"Sharpe {m_b_a['sharpe']:.2f}")
-        print(f"  Si aqui el EW gana por mucho mas margen que en (b), la")
-        print(f"  diferencia es dividendos, no habilidad de la estrategia.")
+    m_ew_t = metricas(r_ew_total)
+    if m_ew_t and m_ew:
+        print(f"  EW total return : CAGR {100*m_ew_t['cagr']:.1f}% "
+              f"Sharpe {m_ew_t['sharpe']:.2f}")
+        print(f"  EW precio       : CAGR {100*m_ew['cagr']:.1f}% "
+              f"Sharpe {m_ew['sharpe']:.2f}")
+        print(f"  diferencia      : {100*(m_ew_t['cagr']-m_ew['cagr']):+.1f}pp "
+              f"(dividendos)")
+        print(f"\n  OJO: NO se compara contra el indice en esta base. Seria")
+        print(f"  comparar EW-con-dividendos contra indice-sin-dividendos, que")
+        print(f"  es el sesgo que invalidaba la primera version de este test.")
 
     # --- veredicto ---
     print("\n" + "=" * 78)
-    print(" VEREDICTO")
+    print(" VEREDICTO (sobre la comparacion justa: precio vs precio)")
     print("=" * 78)
     if m_ew and m_b:
         gana_sharpe = bs["delta"] > 0 and bs["p_valor"] < 0.05
         gana_cagr = m_ew["cagr"] > m_b["cagr"]
-        if gana_sharpe:
-            print("  >> El EW BATE al indice en Sharpe de forma significativa.")
-            print("     Es un vehiculo defendible: mejor riesgo-retorno que")
-            print("     comprar el indice, no solo menos concentracion.")
+        if gana_sharpe and gana_cagr:
+            print("  >> El EW BATE al indice en retorno y en Sharpe, con")
+            print("     significancia. Vehiculo defendible.")
         elif gana_cagr and bs["delta"] > 0:
-            print("  >> El EW bate en retorno y en Sharpe, pero SIN")
-            print("     significancia. Sugerente, no concluyente.")
+            print("  >> El EW bate en retorno y Sharpe, pero SIN significancia.")
+            print("     Sugerente, no concluyente.")
         elif gana_cagr:
             print("  >> El EW bate en retorno bruto pero NO en Sharpe:")
-            print("     gana asumiendo mas riesgo. No es una mejora ajustada.")
+            print("     gana asumiendo mas riesgo.")
         else:
-            print("  >> El EW NO bate al indice. Es una apuesta factorial")
-            print("     (sesgo de tamano) que en este periodo salio peor.")
-            print("     Si el objetivo es exposicion, comprar el indice.")
-            print("     Si el objetivo es menos concentracion, el EW sirve")
-            print("     como vehiculo, pero sin pretension de mejor retorno.")
+            print("  >> El EW NO bate al indice en la comparacion justa.")
+            print("     Es una apuesta factorial (equiponderacion/sesgo de")
+            print("     tamano) que en este periodo salio PEOR que comprar")
+            print("     el indice.")
+            print()
+            print("     Si el objetivo es exposicion: comprar el indice.")
+            print("     Si el objetivo es menos concentracion: el EW sirve")
+            print("     como vehiculo, pero SIN ventaja de retorno.")
+            print()
+            print("     Nota: el EW reduce el peso maximo del 0.35% por nombre")
+            print(f"     (n efectivo {hhi(w_ew).get('n_efectivo', 0):.0f}) frente a la")
+            print("     concentracion del indice. Ese es su unico argumento.")
 
     out = {
         "fecha": pd.Timestamp.now().isoformat(),
         "periodo": [args.start, args.end],
         "tickers": int(adj.shape[1]), "benchmark": BENCH,
+        "identificacion_series": {
+            "serie_total": ident["etiqueta_total"],
+            "serie_precio": ident["etiqueta_precio"],
+            "diferencia_pp": ident["dif_pp"],
+        },
         "comparacion_precio": filas,
         "test_ew_vs_indice": bs,
-        "ajustado": {"ew": m_ew_a, "indice": m_b_a},
+        "ew_total_return": m_ew_t,
         "concentracion": {"ew": hhi(w_ew), "liquidez": hhi(w_lq)},
     }
     Path(args.out).write_text(json.dumps(out, indent=2, ensure_ascii=False,
