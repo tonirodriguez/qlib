@@ -52,7 +52,7 @@ END = "2026-10-22"
 COST_BPS = 5.0
 
 
-def load_prices() -> pd.DataFrame:
+def load_prices(start: str = START, end: str = END) -> pd.DataFrame:
     import qlib
     from qlib.data import D
 
@@ -63,8 +63,8 @@ def load_prices() -> pd.DataFrame:
     qlib.init(provider_uri=uri, region="us",
               kernels=int(os.environ.get("QLIB_KERNELS", "1")))
     tickers = get_universe(verbose=True)
-    df = D.features(tickers, ["$close", "$factor"], start_time=START,
-                    end_time=END, freq="day")
+    df = D.features(tickers, ["$close", "$factor"], start_time=start,
+                    end_time=end, freq="day")
     c = df["$close"].unstack(level=0).sort_index()
     f = df["$factor"].unstack(level=0).sort_index()
     px = (c / f).dropna(axis=0, thresh=int(0.5 * c.shape[1]))
@@ -98,8 +98,13 @@ def simulate(px: pd.DataFrame, weights_by_date: dict,
     fechas = px.index
     D, T = len(fechas), len(tickers)
 
-    # matriz de retornos (0 en el primer dia / NaN)
-    rets = px.pct_change().to_numpy(dtype=float)
+    # matriz de retornos
+    #
+    # fill_method=None es IMPORTANTE: el default ('pad') rellena hacia delante
+    # los precios faltantes, lo que convierte un hueco de datos en un retorno 0
+    # seguido de un salto al reaparecer el precio. Eso inventa rentabilidad.
+    # Con None, los NaN se tratan como 0 (no se opera ese dia en ese ticker).
+    rets = px.pct_change(fill_method=None).to_numpy(dtype=float)
     rets = np.nan_to_num(rets, nan=0.0)
 
     reb = sorted(weights_by_date)
@@ -167,6 +172,9 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--n-random", type=int, default=300)
     ap.add_argument("--topk", type=int, default=TOPK)
+    ap.add_argument("--start", default=START,
+                    help="inicio (el backtest original uso 2022-01-01)")
+    ap.add_argument("--end", default=END)
     ap.add_argument("--out", default=str(HERE / "audit_momentum_alpha.json"))
     args = ap.parse_args()
 
@@ -175,10 +183,10 @@ def main() -> int:
     print(" ¿EL RANKING DE MOMENTUM APORTA ALGO?")
     print("=" * 78)
     print(f"  momentum {MOM_W}d | top-{topk} | costes {COST_BPS:.0f}bps "
-          f"| {START} -> {END}")
+          f"| {args.start} -> {args.end}")
     print(f"  control aleatorio: {args.n_random} carteras de {topk} al azar")
 
-    px = load_prices()
+    px = load_prices(args.start, args.end)
     print(f"  cierres: {px.shape[0]} fechas x {px.shape[1]} tickers")
 
     mom = px / px.shift(MOM_W) - 1
@@ -295,7 +303,7 @@ def main() -> int:
     out = {
         "fecha": pd.Timestamp.now().isoformat(),
         "momentum_dias": MOM_W, "topk": topk, "cost_bps": COST_BPS,
-        "periodo": [START, END], "tickers": int(px.shape[1]),
+        "periodo": [args.start, args.end], "tickers": int(px.shape[1]),
         "top": m_top, "bottom": m_bot, "ew_universo": m_ew,
         "random": {
             "n": len(rnd),
