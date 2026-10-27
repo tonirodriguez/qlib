@@ -568,12 +568,19 @@ positivo.**
 
 # Lo que este curso NO es
 
-- No es una ruta para batir al mercado.
+- **No es una promesa de batir al mercado.** El objetivo del proyecto sí es
+  batirlo (ver `OBJETIVO.md`), pero este curso no lo garantiza: construye la
+  capacidad de saber si lo estás logrando o solo lo parece. Esa capacidad es
+  condición necesaria, no suficiente.
 - No es una introducción a machine learning.
 - No es una colección de tutoriales.
 
 Es entrenamiento para **no engañarte a ti mismo con datos**. Que es más
 difícil de lo que parece, y más útil de lo que promete.
+
+> **La relación entre curso y ambición:** quieres batir al mercado. Ese deseo es
+> precisamente lo que hace que necesites este curso. Sin él, buscarás hasta
+> encontrar un número que te guste, y no sabrás si existe. Con él, sabrás.
 
 ---
 
