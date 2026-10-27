@@ -54,6 +54,18 @@ _CRYPTO_MARKERS = {"btc", "eth", "sol", "xrp", "doge", "ada", "ltc", "xlm", "lin
 # `sp500_liquid.txt` primero (el original); si no, `sp500.txt`.
 UNIVERSOS = ["sp500_liquid.txt", "sp500.txt", "csi300.txt"]
 
+# Ubicaciones ALTERNATIVAS del universo.
+#
+# IMPORTANTE (hallazgo 2026-10-27): `sp500_liquid.txt` NO esta en
+# qlib_data/instruments/ (por eso los simuladores no lo encontraban), pero
+# SI existe en `work/estrategias/` con **292 tickers**. Ese es el universo
+# con el que se construyeron las carteras vivas (30 posiciones de 292).
+# Usar sp500.txt (1180 tickers) en su lugar cambiaria el backtest por
+# completo, y ademas no coincidiria con las carteras ya existentes.
+UBICACIONES_EXTRA = [
+    HERE.parent / "sp500_liquid.txt",   # work/estrategias/sp500_liquid.txt
+]
+
 
 def _es_qlib_dir(p: str | None) -> bool:
     """Una instalacion qlib valida tiene instruments/ o calendars/."""
@@ -122,20 +134,33 @@ def get_qlib_uri(solo_acciones: bool = True) -> str:
 
 
 def get_universe_file() -> str:
-    """Fichero de instrumentos. Avisa si no es el original."""
+    """Fichero de instrumentos.
+
+    Prioridad:
+      1. `sp500_liquid.txt` en `work/estrategias/` (el ORIGINAL del proyecto,
+         292 tickers: es con el que se construyeron las carteras vivas).
+      2. `sp500_liquid.txt` en qlib_data/instruments/ (si alguien lo copia ahi).
+      3. `sp500.txt` en qlib_data/instruments/ (1180, composicion historica).
+      4. cualquier otro .txt que no sea 'all'.
+    """
+    # 1) el original, donde SI esta
+    for p in UBICACIONES_EXTRA:
+        if p.exists():
+            return str(p)
+
+    # 2-4) dentro de qlib_data
     uri = get_qlib_uri()
     inst_dir = os.path.join(uri, "instruments")
     for nm in UNIVERSOS:
         p = os.path.join(inst_dir, nm)
         if os.path.exists(p):
             return p
-    # ultimo recurso: cualquier .txt que no sea 'all' (15k tickers)
     if os.path.isdir(inst_dir):
         cands = sorted(f for f in os.listdir(inst_dir)
                        if f.endswith(".txt") and "all" not in f.lower())
         if cands:
             return os.path.join(inst_dir, cands[0])
-    raise FileNotFoundError(f"Sin universo en {inst_dir}")
+    raise FileNotFoundError(f"Sin universo en {inst_dir} ni en {UBICACIONES_EXTRA}")
 
 
 def get_universe(min_dollar_vol: float | None = None,
