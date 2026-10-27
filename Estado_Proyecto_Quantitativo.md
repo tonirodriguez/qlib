@@ -289,9 +289,15 @@ En el roadmap de `04 Experiments/ROADMAP TRABAJO.md`, estas estrategias correspo
 5. **Todo el stack es post-Qlib**: las señales se construyen con datos de Qlib
    pero los backtests son custom (no usan `qrun` ni el workflow estándar), lo
    que da flexibilidad pero requiere mantener más código propio
-6. **Línea abierta única:** vol-targeting sobre equal-weight. Es lo único con
-   efecto medible en estos datos (drawdown −41,0% → −33,4% en la arquitectura
-   E3) y con potencia estadística suficiente para concluir.
+6. 🟡 **Vol-targeting: medido y limitado.** Sharpe no significativo (p=0,48);
+   el drawdown mejora 17,5pp a igual exposición pero **el efecto es un solo
+   evento** (COVID 2020). En las otras 4 crisis: entre −0,7 y +2,3pp (ruido).
+   No se sostiene como seguro de drawdown. Ver
+   `work/qlib_work/CIERRE_INVESTIGACION.md`.
+7. 🔴 **La línea de investigación está cerrada.** Ninguna de las estrategias
+   testeadas tiene ventaja demostrable. Causa raíz: el dataset no puede
+   distinguir un IC de 0,03 de cero (~17 observaciones independientes a 120
+   días, ~69 a 30 días). Ver `work/qlib_work/CIERRE_INVESTIGACION.md`.
 
 ---
 
