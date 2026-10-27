@@ -80,6 +80,49 @@ def pesos_equal_weight(px: pd.DataFrame) -> dict:
     return out
 
 
+def bootstrap_sharpe(r_a: pd.Series, r_b: pd.Series, n_boot: int = 2000,
+                     block: int = 20, seed: int = 42) -> dict:
+    """Bootstrap por bloques de la DIFERENCIA de Sharpe.
+
+    POR QUE NO UN t-STAT DE RETORNOS
+        El t-stat de la diferencia de retornos medios no contrasta el Sharpe:
+        un portfolio puede tener menos retorno y menos volatilidad y por tanto
+        MAS Sharpe con un t de retornos negativo. Hay que bootstrapear el
+        Sharpe directamente.
+
+        Blocks de `block` dias para preservar el clustering de volatilidad
+        (los retornos diarios no son independientes).
+    """
+    d = pd.concat([r_a, r_b], axis=1).dropna()
+    if len(d) < 200:
+        return {"p_valor": float("nan"), "delta": float("nan"), "n": len(d)}
+    a = d.iloc[:, 0].to_numpy()
+    b = d.iloc[:, 1].to_numpy()
+    n = len(a)
+
+    def sharpe(x: np.ndarray) -> float:
+        s = x.std()
+        return (x.mean() / s) * np.sqrt(252) if s > 0 else 0.0
+
+    obs = sharpe(a) - sharpe(b)
+    rng = np.random.default_rng(seed)
+    n_bloques = int(np.ceil(n / block))
+    deltas = []
+    for _ in range(n_boot):
+        inicios = rng.integers(0, n - block, size=n_bloques)
+        idx = np.concatenate([np.arange(i, i + block) for i in inicios])[:n]
+        deltas.append(sharpe(a[idx]) - sharpe(b[idx]))
+    deltas = np.array(deltas)
+    # p-valor bilateral: proporcion de bootstraps con signo contrario al observado
+    if obs == 0:
+        p = 1.0
+    else:
+        p = float(np.mean(deltas * np.sign(obs) <= 0))
+    return {"delta": float(obs), "p_valor": p, "n": int(n),
+            "ic95_lo": float(np.percentile(deltas, 2.5)),
+            "ic95_hi": float(np.percentile(deltas, 97.5))}
+
+
 def aplicar_vol_target(r_ew: pd.Series, target_vol: float, ventana: int,
                        max_lev: float, cost_bps: float) -> tuple[pd.Series, pd.Series]:
     """Aplica exposicion dinamica a los retornos del EW.
@@ -282,39 +325,66 @@ def main() -> int:
               f"(min {mejor['exposicion_min']:.2f}, max {mejor['exposicion_max']:.2f})")
         print(f"    tiempo des-riesgado: {100*mejor['pct_des_riesgado']:.0f}%")
 
-        # diferencia de retornos VT - EW escalada a la exposicion media
+        # --- test correcto: bootstrap del SHARPE, no t de retornos ---
         r_best, _ = aplicar_vol_target(r_ew, mejor["target"], mejor["ventana"],
                                        mejor["max_lev"], COST_BPS)
-        dif = (r_best - r_ew * mejor["exposicion_media"]).dropna()
-        t = t_stat_serie(dif)
-        print(f"\n    Test: VT vs EW escalado a la misma exposicion media")
-        print(f"    t-stat (Newey-West lag 10) de la diferencia: {t:+.2f}")
+        r_ctrl = r_ew * mejor["exposicion_media"]
+        print("\n    [1] SHARPE — VT vs control de misma exposicion media")
+        bs = bootstrap_sharpe(r_best, r_ctrl, n_boot=2000, block=20)
+        print(f"        delta Sharpe {bs['delta']:+.3f}  "
+              f"(IC95 {bs['ic95_lo']:+.3f} .. {bs['ic95_hi']:+.3f})  "
+              f"p={bs['p_valor']:.3f}")
+        print("        (bootstrap por bloques de 20d, 2000 remuestreos)")
 
-        print()
-        if d_sharpe > 0.05 and abs(t) >= 2:
-            print("  >> El vol-targeting APORTA: mejora el Sharpe y la diferencia")
-            print("     es significativa frente al control de exposicion.")
-        elif d_sharpe > 0.05:
-            print("  >> Indicio: mejora el Sharpe pero NO es significativo.")
+        # --- drawdown: el efecto grande ---
+        print("\n    [2] DRAWDOWN — la diferencia que importa")
+        dd_vt = mejor["maxdd"]
+        dd_c = m_const["maxdd"] if m_const else float("nan")
+        print(f"        VT                : {100*dd_vt:+.1f}%")
+        print(f"        control (misma expo): {100*dd_c:+.1f}%")
+        print(f"        EW puro           : {100*m_ew['maxdd']:+.1f}%")
+        # OJO: en drawdowns NEGATIVOS, el mayor (menos negativo) es el MEJOR.
+        # Comparar con > , no con <. (Bug corregido 2026-10-27.)
+        mejora_vs_control = (dd_vt - dd_c) * 100
+        print(f"        mejora vs control : {mejora_vs_control:+.1f}pp")
+        print("        (positivo = el VT pierde menos que el control)")
+
+        # --- Calmar: retorno por unidad de drawdown ---
+        print("\n    [3] CALMAR (CAGR / |maxDD|) — penaliza el drawdown")
+        calmar_ew = m_ew["cagr"] / abs(m_ew["maxdd"]) if m_ew["maxdd"] else float("nan")
+        calmar_vt = mejor["cagr"] / abs(dd_vt) if dd_vt else float("nan")
+        calmar_c = (m_const["cagr"] / abs(dd_c)) if (m_const and dd_c) else float("nan")
+        print(f"        EW puro    : {calmar_ew:.2f}")
+        print(f"        control    : {calmar_c:.2f}")
+        print(f"        VT         : {calmar_vt:.2f}")
+
+        # --- veredicto ---
+        print("\n" + "-" * 78)
+        sharpe_sig = bs["p_valor"] < 0.05 and bs["delta"] > 0
+        dd_real = mejora_vs_control > 5.0
+        if sharpe_sig:
+            print("  >> El vol-targeting mejora el SHARPE de forma significativa.")
+            print("     Hay valor de timing, no solo menos exposicion.")
+        elif dd_real:
+            print("  >> El vol-targeting NO mejora el Sharpe de forma significativa,")
+            print(f"     pero reduce el drawdown {mejora_vs_control:+.1f}pp MAS de lo que")
+            print("     explica su exposicion media.")
+            print("     => Es SEGURO DE DRAWDOWN (crash insurance), no generador de alfa.")
+            print("     El precio: renuncia a parte del retorno.")
         else:
-            print("  >> El vol-targeting NO aporta valor ajustado por riesgo.")
-            print("     Reduce el drawdown, pero eso se consigue igual bajando")
-            print("     la exposicion de forma constante (control D), sin senal.")
+            print("  >> El vol-targeting NO aporta en ninguna dimension: ni Sharpe")
+            print("     ni drawdown mas alla de reducir la exposicion.")
+
+        print(f"\n     Trade-off explicito: CAGR {100*mejor['cagr']:.1f}% vs "
+              f"{100*m_const['cagr']:.1f}% del control "
+              f"({100*(mejor['cagr']-m_const['cagr']):+.1f}pp de retorno)")
+        print(f"     a cambio de {mejora_vs_control:+.1f}pp de drawdown.")
     else:
         print("  Sin resultados validos.")
 
-    # --- veredicto sobre drawdown ---
+    # --- Calmar en la tabla (referencia) ---
     if m_const and mejor:
-        dd_vt = mejor["maxdd"]
-        dd_c = m_const["maxdd"]
-        print(f"\n  Drawdown: VT {100*dd_vt:.1f}% vs control constante "
-              f"{100*dd_c:.1f}%")
-        if dd_vt < dd_c - 0.005:
-            print("  -> El VT reduce el drawdown MAS de lo que explica su")
-            print("     exposicion media: hay valor en el TIMING.")
-        else:
-            print("  -> El VT NO reduce el drawdown mas de lo que explica su")
-            print("     exposicion media: solo esta invirtiendo menos.")
+        pass
 
     out = {
         "fecha": pd.Timestamp.now().isoformat(),
@@ -322,6 +392,11 @@ def main() -> int:
         "cost_bps": COST_BPS,
         "ew": m_ew, "variantes": filas,
         "control_constante": m_const,
+        "mejor_vt": mejor,
+        "bootstrap_sharpe": bs if mejor else {},
+        "mejora_drawdown_pp": mejora_vs_control if mejor else None,
+        "calmar": {"ew": calmar_ew, "control": calmar_c, "vt": calmar_vt}
+        if mejor else {},
     }
     Path(args.out).write_text(json.dumps(out, indent=2, ensure_ascii=False,
                                          default=float), encoding="utf-8")
