@@ -123,6 +123,88 @@ def bootstrap_sharpe(r_a: pd.Series, r_b: pd.Series, n_boot: int = 2000,
             "ic95_hi": float(np.percentile(deltas, 97.5))}
 
 
+def episodios_drawdown(r_ew: pd.Series, r_vt: pd.Series,
+                       top_n: int = 5, sep_dias: int = 60,
+                       min_prof: float = 0.05) -> list[dict]:
+    """Compara EW y VT en cada CRISIS, detectando valles separados.
+
+    POR QUE HACE FALTA
+        El maxDD es UN numero de UN camino historico. Afirmar que el VT lo
+        mejora 17.5pp con ese unico dato repite el error de potencia que
+        tumbo al momentum: en 8 anos hay pocas crisis grandes.
+
+        Este analisis aisla cada crisis y compara que hizo cada cartera en
+        CADA una. Si el VT mejora en 5 de 5, el mecanismo es consistente.
+
+    METODO (valles separados)
+        Se buscan minimos locales del drawdown del EW con profundidad
+        minima `min_prof` y separados al menos `sep_dias` dias habiles entre
+        si (si dos candidatos estan cerca, se conserva el mas profundo).
+        Para cada valle, la ventana es [ultimo pico anterior, valle].
+
+        Se usa esto en vez de pico-a-pico porque si la equity tarda anos en
+        recuperar, pico-a-pico fusiona todas las crisis en un solo tramo y el
+        analisis pierde poder. Aqui lo que interesa es cada caida, no cada
+        ciclo completo de recuperacion.
+    """
+    idx = r_ew.index.intersection(r_vt.index)
+    a = r_ew.loc[idx]
+    b = r_vt.loc[idx]
+
+    def dd_series(r: pd.Series) -> pd.Series:
+        eq = (1 + r).cumprod()
+        return eq / eq.cummax() - 1
+
+    dd_a = dd_series(a)
+    dd_b = dd_series(b)
+    vals = dd_a.to_numpy()
+
+    # --- valles locales, separados entre si ---
+    mitad = max(10, sep_dias // 2)
+    candidatos = []
+    for i in range(mitad, len(vals) - mitad):
+        seg = vals[i - mitad:i + mitad + 1]
+        if vals[i] == seg.min() and vals[i] < -min_prof:
+            candidatos.append((i, float(vals[i])))
+    # deduplicar: conservar el mas profundo entre valles cercanos
+    valles: list[tuple[int, float]] = []
+    for i, v in candidatos:
+        if valles and i - valles[-1][0] < sep_dias:
+            if v < valles[-1][1]:
+                valles[-1] = (i, v)
+        else:
+            valles.append((i, v))
+    valles.sort(key=lambda t: t[1])
+    valles = valles[:top_n]
+    valles.sort(key=lambda t: t[0])      # ordenar por fecha
+
+    # --- para cada valle, el inicio es el MAXIMO LOCAL del DD entre el valle
+    #     anterior y este. Asi cada ventana cubre una pierna distinta de la
+    #     caida, y no todas empiezan en el mismo pico inicial (que es lo que
+    #     pasa cuando la equity tarda anos en recuperar). ---
+    out = []
+    prev = 0
+    for i, prof in valles:
+        # posicion del DD menos negativo en [prev, i]
+        j = prev + int(np.argmax(vals[prev:i + 1])) if i > prev else prev
+        ini, fin = idx[j], idx[i]
+        prev = i
+        if (fin - ini).days < 5:
+            continue
+        dd_a_ep = float(dd_a.loc[ini:fin].min())
+        dd_b_ep = float(dd_b.loc[ini:fin].min())
+        out.append({
+            "desde": str(ini.date()), "hasta": str(fin.date()),
+            "dias": int((fin - ini).days),
+            "dd_ew": dd_a_ep,
+            "dd_vt": dd_b_ep,
+            "mejora_pp": (dd_b_ep - dd_a_ep) * 100,
+            "mejora": dd_b_ep > dd_a_ep,
+        })
+    out.sort(key=lambda e: e["dd_ew"])
+    return out
+
+
 def aplicar_vol_target(r_ew: pd.Series, target_vol: float, ventana: int,
                        max_lev: float, cost_bps: float) -> tuple[pd.Series, pd.Series]:
     """Aplica exposicion dinamica a los retornos del EW.
@@ -358,6 +440,35 @@ def main() -> int:
         print(f"        control    : {calmar_c:.2f}")
         print(f"        VT         : {calmar_vt:.2f}")
 
+        # --- episodios de drawdown: el test de robustez ---
+        print("\n    [4] EPISODIOS DE DRAWDOWN — ¿el timing esquiva las crisis?")
+        print("        (el maxDD es 1 numero de 1 camino: hay que descomponerlo)")
+        print("        Comparacion contra el CONTROL (misma exposicion media),")
+        print("        no contra el EW: si no, el VT gana por estar menos invertido.")
+        eps = episodios_drawdown(r_ctrl, r_best, top_n=5)
+        if eps:
+            print(f"\n        {'crisis':<26} {'dias':>5} {'DD ctrl':>9} "
+                  f"{'DD VT':>8} {'mejora':>9}")
+            for e in eps:
+                rango = f"{e['desde']}->{e['hasta']}"
+                print(f"        {rango:<26} {e['dias']:>5} "
+                      f"{100*e['dd_ew']:>8.1f}% {100*e['dd_vt']:>7.1f}% "
+                      f"{e['mejora_pp']:>+8.1f}pp")
+            n_mejora = sum(1 for e in eps if e["mejora"])
+            print(f"\n        El VT fue mejor en {n_mejora}/{len(eps)} crisis")
+            if n_mejora == len(eps):
+                print("        -> CONSISTENTE: el timing protege en todas las")
+                print("           crisis, no solo en una. Es el mecanismo esperado.")
+            elif n_mejora >= len(eps) * 0.6:
+                print("        -> MAYORITARIO pero no universal: el timing acierta")
+                print("           en la mayoria, falla en alguna. Revisar cual.")
+            else:
+                print("        -> INCONSISTENTE: la mejora del maxDD global")
+                print("           depende de una crisis concreta. No es robusta.")
+        else:
+            n_mejora = 0
+            print("        No se identificaron crisis.")
+
         # --- veredicto ---
         print("\n" + "-" * 78)
         sharpe_sig = bs["p_valor"] < 0.05 and bs["delta"] > 0
@@ -395,6 +506,8 @@ def main() -> int:
         "mejor_vt": mejor,
         "bootstrap_sharpe": bs if mejor else {},
         "mejora_drawdown_pp": mejora_vs_control if mejor else None,
+        "crisis_vs_control": eps if mejor else [],
+        "crisis_mejoradas": n_mejora if mejor else None,
         "calmar": {"ew": calmar_ew, "control": calmar_c, "vt": calmar_vt}
         if mejor else {},
     }
