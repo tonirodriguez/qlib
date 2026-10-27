@@ -1,17 +1,21 @@
 # Cierre de la línea de investigación — resultado
 
 > **Fecha:** 2026-10-27
-> **Alcance:** 10 auditorías sobre los resultados del proyecto desde 2026-05
-> **Conclusión:** 🔴 **Ninguna de las estrategias testeadas tiene una ventaja
-> demostrable sobre exposición simple al mercado.**
+> **Alcance:** 11 auditorías sobre los resultados del proyecto desde 2026-05
+> **Conclusión:** 🔴 **Ninguna de las estrategias testeadas bate a comprar el
+> índice, y el propio baseline (equal-weight) pierde contra él.**
 
 ---
 
 ## 1. El resultado en una frase
 
 El proyecto ha producido **infraestructura sólida y auditorías rigurosas**, pero
-**ninguna señal con edge demostrado**. De nueve resultados que se presentaban
-como hallazgos, ocho no resistieron una comprobación honesta.
+**ninguna señal con edge demostrado**. De once resultados que se presentaban
+como hallazgos, diez no resistieron una comprobación honesta.
+
+Y el último, el más incómodo: **el equal-weight del universo —lo único que
+había sobrevivido— tampoco bate al índice.** Rinde 11,3% frente a 12,6% del
+^GSPC, con peor Sharpe (0,67 vs 0,72) y peor drawdown (−38,7% vs −33,9%).
 
 ---
 
@@ -29,6 +33,7 @@ como hallazgos, ocho no resistieron una comprobación honesta.
 | **`momentum_vt` (Sharpe 1,07)** | Import del módulo | 🔴 **No ejecutable**: `toni.vol_target_strategy` no existe |
 | **CSI300 (14-31% anual)** | Búsqueda de los runs de MLflow | 🔴 **No verificable** + contradicción de 10x entre documentos |
 | **Jev (sizing por régimen)** | 7 fórmulas sobre probabilidades | 🔴 **Descartado**: mejor Sharpe 0,91 vs 0,97 del vol-gate |
+| **Equal-weight (el baseline)** | vs ^GSPC cap-weighted, **precio vs precio** | 🔴 **Pierde**: CAGR 11,3% vs 12,6%, Sharpe 0,67 vs 0,72 |
 
 ---
 
@@ -85,6 +90,62 @@ propio resultado. Aplicar un estándar y no otro sería deshonesto.
 **Uso defendible:** si alguien quiere protección específica ante crashes
 rápidos y acepta ceder 1,5pp anuales por ella, el mecanismo está documentado.
 **No es** un sistema con ventaja demostrada.
+
+---
+
+## 3.bis El baseline tampoco gana: equal-weight vs índice
+
+La última pregunta abierta era si el equal-weight del universo — lo único que
+había sobrevivido— servía como estrategia. **No: está dominado.**
+
+### El resultado (precio vs precio, la única comparación justa)
+
+| Cartera | CAGR | vol | Sharpe | maxDD | Calmar |
+|---|---:|---:|---:|---:|---:|
+| **EW (292, semanal)** | **11,3%** | 18,7% | **0,67** | −38,7% | 0,29 |
+| **Ponderada por liquidez (292, trim.)** | **13,4%** | 20,4% | **0,72** | −38,6% | 0,35 |
+| **^GSPC (cap-weighted)** | **12,6%** | 19,1% | **0,72** | **−33,9%** | **0,37** |
+
+**El EW es el peor de los tres.** Pierde contra el índice (−1,3pp/año, −0,04
+Sharpe) y pierde contra una versión ponderada por liquidez de **su propio
+universo** (−2,1pp/año).
+
+### Lo que esto significa
+
+**Equiponderar no es neutro: es un sesgo de tamaño que jugó en contra.** Al
+dar el mismo peso a 282 nombres, se sobrepondera a los pequeños y se
+infrapondera a las megacaps, que dominaron 2023-2025. Coste: ~1,7-2pp/año.
+
+No es que el EW no aporte; es que **resta**. Y el índice tiene además mejor
+drawdown (−33,9% vs −38,7%) y mejor Calmar.
+
+### El sesgo que casi invalida este test
+
+La primera versión concluyó lo contrario ("el EW bate al índice"). Comparaba
+**EW con dividendos contra índice sin dividendos**: 13,9% vs 12,6% parecía una
+victoria, cuando la comparación justa es **11,3% vs 12,6%**.
+
+Detalle técnico: en estos datos **`$close` es el total return** y
+**`$close/$factor` es el precio** — al revés de la convención habitual de
+qlib. La diferencia medida es 2,64pp/año, exactamente el dividend yield.
+
+El script ahora determina cuál es cuál **empíricamente** (la serie con mayor
+retorno acumulado es la que incluye dividendos) y avisa si la diferencia es
+menor de 0,3pp.
+
+### Ranking final honesto
+
+| Si buscas... | La respuesta |
+|---|---|
+| Mayor retorno | Ponderación por liquidez (13,4%) o el índice (12,6%) |
+| Mejor Sharpe | Índice o liquidez (0,72 ambos) |
+| Menor drawdown | Vol-targeting sobre EW (−18,0%), **pero es un solo evento** |
+| Mejor Calmar | Vol-targeting sobre EW (0,49), **misma salvedad** |
+| Robustez de la evidencia | **Comprar el índice** |
+
+El vol-targeting sobre EW tiene el mejor Calmar de todos (0,49 vs 0,37), pero
+su ventaja de drawdown descansa en el crash COVID de 2020 y cuesta 3,8pp/año
+frente al índice.
 
 ---
 
@@ -180,28 +241,42 @@ leyendo.
 
 ### Si el objetivo es rentabilidad
 
-**Equal-weight del universo y nada más.** Sharpe 0,67 en 8,8 años, 1,04 en
-2022-2026, sin rotación, sin investigación, sin coste de mantenimiento. Es beta,
-y la beta es lo que puedes obtener con ventaja demostrada.
+**Comprar el índice.** Es lo único que gana en la comparación justa.
 
-Si se quiere protección ante crashes rápidos: añadir vol-targeting, sabiendo que
-la evidencia es de un solo evento y cuesta 1,5pp anuales.
+| | CAGR | Sharpe | maxDD | Calmar |
+|---|---:|---:|---:|---:|
+| ^GSPC | **12,6%** | **0,72** | **−33,9%** | **0,37** |
+| EW del universo | 11,3% | 0,67 | −38,7% | 0,29 |
+| Ponderada por liquidez | 13,4% | 0,72 | −38,6% | 0,35 |
+
+El EW pierde contra las dos alternativas. Equiponderar fue un **sesgo de tamaño
+que restó** ~1,7-2pp/año en un periodo dominado por megacaps.
+
+**Si se prefiere menor concentración:** el EW es un vehículo legítimo (282
+nombres, peso máximo 0,35%), pero hay que aceptar peor retorno, peor Sharpe y
+peor drawdown. Es pagar por diversificación, no comprar rendimiento.
+
+**Si se quiere protección ante crashes rápidos:** vol-targeting sobre EW da el
+mejor Calmar de todo el estudio (0,49), pero su ventaja de drawdown descansa en
+un único evento (COVID 2020) y cuesta 3,8pp/año frente al índice.
 
 ### Si el objetivo es aprender investigación cuantitativa
 
-**El proyecto ya lo ha conseguido.** Diez auditorías, ocho falsos positivos
-encontrados en trabajo propio, tres fallos de proceso identificados con su
-remedio. Eso es más formación que cualquier curso.
+**El proyecto ya lo ha conseguido.** Diez auditorías, nueve falsos positivos
+encontrados en trabajo propio (cuatro de ellos míos, corregidos antes de
+presentarlos), tres fallos de proceso identificados con su remedio. Eso es más
+formación que cualquier curso.
 
 ### Lo que no hacer
 
 - Otra variante de momentum sobre los mismos datos
 - Backtestear PEAD con datos de un año
 - Abrir una línea nueva sin aplicar las tres reglas del punto 5
+- Confundir "menos concentrado" con "mejor"
 
 ---
 
-## 8. Balance de las diez auditorías
+## 8. Balance de las once auditorías
 
 | # | Artefacto | Fallo encontrado |
 |---|---|---|
@@ -214,10 +289,20 @@ remedio. Eso es más formación que cualquier curso.
 | 7 | CSI300 | Contradicción documental de 10x |
 | 8 | IC 0,066 | No reproducible; el real es 0,032 y no significativo |
 | 9 | Ranking de momentum | Percentil 57 vs aleatorias |
-| 10 | **Vol-targeting** | **El +17,5pp es un solo evento** |
+| 10 | Vol-targeting | El +17,5pp es un solo evento |
+| 11 | **Equal-weight** | **Pierde contra el índice**: 11,3% vs 12,6% |
 
-**Nueve de diez** presentaban un número que no resistía una comprobación. Y dos
-de los errores encontrados fueron míos.
+**Diez de once** presentaban un número que no resistía una comprobación. Cuatro
+de los errores encontrados fueron míos, y tres de ellos habrían dado un
+resultado falsamente favorable si no los hubiera buscado:
+
+| Mi error | Qué habría reportado |
+|---|---|
+| `vol_pct` "leak" | Un leak que no existía |
+| Signo del drawdown | "El vol-targeting no aporta" cuando sí |
+| t-stat de retornos para el Sharpe | Un Sharpe "significativo" que no lo era |
+| `$close` vs `$close/$factor` | **"El equal-weight bate al índice"** |
+
 
 ---
 
