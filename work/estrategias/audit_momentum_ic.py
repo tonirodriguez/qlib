@@ -328,7 +328,16 @@ def main() -> int:
     print(f"  {'t Newey-West (conservador)':<38} {nw['t_nw']:+.2f}")
     print()
     t_real = no["t"] if np.isfinite(no["t"]) else nw["t_nw"]
-    if abs(media - 0.066) < 0.02:
+    # Umbral de "indistinguible de cero". Un IC de -0.0007 NO es negativo:
+    # es cero. Distinguirlo importa: "sin senal" != "senal en contra".
+    RUIN = 0.005
+    if abs(media) < RUIN:
+        print(f"  >> SIN SENAL ({media:+.4f}): indistinguible de cero "
+              f"(|IC| < {RUIN}).")
+        print(f"     t honesto {t_real:+.2f} con ~{no['n']} obs independientes.")
+        print(f"     El 0.066 no se reproduce a este horizonte.")
+        print("     No es 'senal en contra': simplemente no hay senal.")
+    elif abs(media - 0.066) < 0.02:
         print("  >> El 0.066 se sostiene con el metodo correcto.")
     elif media >= 0.02 and abs(t_real) >= 2:
         print(f"  >> Hay senal real y significativa: IC {media:+.4f}, "
@@ -337,15 +346,14 @@ def main() -> int:
     elif media >= 0.02:
         print(f"  >> Hay senal ({media:+.4f}) pero NO significativa con "
               f"labels solapados (t={t_real:.1f}).")
-        print("     La muestra solo permite ~%d observaciones independientes." % no["n"])
+        print(f"     La muestra solo permite ~{no['n']} obs independientes.")
         print("     Conclusion honesta: evidencia PRELIMINAR, no confirmada.")
-    elif media > 0:
+    elif media > RUIN:
         print(f"  >> Senal DEBIL ({media:+.4f}, t={t_real:.1f}): no supera")
         print("     el umbral 0.02. El 0.066 era optimista.")
     else:
-        print(f"  >> IC NEGATIVO ({media:+.4f}): la senal no predice en este")
-        print("     periodo. Coincide con el purged CV de agosto (-0.036).")
-        print("     >>> Las carteras vivas se apoyan en una senal sin alpha.")
+        print(f"  >> IC NEGATIVO ({media:+.4f}): la senal va EN CONTRA en")
+        print("     este periodo. Coincide con el purged CV de agosto (-0.036).")
 
     out = {
         "fecha": pd.Timestamp.now().isoformat(),
