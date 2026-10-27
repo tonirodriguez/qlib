@@ -375,20 +375,178 @@ Si un nivel se alarga, se alarga. **No se salta el test de respuesta conocida.**
 
 ---
 
-# Lectura (mínima y dirigida)
+# Lecturas
 
-No antes de empezar el nivel correspondiente:
+## Cómo usar esta sección
 
-| Nivel | Lectura |
+**Una regla:** lee la lectura del nivel **cuando empiezas el nivel**, no antes.
+Leer sobre purged CV sin haber escrito un backtester es como leer un manual de
+escalada en el sofá.
+
+**Prioridad:** las marcadas con ★ son las que de verdad cambian cómo piensas.
+Las demás son apoyo. Si tienes poco tiempo, ve solo a las ★.
+
+**Cómo leer un paper en 20 minutos:**
+
+1. Abstract y conclusión (2 min) → ¿qué afirma?
+2. **Las figuras** (5 min) → casi siempre revelan más que el texto
+3. Metodología (10 min) → ¿cómo lo mide? ¿qué supone?
+4. Solo si te convence, el resto
+
+Si el paper no responde "¿cuál es la hipótesis nula y qué la falsaría?", no es
+un paper de investigación: es marketing.
+
+---
+
+## Nivel 0 — Datos
+
+| Lectura | Por qué |
 |---|---|
-| 0 | Documentación de qlib sobre `$factor`; cualquier nota sobre ajuste por splits |
-| 1 | *Advances in Financial Machine Learning*, cap. 1-2 (estructura de datos financieros) |
-| 2 | Cualquier texto de inferencia estadística, capítulo de intervalos de confianza |
-| 3 | Bailey et al. (2016), *The Probability of Backtest Overfitting* |
-| 3 | Bailey & López de Prado (2014), *The Deflated Sharpe Ratio* |
-| 4 | Ang, *Asset Management*, cap. 2-4 (beta vs alfa) |
-| 5 | *Advances in Financial Machine Learning*, cap. 7 (purged CV) |
-| 6 | Harvey, Liu & Zhu (2016), *…and the Cross-Section of Expected Returns* |
+| ★ Documentación de qlib sobre `$close`, `$factor` y ajustes | Te tocó directamente: dos series del mismo activo con 2,6pp de diferencia |
+| ★ Hasbrouck, *Empirical Market Microstructure* (2007), cap. 1-3 | De dónde salen realmente los precios: bid-ask, trades, y por qué "el precio de cierre" es una convención |
+| Ernie Chan, *Quantitative Trading* (2009), cap. sobre datos | Práctico y honesto sobre las trampas típicas de datos gratuitos |
+| Documentación de CRSP o Compustat (aunque no tengas acceso) | Verás qué es un dato *point-in-time* de verdad y por qué Yahoo no lo es |
+
+**Ejercicio de lectura:** busca en el paper de Hasbrouck la primera vez que
+aparece "bid-ask bounce" y entiende por qué un precio de cierre puede tener
+ruido que no es señal.
+
+---
+
+## Nivel 1 — Motor de backtest
+
+| Lectura | Por qué |
+|---|---|
+| ★ López de Prado, *Advances in Financial Machine Learning* (2018), cap. 1-2 | Estructura de datos financieros, barras, y por qué el muestreo temporal no es trivial |
+| ★ Arnott, Harvey & Markowitz (2019), *A Backtesting Protocol in the Era of Machine Learning*, Journal of Financial Data Science | **El artículo más útil de toda la lista para tu caso.** Siete decisiones que hay que documentar en todo backtest |
+| Ernie Chan, *Algorithmic Trading* (2013), cap. 1-2 | Costes, slippage y capacidad con números concretos |
+| Bailey, Borwein, López de Prado & Zhu (2014), *Pseudo-Mathematics and Financial Charlatanism*, Notices of the AMS | Divertido y brutal: cómo se fabrican resultados financieros con sobreajuste |
+
+---
+
+## Nivel 2 — Estadística para muestras pequeñas
+
+| Lectura | Por qué |
+|---|---|
+| ★ Wasserman, *All of Statistics* (2004), cap. 6-8 | Conciso y riguroso. Intervalos de confianza y tests sin rodeos |
+| ★ Lakens, *Improving Your Statistical Inferences* (libro libre online) | El mejor material didáctico sobre potencia, p-valores y por qué "no significativo" ≠ "no hay efecto" |
+| Efron & Tibshirani, *An Introduction to the Bootstrap* (1993), cap. 1-6 | La biblia del remuestreo. Los capítulos iniciales bastan |
+| ★ Ioannidis (2005), *Why Most Published Research Findings Are False*, PLoS Medicine | Por qué la comunidad científica entera tiene el problema que tú tuviste |
+| Simmons, Nelson & Simonsohn (2011), *False-Positive Psychology*, Psychological Science | "Grados de libertad del investigador": cómo decisiones razonables producen falsos positivos. **Es tu proyecto, en psicología** |
+
+**Ejercicio de lectura:** en el paper de Simmons, cuenta cuántos "grados de
+libertad" reconoces de tu propio trabajo anterior.
+
+---
+
+## Nivel 3 — Hipótesis nula y sobreajuste
+
+Este es el nivel con la mejor literatura del campo. Casi todo es ★.
+
+| Lectura | Por qué |
+|---|---|
+| ★ Bailey, Borwein, López de Prado & Zhu (2016), *The Probability of Backtest Overfitting*, Journal of Computational Finance | La formalización de "cuántos intentos he hecho" |
+| ★ Bailey & López de Prado (2014), *The Deflated Sharpe Ratio*, Journal of Portfolio Management | La corrección concreta: Sharpe ajustado por intentos, asimetría y curtosis |
+| ★ Harvey, Liu & Zhu (2016), *…and the Cross-Section of Expected Returns*, Review of Financial Studies | Por qué el umbral pasó de t=2,0 a t=3,0. Con datos de 300+ factores publicados |
+| Harvey & Liu (2020), *False (and Missed) Discoveries in Financial Economics*, Journal of Finance | El reverso: también hay señales reales que descartamos por exigir demasiado |
+| Nosek, Ebersole, DeHaven & Mellor (2018), *The preregistration revolution*, PNAS | Qué es pre-registrar y por qué cambió la ciencia |
+
+**Orden recomendado:** empieza por Bailey (2016) —es el más intuitivo—, sigue
+con el Deflated Sharpe, y deja Harvey para el final.
+
+---
+
+## Nivel 4 — Factores y atribución
+
+| Lectura | Por qué |
+|---|---|
+| ★ Ang, *Asset Management: A Systematic Approach to Factor Investing* (2014), cap. 1-4 | La mejor exposición de beta vs alfa para alguien que viene de programar |
+| ★ Fama & French (1993), el paper de los tres factores | El original. Léelo aunque sea por encima: verás cómo se construye un factor de verdad |
+| Jegadeesh & Titman (1993), *Returns to Buying Winners and Selling Losers*, Journal of Finance | El momentum original. 12 meses de formación, 3-12 de mantenimiento — y tú usaste 120 días con label 120 |
+| Daniel & Moskowitz (2016), *Momentum Crashes*, Journal of Financial Economics | Por qué el momentum se hunde en las recuperaciones. Explica 2021 |
+| ★ Moreira & Muir (2017), *Volatility-Managed Portfolios*, Journal of Finance | El paper del vol-targeting que mediste. Verás qué encontraron ellos y con cuántos datos |
+| Barroso & Santa-Clara (2015), *Momentum Has Its Moments*, JFE | Vol-scaled momentum: el Sharpe se dispara. Con datos de 1927, no de 8 años |
+| Pedersen, *Efficiently Inefficient* (2015) | Catálogo de estrategias con su lógica económica. Útil para preguntarte "¿por qué existiría este alfa?" |
+
+**Pregunta que debes saber responder tras este nivel:** ¿por qué el momentum
+funciona en la literatura y no en tus datos? (Pista: universo, horizonte, y
+número de observaciones.)
+
+---
+
+## Nivel 5 — Validación temporal
+
+| Lectura | Por qué |
+|---|---|
+| ★ López de Prado, *Advances in Financial Machine Learning*, cap. 7 | Purged CV y embargo. El capítulo que faltaba en tu script de agosto |
+| López de Prado, *Advances in Financial Machine Learning*, cap. 11-12 | Importancia de features y backtesting con múltiples caminos |
+| López de Prado, *Machine Learning for Asset Managers* (2020) | Versión corta y aplicada del anterior |
+
+**Ejercicio de lectura:** después del cap. 7, vuelve a tu
+`momentum_purgedcv.py` y escribe en tres líneas por qué no purgaba.
+
+---
+
+## Nivel 6 — Protocolo de investigación
+
+| Lectura | Por qué |
+|---|---|
+| ★ Arnott, Harvey & Markowitz (2019), *A Backtesting Protocol…* (releer) | Ahora lo entenderás de verdad, con los niveles 1-5 hechos |
+| ★ Harvey & Liu (2015), *Backtesting*, Journal of Portfolio Management | Guía práctica de cómo NO reportar un backtest |
+| Nosek et al. (2018), *The preregistration revolution* (releer) | Cómo adaptarlo a finanzas, donde no hay comité ético |
+| Wilson et al. (2017), *Good Enough Practices in Scientific Computing*, PLOS Computational Biology | Cómo organizar código y resultados para que sean reproducibles por otro |
+
+---
+
+## Transversales — criterio, no técnica
+
+Estas no enseñan métodos. Enseñan a **desconfiar**, que es más difícil.
+
+| Lectura | Por qué |
+|---|---|
+| ★ Taleb, *Fooled by Randomness* (2001) | El libro que mejor explica por qué confundimos suerte con habilidad. Si solo lees uno de esta sección, este |
+| ★ Bernstein, *Against the Gods: The Remarkable Story of Risk* (1996) | Historia de cómo la humanidad aprendió a pensar en probabilidad. Contexto que no dan los manuales |
+| Lowenstein, *When Genius Failed* (2000) | LTCM: dos premios Nobel, un modelo brillante, y una ruina. La arrogancia del modelo |
+| Malkiel, *A Random Walk Down Wall Street* | El argumento escéptico, expuesto con claridad |
+| Hamming, *The Art of Doing Science and Engineering* (1997), cap. sobre investigación | Cómo elegir problemas que merezcan la pena. Escrito para científicos, aplica igual |
+| Box (1976), *Science and Statistics*, JASA | "Todos los modelos son falsos, pero algunos son útiles". Breve y fundacional |
+
+---
+
+## Cursos gratuitos
+
+| Curso | Nivel | Nota |
+|---|---|---|
+| MIT OCW 18.05, *Introduction to Probability and Statistics* | 2 | Sólido, con ejercicios y soluciones |
+| Daniel Lakens, *Improving Your Statistical Inferences* (Coursera + libro libre) | 2-3 | El mejor sobre potencia y p-values. Directo al grano |
+| *Statistical Rethinking* de McElreath (vídeos en YouTube) | optativo | Si te interesa la estadística bayesiana, la mejor pedagogía que existe |
+
+---
+
+## Qué NO leer (todavía, o nunca)
+
+- **Blogs que prometen rentabilidades.** Si alguien publica un Sharpe de 3, la
+  pregunta es cuántos intentos hizo. Casi nunca lo dice.
+- **Papers de "X predice retornos"** sin mirar antes el t-stat y el número de
+  observaciones independientes.
+- **Tutoriales de ML aplicado a trading** antes del nivel 5. Enseñan a
+  sobreajustar con mucha eficacia.
+- **Listas de "los 10 factores que funcionan"** sin la corrección por múltiples
+  comparaciones. Son el catálogo de falsos positivos del que habla Harvey.
+
+---
+
+## Un consejo sobre el orden
+
+Si te sientes perdido, este es el orden de impacto real:
+
+1. **Arnott, Harvey & Markowitz (2019)** — cambia cómo diseñas cualquier test
+2. **Taleb, *Fooled by Randomness*** — cambia cómo interpretas cualquier resultado
+3. **Bailey et al. (2016), Backtest Overfitting** — te da el número
+4. **Lakens** — te da la herramienta estadística
+5. **Ang, *Asset Management*** — te da el marco beta/alfa
+
+Los cinco, en ese orden, cubren el 80% de lo que hace falta para no engañarte.
 
 ---
 
