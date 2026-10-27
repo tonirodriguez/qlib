@@ -5,6 +5,35 @@
 > live trading, investment decisions, order execution, or claims of expected
 > financial performance.
 
+## Estado actual (2026-10-27)
+
+**Pipeline SFM: cerrado.** La auditoría de `AUDITORIA_V8.md` confirmó tres fugas de
+futuro en v8; sus métricas (Sharpe 2.74, equity 20x) no son evidencia válida. El
+cron diario de v8 se eliminó y no queda ningún job apuntando a ese pipeline. Los
+ficheros se conservan como base de código y comparación histórica.
+
+**Paper trading activo — dos estrategias, dos lógicas distintas:**
+
+| Estrategia | Script | Cron | Lógica | Estado al 27-oct |
+|---|---|---|---|---|
+| TSMOM20 vol40/vol60-breadth | `paper_trading_tsmom.py` | diario 09:00 | momentum 20d + vol-target + filtro de amplitud | 100% efectivo: 0 señales, amplitud 0% |
+| Carry de funding | `carry_paper_trading.py` | diario 09:05 | long spot + short perpetuo (funding) | carry-9 +16,82 pb, carry-majors +3,81 pb |
+
+Capital ficticio 10.000 € por variante. Libros en `output/paper_trading/ledger.csv`
+y `output/carry/paper_trading/ledger.csv`.
+
+**Evidencia de backtest (2016-2026, 9 criptos, 10 pb por operación):** TSMOM
+vol40-breadth +4.625% total (42%/año, Sharpe 1.27, DD −41%) frente a BTC buy&hold
++18.519% (Sharpe 1.06, DD −83%); carry siempre +116% (12%/año, Sharpe 4.60, DD
+−6,5%). El Sharpe del carry está inflado por la baja volatilidad diaria del
+funding. Correlación diaria entre ambas ≈ 0,00 (rolling 63d media −0,15), por lo
+que se complementan: 50/50 sube el Sharpe a 1.85 y baja el DD a −21,4%.
+
+**Límites:** ninguna de las dos está aprobada para capital real. El TSMOM no bate
+claramente a holdear BTC en riqueza y su t-stat ≈ 1,4; el carry rinde ya solo
+~4-5%/año y asume riesgo de contraparte y de funding. El paper trading debe
+acumular semanas antes de decidir.
+
 ## Status of the experiments
 
 The current SFM v2, v3, and v4 experiments have a known temporal data leakage:

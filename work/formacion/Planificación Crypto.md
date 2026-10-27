@@ -55,9 +55,39 @@ el ampliado de nueve y, si procede, una selección reducida mediante clustering.
 | 0. Contención | Completada | Resultados antiguos invalidados y marcados como investigación |
 | 1. Corrección metodológica | Completada en su alcance actual | Leakage corregido y nested walk-forward validado |
 | 2. Datos robustos | Completada en su alcance actual | Provider atómico, incremental, validado y trazable |
-| 3. Backtest realista | En curso | Calendario y costes básicos corregidos; faltan costes y restricciones avanzadas |
-| 4. Consolidación y experimento formal | Pendiente | Existe un smoke test, pero no un experimento defendible |
-| 5. Paper trading | Bloqueada | Solo comenzará cuando se superen todos los gates anteriores |
+| 3. Backtest realista | Completada para las estrategias simples | Costes por turnover y escenarios optimista/base/adverso; el modelo SFM se descartó antes de cerrar esta fase |
+| 4. Consolidación y experimento formal (SFM) | **Cancelada** | La auditoría de v8 confirmó tres fugas de futuro; sus métricas no son evidencia |
+| 5. Paper trading | **En curso desde 2026-10-25** | TSMOM20 (momentum 20d + vol-target) y carry de funding, diarios |
+
+## Reorientación 2026-10: SFM cerrado, trend following y carry
+
+La línea SFM se cerró el 26-oct-2026 tras la auditoría de `AUDITORIA_V8.md`:
+tres fugas de futuro confirmadas y cuantificadas invalidan sus resultados
+(Sharpe 2.74, equity 20x). El cron diario de v8 se eliminó. Los ficheros se
+conservan como base de código y comparación histórica, no como evidencia.
+
+En su lugar se probaron dos estrategias simples y auditables, sin modelo ML:
+
+- **TSMOM20** — momentum 20 días con vol-targeting (40% y 60%) y filtro de
+  amplitud. Backtest 2016-2026 sobre 9 criptos con 10 pb por operación:
+  vol40-breadth +4.625% total (42%/año, Sharpe 1.27, DD −41,3%) frente a BTC
+  buy&hold +18.519% (Sharpe 1.06, DD −83,3%). El retorno está concentrado en
+  2017, 2020 y 2021; pierde en 2016, 2018, 2022 y 2026. t-stat ≈ 1,4.
+- **Carry de funding** — long spot + short perpetuo. Variante "siempre"
+  +116,4% total (12,0%/año, Sharpe 4.60, DD −6,5%). El Sharpe está inflado por
+  la baja volatilidad diaria del funding; el rendimiento real ha caído a
+  ~4-5%/año en los últimos cinco años. Riesgo de contraparte no modelado.
+
+Correlación diaria entre ambas ≈ 0,00 (rolling 63d media −0,15): se
+complementan. La combinación 50/50 mejora el Sharpe a 1.85 y reduce el DD a
+−21,4% en el backtest, aunque el TSMOM no bate claramente a holdear BTC.
+
+**Estado real del paper trading:** capital ficticio 10.000 € por variante.
+TSMOM20 corre a diario a las 09:00 (hoy 100% efectivo: 0 señales, amplitud 0%);
+carry a las 09:05 (carry-9 +16,82 pb, carry-majors +3,81 pb al 26-oct). Ninguna
+de las dos está aprobada para capital real: deben acumular semanas de datos en
+vivo y superar una revisión explícita. Los gates de las fases 0-2 siguen siendo
+el marco de referencia; las fases 3-4 se reinterpretan para estrategias sin ML.
 
 ## Fase 0. Contención
 
@@ -379,13 +409,15 @@ operativa requeriría un proyecto y una autorización independientes que cubran,
 como mínimo, custodia, credenciales de mínimo privilegio, límites financieros,
 cumplimiento, monitorización, respuesta a incidentes y aprobación humana.
 
-## Próximas acciones prioritarias
+## Próximas acciones prioritarias (revisadas 2026-10-27)
 
-1. Crear un entorno Conda exclusivo para crypto y fijar dependencias.
-2. Completar la construcción atómica e incremental del provider Qlib.
-3. Analizar correlaciones y clustering del universo de nueve activos.
-4. Implementar nested walk-forward y reservar el holdout final.
-5. Completar el modelo de costes y restricciones del backtester.
-6. Ejecutar el experimento formal 5 vs. 9 vs. universo reducido.
-7. Empaquetar el artefacto reproducible.
-8. Revisar los gates y decidir si procede iniciar paper trading.
+1. Acumular y revisar el paper trading diario de TSMOM20 y carry (09:00 y 09:05).
+2. Corregir el arranque del libro TSMOM: el capital no compone el primer día y
+   el ledger parece congelado en 10.000 €. Revisar la condición `fecha > start`.
+3. Documentar el desfase de un día en los datos de funding del carry.
+4. Medir en vivo la correlación TSMOM/carry y validar la combinación 50/50.
+5. Decidir con datos de al menos 30 días si alguna merece capital real; por
+   defecto, no.
+6. Si se retoma un modelo ML, exigir nested walk-forward, holdout intocable y
+   auditoría anti-leakage antes de cualquier backtest creíble.
+7. Congelar el pipeline SFM v8 como referencia histórica; no reprogramarlo.
