@@ -125,6 +125,76 @@ def ic_cross_sectional(mom: pd.DataFrame, fwd: pd.DataFrame,
     return pd.Series(out).dropna()
 
 
+def newey_west_t(ics: pd.Series, lag: int) -> dict:
+    """t-stat con correccion Newey-West para autocorrelacion.
+
+    POR QUE HACE FALTA
+        Con un label de FWD dias, cada IC diario comparte FWD-1 dias de
+        ventana de retorno con el siguiente: las observaciones NO son
+        independientes. El t-stat clasico (media/(std/sqrt(n))) asume
+        independencia y sale MUY inflado (p.ej. 9.7 cuando el real es ~1).
+
+        Newey-West estima la varianza de la media corrigiendo por la
+        autocorrelacion hasta `lag` (se usa lag = FWD dias).
+
+    Devuelve tambien el "n efectivo" (n / (1+2*sum(rho))), que es cuantas
+    observaciones independientes hay de verdad.
+    """
+    x = ics.dropna().to_numpy(dtype=float)
+    n = len(x)
+    if n < 20:
+        return {"t_nw": float("nan"), "n": n, "n_eff": n, "lag": lag}
+    mean = x.mean()
+    d = x - mean
+    # varianza de la media con correccion de Bartlett
+    var = (d @ d) / n
+    s = 0.0
+    for k in range(1, min(lag, n - 1) + 1):
+        w = 1.0 - k / (lag + 1.0)          # ponderador de Bartlett
+        cov_k = (d[k:] @ d[:-k]) / n
+        s += 2.0 * w * cov_k
+    var_nw = (var + s) / n
+    if var_nw <= 0:
+        return {"t_nw": float("nan"), "n": n, "n_eff": n, "lag": lag}
+    # n efectivo: var_clasica / var_nw * n
+    n_eff = n * var / (var_nw * n) if var_nw * n > 0 else n
+    return {
+        "t_nw": float(mean / np.sqrt(var_nw)),
+        "n": int(n),
+        "n_eff": float(max(1.0, n_eff)),
+        "lag": int(lag),
+        "ic_medio": float(mean),
+    }
+
+
+def non_overlapping_t(ics: pd.Series, step: int) -> dict:
+    """IC sobre fechas NO solapadas + t clasico.
+
+    POR QUE ESTE ES EL TEST LIMPIO
+        Si el label dura `step` dias, dos fechas separadas por >= step no
+        comparten ventana de retorno: sus IC son independientes. Muestreando
+        1 de cada `step` fechas, el t clasico es valido (sin correcciones).
+
+        Coste: se pierde (step-1)/step de las observaciones. Con label 120d
+        y 1974 fechas quedan ~16 ICs. Pocos, pero HONESTOS: es toda la
+        informacion independiente que hay en la muestra.
+    """
+    x = ics.iloc[::step]
+    n = len(x)
+    if n < 8:
+        return {"t": float("nan"), "n": n, "ic_medio": float(x.mean())
+                if n else float("nan")}
+    m = float(x.mean())
+    s = float(x.std(ddof=1))
+    return {
+        "n": int(n),
+        "ic_medio": m,
+        "ic_std": s,
+        "t": float(m / (s / np.sqrt(n))) if s > 0 else float("nan"),
+        "step": int(step),
+    }
+
+
 def purged_cv_by_date(ics: pd.Series, n_splits: int, embargo_days: int) -> list[dict]:
     """Pliegues temporales con EMBARGO real entre ellos.
 
@@ -207,8 +277,27 @@ def main() -> int:
     print(f"  fechas       : {len(ics)}")
     print(f"  IC medio     : {media:+.4f}")
     print(f"  IC std       : {std:.4f}")
-    print(f"  t-stat       : {tstat:+.2f}")
+    print(f"  t-stat CLASICO (asume independencia): {tstat:+.2f}")
     print(f"  % > 0        : {100*(ics > 0).mean():.1f}%")
+    print("  OJO: el t clasico esta INFLADO por el solapamiento de labels.")
+    print("       Ver la seccion D para el t corregido.")
+
+    # --- D) significancia con labels solapados ---
+    print("\n" + "-" * 78)
+    print(" D) SIGNIFICANCIA REAL (labels de %dd se solapan)" % args.fwd)
+    print("-" * 78)
+    no = non_overlapping_t(ics, step=max(5, args.fwd))
+    print(f"  [D1] Fechas NO solapadas (1 de cada {no['step']}):")
+    print(f"       n ICs independientes : {no['n']}")
+    print(f"       IC medio             : {no['ic_medio']:+.4f}")
+    print(f"       t-stat               : {no['t']:+.2f}   <- el honesto")
+
+    nw = newey_west_t(ics, lag=max(5, args.fwd))
+    print(f"  [D2] Newey-West (lag={nw['lag']}, conservador):")
+    print(f"       t-stat               : {nw['t_nw']:+.2f}")
+    print(f"       n efectivo           : {nw['n_eff']:.0f} de {nw['n']}")
+    print("       (NW es conservador en muestra finita: infravalora el t)")
+    print("       Usar D1 como referencia principal.")
     print(f"  p25/p50/p75  : {ics.quantile(.25):+.4f} / "
           f"{ics.median():+.4f} / {ics.quantile(.75):+.4f}")
 
@@ -232,17 +321,27 @@ def main() -> int:
     print(f"  {'+0.066 citado en los docs':<38} {0.066:+.4f}")
     print(f"  {'IC pooled (Pearson)':<38} {pooled['ic_pearson']:+.4f}")
     print(f"  {'IC pooled (Spearman)':<38} {pooled['ic_spearman']:+.4f}")
-    print(f"  {'IC cross-sectional medio':<38} {media:+.4f}  (t={tstat:+.2f})")
+    print(f"  {'IC cross-sectional medio':<38} {media:+.4f}")
+    print(f"  {'t clasico (inflado)':<38} {tstat:+.2f}")
+    print(f"  {'t NO solapado (honesto)':<38} {no['t']:+.2f}  "
+          f"(n={no['n']})")
+    print(f"  {'t Newey-West (conservador)':<38} {nw['t_nw']:+.2f}")
     print()
+    t_real = no["t"] if np.isfinite(no["t"]) else nw["t_nw"]
     if abs(media - 0.066) < 0.02:
         print("  >> El 0.066 se sostiene con el metodo correcto.")
-    elif media > 0.02 and tstat > 2:
-        print(f"  >> El 0.066 NO se reproduce, pero hay senal real "
-              f"({media:+.4f}, t={tstat:.1f}).")
-        print(f"     Usar {media:+.3f} como referencia, no 0.066.")
+    elif media >= 0.02 and abs(t_real) >= 2:
+        print(f"  >> Hay senal real y significativa: IC {media:+.4f}, "
+              f"t={t_real:.1f}.")
+        print(f"     Usar {media:+.3f} como referencia, NO 0.066.")
+    elif media >= 0.02:
+        print(f"  >> Hay senal ({media:+.4f}) pero NO significativa con "
+              f"labels solapados (t={t_real:.1f}).")
+        print("     La muestra solo permite ~%d observaciones independientes." % no["n"])
+        print("     Conclusion honesta: evidencia PRELIMINAR, no confirmada.")
     elif media > 0:
-        print(f"  >> Senal DEBIL ({media:+.4f}, t={tstat:.1f}): no supera el")
-        print("     umbral 0.02 con significancia. El 0.066 era optimista.")
+        print(f"  >> Senal DEBIL ({media:+.4f}, t={t_real:.1f}): no supera")
+        print("     el umbral 0.02. El 0.066 era optimista.")
     else:
         print(f"  >> IC NEGATIVO ({media:+.4f}): la senal no predice en este")
         print("     periodo. Coincide con el purged CV de agosto (-0.036).")
@@ -256,8 +355,11 @@ def main() -> int:
         "pooled": pooled,
         "cross_sectional": {
             "n_fechas": int(len(ics)), "ic_medio": media, "ic_std": std,
-            "t_stat": float(tstat), "pct_positivas": float((ics > 0).mean()),
+            "t_stat_clasico": float(tstat),
+            "pct_positivas": float((ics > 0).mean()),
         },
+        "no_solapado": no,
+        "newey_west": nw,
         "purged_cv": folds,
         "doc_066": 0.066,
     }
