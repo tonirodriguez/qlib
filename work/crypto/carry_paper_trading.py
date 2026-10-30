@@ -179,7 +179,7 @@ def main() -> int:
             try:
                 update_coin(c)
             except Exception as e:
-                print(f"  ⚠️  {c}: no se pudo refrescar ({type(e).__name__})")
+                print(f"  ⚠️  {c}: no se pudo refrescar ({type(e).__name__}: {e!r})")
 
     F, Sr, Pr = build_panel(cf.COINS)
     rets, held = simulate(F, Sr, Pr)
