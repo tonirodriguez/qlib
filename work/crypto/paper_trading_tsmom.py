@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -48,6 +49,49 @@ VOL_WINDOW = 60
 MAX_LEV = 2.0
 STRATEGIES = [("vol40-breadth", 0.40, "breadth"), ("vol60-breadth", 0.60, "breadth")]
 BINANCE = "https://api.binance.com/api/v3/klines"
+COINBASE = "https://api.exchange.coinbase.com/products/{product}/candles"
+
+UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+      "(KHTML, like Gecko) Chrome/120.0 Safari/537.36")
+RETRIES = 3
+BACKOFF = (2, 5, 10)
+
+
+def _get_json(url: str, timeout: int = 20):
+    """GET con User-Agent de navegador y reintentos con backoff exponencial."""
+    last = None
+    for attempt in range(RETRIES):
+        req = urllib.request.Request(
+            url, headers={"User-Agent": UA, "Accept": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return json.loads(r.read().decode())
+        except Exception as e:  # noqa: BLE001 - se reintenta cualquier fallo de red
+            last = e
+            if attempt < RETRIES - 1:
+                time.sleep(BACKOFF[attempt])
+    raise last
+
+
+def coinbase_closes(symbol: str, start_ms: int, end_ms: int) -> pd.Series:
+    """Cierres diarios de Coinbase Exchange — fallback si Binance falla."""
+    product = symbol.replace("USDT", "-USD")
+    out = {}
+    cur = start_ms
+    while cur < end_ms:
+        chunk_end = min(cur + 300 * 86400000, end_ms)
+        q = urllib.parse.urlencode({
+            "granularity": 86400,
+            "start": pd.Timestamp(cur, unit="ms").isoformat(),
+            "end": pd.Timestamp(chunk_end, unit="ms").isoformat(),
+        })
+        data = _get_json(f"{COINBASE.format(product=product)}?{q}")
+        if not data:
+            break
+        for k in data:  # [time, low, high, open, close, volume]
+            out[pd.Timestamp(k[0], unit="s").normalize()] = float(k[4])
+        cur = chunk_end
+    return pd.Series(out).sort_index()
 
 
 def binance_closes(symbol: str, start_ms: int, end_ms: int) -> pd.Series:
@@ -58,8 +102,7 @@ def binance_closes(symbol: str, start_ms: int, end_ms: int) -> pd.Series:
         q = urllib.parse.urlencode({
             "symbol": symbol, "interval": "1d", "limit": 1000,
             "startTime": cur, "endTime": end_ms})
-        with urllib.request.urlopen(f"{BINANCE}?{q}", timeout=20) as r:
-            data = json.loads(r.read().decode())
+        data = _get_json(f"{BINANCE}?{q}")
         if not data:
             break
         for k in data:
@@ -81,12 +124,21 @@ def refresh_prices(df: pd.DataFrame) -> pd.DataFrame:
         print("  datos ya al día, sin refresco")
         return df
     added = 0
+    errors: dict[str, Exception] = {}
     for c in df.columns:
         try:
             s = binance_closes(f"{c.upper()}USDT", start_ms, end_ms)
-        except Exception as e:  # red o símbolo no listado
-            print(f"  ⚠️  {c}: no se pudo refrescar ({type(e).__name__})")
-            continue
+        except Exception as e:  # red o símbolo no listado -> fallback Coinbase
+            try:
+                s = coinbase_closes(f"{c.upper()}USDT", start_ms, end_ms)
+                print(f"  ↪️  {c}: Binance falló ({type(e).__name__}: {e}), "
+                      f"refrescado desde Coinbase")
+            except Exception as e2:  # noqa: BLE001
+                errors[c] = e2
+                print(f"  ⚠️  {c}: no se pudo refrescar "
+                      f"(Binance {type(e).__name__}: {e} | "
+                      f"Coinbase {type(e2).__name__}: {e2})")
+                continue
         if s.empty:
             continue
         s.index = s.index.tz_localize(None)
@@ -95,6 +147,11 @@ def refresh_prices(df: pd.DataFrame) -> pd.DataFrame:
             df.loc[ts, c] = px
             added += 1
     print(f"  {added} cierres nuevos añadidos (hasta {df.index[-1].date()})")
+    if added == 0 and errors:
+        print(f"  ❌ Sin datos nuevos: {len(errors)}/{len(df.columns)} activos fallaron "
+              f"tras {RETRIES} intentos (Binance y Coinbase). "
+              f"Último error: {errors[next(iter(errors))]!r}")
+        raise SystemExit(2)
     return df.sort_index()
 
 

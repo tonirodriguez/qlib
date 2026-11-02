@@ -53,11 +53,17 @@ SPOT = "https://api.binance.com/api/v3/klines"
 FAPI = "https://fapi.binance.com/fapi/v1"
 
 
+UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+      "(KHTML, like Gecko) Chrome/120.0 Safari/537.36")
+
+
 def _get(url: str, params: dict) -> list:
     q = urllib.parse.urlencode(params)
     for attempt in range(4):
         try:
-            with urllib.request.urlopen(f"{url}?{q}", timeout=25) as r:
+            req = urllib.request.Request(
+                f"{url}?{q}", headers={"User-Agent": UA, "Accept": "application/json"})
+            with urllib.request.urlopen(req, timeout=25) as r:
                 return json.loads(r.read().decode())
         except Exception:
             if attempt == 3:
